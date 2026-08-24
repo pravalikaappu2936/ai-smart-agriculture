@@ -1,0 +1,374 @@
+/* ========================================
+   LOGIN PAGE
+======================================== */
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 25px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f3f8f0 0%,
+            #eaf4e6 50%,
+            #f7faf5 100%
+        );
+
+    box-sizing: border-box;
+}
+
+
+/* ========================================
+   LOGIN CONTAINER
+======================================== */
+
+.login-container {
+    width: 100%;
+    max-width: 430px;
+
+    padding: 40px;
+
+    background: #ffffff;
+
+    border: 1px solid #dfe8dc;
+    border-radius: 20px;
+
+    box-shadow:
+        0 12px 35px rgba(40, 70, 40, 0.09);
+
+    box-sizing: border-box;
+
+    animation: loginAppear 0.45s ease;
+}
+
+
+/* ========================================
+   LOGIN ANIMATION
+======================================== */
+
+@keyframes loginAppear {
+
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+
+/* ========================================
+   LOGO
+======================================== */
+
+.login-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 9px;
+
+    margin-bottom: 25px;
+
+    color: #2f6b35;
+
+    font-size: 25px;
+    font-weight: 700;
+}
+
+
+/* Logo icon */
+
+.login-logo:first-letter {
+    font-size: 30px;
+}
+
+
+/* ========================================
+   TITLE
+======================================== */
+
+.login-container h1 {
+    margin: 0 0 25px;
+
+    text-align: center;
+
+    color: #2c5932;
+
+    font-size: 30px;
+    font-weight: 700;
+}
+
+
+/* ========================================
+   FORM GROUP
+======================================== */
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+
+/* ========================================
+   LABEL
+======================================== */
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #435146;
+
+    font-size: 14px;
+    font-weight: 600;
+}
+
+
+/* ========================================
+   INPUT
+======================================== */
+
+.form-group input {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 13px 14px;
+
+    border: 1px solid #cfdacf;
+
+    border-radius: 9px;
+
+    outline: none;
+
+    background: #ffffff;
+
+    color: #28352b;
+
+    font-size: 14px;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+
+/* Placeholder */
+
+.form-group input::placeholder {
+    color: #9aa49b;
+}
+
+
+/* Input focus */
+
+.form-group input:focus {
+    border-color: #55935d;
+
+    box-shadow:
+        0 0 0 3px rgba(85, 147, 93, 0.1);
+
+    background: #fbfefb;
+}
+
+
+/* ========================================
+   BROWSER AUTOFILL
+======================================== */
+
+/*
+   Keeps browser autofill visually consistent
+   with the application.
+
+   NOTE:
+   This does NOT delete credentials saved in
+   Chrome/Edge password manager.
+*/
+
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:hover,
+.form-group input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #28352b;
+
+    box-shadow:
+        0 0 0 1000px #ffffff inset;
+
+    transition:
+        background-color 5000s ease-in-out 0s;
+}
+
+
+/* ========================================
+   ERROR MESSAGE
+======================================== */
+
+.login-error {
+    margin-bottom: 15px;
+
+    padding: 12px;
+
+    border-radius: 8px;
+
+    background: #fff0ee;
+
+    border: 1px solid #f1cbc6;
+
+    color: #a83327;
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+    white-space: pre-line;
+}
+
+
+/* ========================================
+   LOGIN BUTTON
+======================================== */
+
+.login-container form button {
+    width: 100%;
+
+    padding: 13px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #3d7b43;
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+/* Hover */
+
+.login-container form button:hover:not(:disabled) {
+    background: #326638;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 5px 12px rgba(50, 102, 56, 0.2);
+}
+
+
+/* Click */
+
+.login-container form button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+
+/* Disabled */
+
+.login-container form button:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+    box-shadow: none;
+}
+
+
+/* ========================================
+   REGISTER LINK
+======================================== */
+
+.register-link {
+    margin: 22px 0 0;
+
+    text-align: center;
+
+    color: #727b73;
+
+    font-size: 14px;
+}
+
+
+/* Register link */
+
+.register-link a {
+    color: #39713f;
+
+    font-weight: 700;
+
+    text-decoration: none;
+
+    transition: color 0.2s ease;
+}
+
+
+/* Hover */
+
+.register-link a:hover {
+    color: #285d30;
+
+    text-decoration: underline;
+}
+
+
+/* ========================================
+   MOBILE
+======================================== */
+
+@media (max-width: 480px) {
+
+    .login-page {
+        padding: 18px;
+    }
+
+
+    .login-container {
+        padding: 30px 22px;
+
+        border-radius: 16px;
+    }
+
+
+    .login-logo {
+        font-size: 22px;
+    }
+
+
+    .login-container h1 {
+        font-size: 26px;
+
+        margin-bottom: 22px;
+    }
+
+
+    .form-group input {
+        padding: 12px;
+    }
+
+
+    .login-container form button {
+        padding: 12px;
+    }
+
+}

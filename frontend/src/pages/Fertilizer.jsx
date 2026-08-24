@@ -1,0 +1,1535 @@
+import React, {
+    useEffect,
+    useState
+} from "react";
+
+import BackToDashboard from "../components/BackToDashboard";
+
+import {
+    getLatestSensorData,
+    getFertilizerRecommendation
+} from "../services/api";
+
+import "./Fertilizer.css";
+
+
+function Fertilizer() {
+
+    // =====================================================
+    // SENSOR DATA
+    // =====================================================
+
+    const [sensorData, setSensorData] =
+        useState(null);
+
+    const [recommendation, setRecommendation] =
+        useState(null);
+
+    const [loading, setLoading] =
+        useState(true);
+
+    const [predicting, setPredicting] =
+        useState(false);
+
+    const [error, setError] =
+        useState("");
+
+    const [lastUpdated, setLastUpdated] =
+        useState(null);
+
+
+    // =====================================================
+    // LANGUAGE
+    // =====================================================
+
+    const [language, setLanguage] =
+        useState(
+            localStorage.getItem("language") || "en"
+        );
+
+    const isKannada =
+        language === "kn";
+
+
+    const changeLanguage = (lang) => {
+
+        setLanguage(lang);
+
+        localStorage.setItem(
+            "language",
+            lang
+        );
+
+    };
+
+
+    // =====================================================
+    // LOAD SENSOR DATA
+    // =====================================================
+
+    const loadSensorData = async () => {
+
+        try {
+
+            setLoading(true);
+
+            setError("");
+
+            const response =
+                await getLatestSensorData();
+
+            console.log(
+                "Fertilizer IoT response:",
+                response
+            );
+
+
+            let data;
+
+            if (response?.data) {
+
+                data = response.data;
+
+            } else {
+
+                data = response;
+
+            }
+
+
+            setSensorData(data);
+
+            setLastUpdated(
+                new Date()
+            );
+
+        }
+
+        catch (err) {
+
+            console.error(
+                "Fertilizer sensor error:",
+                err
+            );
+
+
+            const detail =
+                err.response?.data?.detail;
+
+
+            if (typeof detail === "string") {
+
+                setError(detail);
+
+            }
+
+            else {
+
+                setError(
+
+                    isKannada
+
+                        ? "ಲೈವ್ ಸೆನ್ಸರ್ ಡೇಟಾವನ್ನು ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ."
+
+                        : "Unable to load live sensor data."
+
+                );
+
+            }
+
+        }
+
+        finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+
+    // =====================================================
+    // REFRESH SENSOR DATA EVERY 5 SECONDS
+    // =====================================================
+
+    useEffect(() => {
+
+        loadSensorData();
+
+
+        const interval =
+            setInterval(() => {
+
+                loadSensorData();
+
+            }, 5000);
+
+
+        return () => {
+
+            clearInterval(interval);
+
+        };
+
+    }, []);
+
+
+    // =====================================================
+    // FERTILIZER RECOMMENDATION
+    // =====================================================
+
+    const handleRecommendation = async () => {
+
+        if (!sensorData) {
+
+            setError(
+
+                isKannada
+
+                    ? "ಸೆನ್ಸರ್ ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ."
+
+                    : "Sensor data is not available."
+
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            setPredicting(true);
+
+            setRecommendation(null);
+
+            setError("");
+
+
+            // =============================================
+            // MAP IOT DATA
+            // =============================================
+
+            const inputData = {
+
+                nitrogen:
+                    Number(
+                        sensorData.nitrogen
+                    ),
+
+                phosphorus:
+                    Number(
+                        sensorData.phosphorus
+                    ),
+
+                potassium:
+                    Number(
+                        sensorData.potassium
+                    ),
+
+                ph:
+                    Number(
+                        sensorData.ph
+                    ),
+
+                moisture:
+                    Number(
+                        sensorData.soil_moisture
+                    ),
+
+                temperature:
+                    Number(
+                        sensorData.temperature
+                    )
+
+            };
+
+
+            console.log(
+                "Fertilizer recommendation input:",
+                inputData
+            );
+
+
+            // =============================================
+            // VALIDATE SENSOR VALUES
+            // =============================================
+
+            const invalidFields =
+                Object.entries(inputData)
+
+                    .filter(
+                        ([, value]) =>
+                            !Number.isFinite(value)
+                    )
+
+                    .map(
+                        ([key]) =>
+                            key
+                    );
+
+
+            if (
+                invalidFields.length > 0
+            ) {
+
+                setError(
+
+                    isKannada
+
+                        ? `ಅಮಾನ್ಯ ಸೆನ್ಸರ್ ಮೌಲ್ಯಗಳು: ${invalidFields.join(", ")}`
+
+                        : `Invalid sensor values: ${invalidFields.join(", ")}`
+
+                );
+
+                return;
+
+            }
+
+
+            // =============================================
+            // CALL FERTILIZER API
+            // =============================================
+
+            const result =
+                await getFertilizerRecommendation(
+                    inputData
+                );
+
+
+            console.log(
+                "Fertilizer recommendation result:",
+                result
+            );
+
+
+            setRecommendation(result);
+
+        }
+
+
+        catch (err) {
+
+            console.error(
+                "Fertilizer recommendation error:",
+                err
+            );
+
+
+            const detail =
+                err.response?.data?.detail;
+
+
+            // =============================================
+            // FASTAPI VALIDATION ERROR
+            // =============================================
+
+            if (
+                Array.isArray(detail)
+            ) {
+
+                const messages =
+                    detail.map(
+                        (item) => {
+
+                            const field =
+                                item.loc?.join(
+                                    " → "
+                                ) ||
+                                "Field";
+
+
+                            return `${field}: ${item.msg}`;
+
+                        }
+                    );
+
+
+                setError(
+                    messages.join(" | ")
+                );
+
+            }
+
+            else if (
+                typeof detail === "string"
+            ) {
+
+                setError(detail);
+
+            }
+
+            else {
+
+                setError(
+
+                    isKannada
+
+                        ? "ರಸಗೊಬ್ಬರ ಶಿಫಾರಸನ್ನು ರಚಿಸಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ."
+
+                        : "Unable to generate fertilizer recommendation."
+
+                );
+
+            }
+
+        }
+
+        finally {
+
+            setPredicting(false);
+
+        }
+
+    };
+
+
+    // =====================================================
+    // PAGE
+    // =====================================================
+
+    return (
+
+        <div className="fertilizer-page">
+
+            <div className="fertilizer-container">
+
+
+                {/* =================================================
+                    BACK TO DASHBOARD
+                ================================================= */}
+
+                <div className="fertilizer-back-wrapper">
+
+                    <BackToDashboard />
+
+                </div>
+
+
+                {/* =================================================
+                    LANGUAGE BAR
+                ================================================= */}
+
+                <div className="fertilizer-language-bar">
+
+                    <button
+                        className={
+                            language === "en"
+                                ? "language-button active"
+                                : "language-button"
+                        }
+
+                        onClick={() =>
+                            changeLanguage("en")
+                        }
+                    >
+                        English
+                    </button>
+
+
+                    <button
+                        className={
+                            language === "kn"
+                                ? "language-button active"
+                                : "language-button"
+                        }
+
+                        onClick={() =>
+                            changeLanguage("kn")
+                        }
+                    >
+                        ಕನ್ನಡ
+                    </button>
+
+                </div>
+
+
+                {/* =================================================
+                    PAGE TITLE
+                ================================================= */}
+
+                <div className="fertilizer-page-heading">
+
+
+                    <div className="fertilizer-title-area">
+
+
+                        <div className="fertilizer-title-icon">
+
+                            🌱
+
+                        </div>
+
+
+                        <div>
+
+                            <h1>
+
+                                {isKannada
+
+                                    ? "ರಸಗೊಬ್ಬರ ಶಿಫಾರಸು"
+
+                                    : "Fertilizer Recommendation"}
+
+                            </h1>
+
+
+                            <p>
+
+                                {isKannada
+
+                                    ? "ಲೈವ್ ಕೃಷಿ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಬಳಸಿಕೊಂಡು AI ಆಧಾರಿತ ರಸಗೊಬ್ಬರ ಆಯ್ಕೆ."
+
+                                    : "AI-powered fertilizer selection using live farm conditions"}
+
+                            </p>
+
+                        </div>
+
+
+                    </div>
+
+
+                    {/* =================================================
+                        AI STATUS
+                    ================================================= */}
+
+                    <div className="fertilizer-ai-status">
+
+                        <span className="ai-status-dot"></span>
+
+                        {isKannada
+                            ? "AI ಮಾದರಿ ಸಕ್ರಿಯವಾಗಿದೆ"
+                            : "AI Model Active"}
+
+                    </div>
+
+
+                </div>
+
+
+                {/* =================================================
+                    ERROR
+                ================================================= */}
+
+                {error && (
+
+                    <div className="fertilizer-error">
+
+                        <span className="error-icon">
+
+                            ⚠️
+
+                        </span>
+
+
+                        <div>
+
+                            <strong>
+
+                                {isKannada
+                                    ? "ದೋಷ"
+                                    : "Error"}
+
+                            </strong>
+
+
+                            <p>
+
+                                {error}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                )}
+
+
+                {/* =================================================
+                    LOADING
+                ================================================= */}
+
+                {loading && (
+
+                    <div className="fertilizer-loading">
+
+                        <div className="loading-spinner"></div>
+
+                        <span>
+
+                            {isKannada
+
+                                ? "ಲೈವ್ ಸೆನ್ಸರ್ ಡೇಟಾವನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+
+                                : "Loading live sensor data..."}
+
+                        </span>
+
+                    </div>
+
+                )}
+
+
+                {/* =================================================
+                    LIVE FARM CONDITIONS
+                ================================================= */}
+
+                {!loading &&
+                    sensorData && (
+
+                        <section className="fertilizer-sensor-section">
+
+
+                            {/* =================================================
+                                SECTION HEADER
+                            ================================================= */}
+
+                            <div className="fertilizer-section-header">
+
+
+                                <div>
+
+                                    <h2>
+
+                                        📡{" "}
+
+                                        {isKannada
+
+                                            ? "ಲೈವ್ ಕೃಷಿ ಪರಿಸ್ಥಿತಿಗಳು"
+
+                                            : "Live Farm Conditions"}
+
+                                    </h2>
+
+
+                                    <p>
+
+                                        {isKannada
+
+                                            ? "ನಿಮ್ಮ IoT ಸೆನ್ಸರ್‌ಗಳಿಂದ ಸಂಗ್ರಹಿಸಲಾದ ಪ್ರಸ್ತುತ ಮೌಲ್ಯಗಳು"
+
+                                            : "Current values collected from your IoT sensors"}
+
+                                    </p>
+
+                                </div>
+
+
+                                <div className="live-badge">
+
+                                    <span></span>
+
+                                    {isKannada
+                                        ? "ಲೈವ್"
+                                        : "LIVE"}
+
+                                </div>
+
+
+                            </div>
+
+
+                            {/* =================================================
+                                SENSOR GRID
+                            ================================================= */}
+
+                            <div className="fertilizer-sensor-grid">
+
+
+                                {/* ===============================
+                                    NITROGEN
+                                =============================== */}
+
+                                <div className="fertilizer-sensor-card">
+
+                                    <div className="sensor-icon">
+                                        N
+                                    </div>
+
+
+                                    <div className="sensor-info">
+
+                                        <span>
+
+                                            {isKannada
+                                                ? "ಸಾರಜನಕ"
+                                                : "Nitrogen"}
+
+                                        </span>
+
+
+                                        <strong>
+
+                                            {sensorData.nitrogen ??
+                                                "N/A"}
+
+                                        </strong>
+
+
+                                        <small>
+                                            mg/kg
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ===============================
+                                    PHOSPHORUS
+                                =============================== */}
+
+                                <div className="fertilizer-sensor-card">
+
+                                    <div className="sensor-icon">
+                                        P
+                                    </div>
+
+
+                                    <div className="sensor-info">
+
+                                        <span>
+
+                                            {isKannada
+                                                ? "ರಂಜಕ"
+                                                : "Phosphorus"}
+
+                                        </span>
+
+
+                                        <strong>
+
+                                            {sensorData.phosphorus ??
+                                                "N/A"}
+
+                                        </strong>
+
+
+                                        <small>
+                                            mg/kg
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ===============================
+                                    POTASSIUM
+                                =============================== */}
+
+                                <div className="fertilizer-sensor-card">
+
+                                    <div className="sensor-icon">
+                                        K
+                                    </div>
+
+
+                                    <div className="sensor-info">
+
+                                        <span>
+
+                                            {isKannada
+                                                ? "ಪೊಟ್ಯಾಸಿಯಂ"
+                                                : "Potassium"}
+
+                                        </span>
+
+
+                                        <strong>
+
+                                            {sensorData.potassium ??
+                                                "N/A"}
+
+                                        </strong>
+
+
+                                        <small>
+                                            mg/kg
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ===============================
+                                    TEMPERATURE
+                                =============================== */}
+
+                                <div className="fertilizer-sensor-card">
+
+                                    <div className="sensor-icon">
+                                        🌡️
+                                    </div>
+
+
+                                    <div className="sensor-info">
+
+                                        <span>
+
+                                            {isKannada
+                                                ? "ತಾಪಮಾನ"
+                                                : "Temperature"}
+
+                                        </span>
+
+
+                                        <strong>
+
+                                            {sensorData.temperature ??
+                                                "N/A"}
+
+                                            {sensorData.temperature != null
+                                                ? " °C"
+                                                : ""}
+
+                                        </strong>
+
+
+                                        <small>
+
+                                            {isKannada
+                                                ? "ಗಾಳಿಯ ತಾಪಮಾನ"
+                                                : "Air temperature"}
+
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ===============================
+                                    HUMIDITY
+                                =============================== */}
+
+                                <div className="fertilizer-sensor-card">
+
+                                    <div className="sensor-icon">
+                                        💧
+                                    </div>
+
+
+                                    <div className="sensor-info">
+
+                                        <span>
+
+                                            {isKannada
+                                                ? "ಆರ್ದ್ರತೆ"
+                                                : "Humidity"}
+
+                                        </span>
+
+
+                                        <strong>
+
+                                            {sensorData.humidity ??
+                                                "N/A"}
+
+                                            {sensorData.humidity != null
+                                                ? " %"
+                                                : ""}
+
+                                        </strong>
+
+
+                                        <small>
+
+                                            {isKannada
+                                                ? "ಸಾಪೇಕ್ಷ ಆರ್ದ್ರತೆ"
+                                                : "Relative humidity"}
+
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ===============================
+                                    SOIL PH
+                                =============================== */}
+
+                                <div className="fertilizer-sensor-card">
+
+                                    <div className="sensor-icon sensor-ph">
+                                        pH
+                                    </div>
+
+
+                                    <div className="sensor-info">
+
+                                        <span>
+
+                                            {isKannada
+                                                ? "ಮಣ್ಣಿನ pH"
+                                                : "Soil pH"}
+
+                                        </span>
+
+
+                                        <strong>
+
+                                            {sensorData.ph ??
+                                                "N/A"}
+
+                                        </strong>
+
+
+                                        <small>
+
+                                            {isKannada
+                                                ? "ಆಮ್ಲೀಯತೆಯ ಮಟ್ಟ"
+                                                : "Acidity level"}
+
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ===============================
+                                    RAINFALL
+                                =============================== */}
+
+                                <div className="fertilizer-sensor-card">
+
+                                    <div className="sensor-icon">
+                                        🌧️
+                                    </div>
+
+
+                                    <div className="sensor-info">
+
+                                        <span>
+
+                                            {isKannada
+                                                ? "ಮಳೆ"
+                                                : "Rainfall"}
+
+                                        </span>
+
+
+                                        <strong>
+
+                                            {sensorData.rainfall ??
+                                                "N/A"}
+
+                                            {sensorData.rainfall != null
+                                                ? " mm"
+                                                : ""}
+
+                                        </strong>
+
+
+                                        <small>
+
+                                            {isKannada
+                                                ? "ಪ್ರಸ್ತುತ ಮಳೆ"
+                                                : "Current rainfall"}
+
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                                {/* ===============================
+                                    SOIL MOISTURE
+                                =============================== */}
+
+                                <div className="fertilizer-sensor-card moisture-card">
+
+                                    <div className="sensor-icon">
+                                        🌱
+                                    </div>
+
+
+                                    <div className="sensor-info">
+
+                                        <span>
+
+                                            {isKannada
+                                                ? "ಮಣ್ಣಿನ ತೇವಾಂಶ"
+                                                : "Soil Moisture"}
+
+                                        </span>
+
+
+                                        <strong>
+
+                                            {sensorData.soil_moisture ??
+                                                "N/A"}
+
+                                            {sensorData.soil_moisture != null
+                                                ? " %"
+                                                : ""}
+
+                                        </strong>
+
+
+                                        <small>
+
+                                            {isKannada
+                                                ? "ನೀರಾವರಿ ವ್ಯವಸ್ಥೆಯಲ್ಲಿ ಬಳಸಲಾಗುತ್ತದೆ"
+                                                : "Used by irrigation system"}
+
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+
+                            </div>
+
+
+                            {/* =================================================
+                                LAST UPDATED
+                            ================================================= */}
+
+                            <div className="fertilizer-last-updated">
+
+                                <span className="update-dot"></span>
+
+                                <span>
+
+                                    {lastUpdated
+
+                                        ? (
+
+                                            isKannada
+
+                                                ? `ಕೊನೆಯ ನವೀಕರಣ: ${lastUpdated.toLocaleTimeString()}`
+
+                                                : `Last updated: ${lastUpdated.toLocaleTimeString()}`
+
+                                        )
+
+                                        : (
+
+                                            isKannada
+                                                ? "ಡೇಟಾ ನವೀಕರಣಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದೆ..."
+                                                : "Waiting for data update..."
+
+                                        )}
+
+                                </span>
+
+                            </div>
+
+
+                        </section>
+
+                    )}
+
+
+                {/* =================================================
+                    NO SENSOR DATA
+                ================================================= */}
+
+                {!loading &&
+                    !sensorData && (
+
+                        <div className="fertilizer-no-data">
+
+                            <div className="no-data-icon">
+                                📡
+                            </div>
+
+
+                            <h2>
+
+                                {isKannada
+                                    ? "ಸೆನ್ಸರ್ ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ"
+                                    : "No Sensor Data"}
+
+                            </h2>
+
+
+                            <p>
+
+                                {isKannada
+
+                                    ? "ನಿಮ್ಮ IoT ಸೆನ್ಸರ್ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+
+                                    : "Check your IoT sensor connection and try again."}
+
+                            </p>
+
+
+                            <button
+                                className="retry-button"
+                                onClick={loadSensorData}
+                            >
+
+                                {isKannada
+                                    ? "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ"
+                                    : "Retry"}
+
+                            </button>
+
+                        </div>
+
+                    )}
+
+
+                {/* =================================================
+                    AI MODEL INFORMATION
+                ================================================= */}
+
+                {!loading &&
+                    sensorData && (
+
+                        <section className="fertilizer-model-card">
+
+
+                            <div className="model-icon">
+                                🤖
+                            </div>
+
+
+                            <div className="model-information">
+
+                                <h3>
+
+                                    Random Forest AI Model
+
+                                </h3>
+
+
+                                <p>
+
+                                    {isKannada
+
+                                        ? "ನಿಮ್ಮ ಲೈವ್ ಮಣ್ಣು ಮತ್ತು ಪರಿಸರ ಪರಿಸ್ಥಿತಿಗಳಿಂದ ಶಿಫಾರಸು ರಚಿಸಲಾಗಿದೆ."
+
+                                        : "Recommendation is generated from your live soil and environmental conditions."}
+
+                                </p>
+
+                            </div>
+
+
+                            <div className="model-stat">
+
+                                <strong>
+                                    2,200
+                                </strong>
+
+                                <span>
+                                    Training Records
+                                </span>
+
+                            </div>
+
+
+                            <div className="model-stat">
+
+                                <strong>
+                                    22
+                                </strong>
+
+                                <span>
+                                    Fertilizer Classes
+                                </span>
+
+                            </div>
+
+
+                        </section>
+
+                    )}
+
+
+                {/* =================================================
+                    RECOMMEND BUTTON
+                ================================================= */}
+
+                {!loading &&
+                    sensorData && (
+
+                        <button
+
+                            className="fertilizer-button"
+
+                            onClick={
+                                handleRecommendation
+                            }
+
+                            disabled={
+                                predicting ||
+                                !sensorData
+                            }
+
+                        >
+
+                            {predicting ? (
+
+                                <>
+
+                                    <span className="button-spinner"></span>
+
+                                    {isKannada
+                                        ? "ಮಣ್ಣನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ..."
+                                        : "Analyzing Soil..."}
+
+                                </>
+
+                            ) : (
+
+                                <>
+
+                                    🌱{" "}
+
+                                    {isKannada
+
+                                        ? "ಸೂಕ್ತ ರಸಗೊಬ್ಬರವನ್ನು ಶಿಫಾರಸು ಮಾಡಿ"
+
+                                        : "Recommend Suitable Fertilizer"}
+
+                                </>
+
+                            )}
+
+                        </button>
+
+                    )}
+
+
+                {/* =================================================
+                    RECOMMENDATION RESULT
+                ================================================= */}
+
+                {recommendation && (
+
+                    <section className="fertilizer-result">
+
+
+                        {/* =================================================
+                            RESULT HEADER
+                        ================================================= */}
+
+                        <div className="result-header">
+
+                            <div className="result-icon">
+                                🌾
+                            </div>
+
+
+                            <div>
+
+                                <h2>
+
+                                    {isKannada
+                                        ? "ಶಿಫಾರಸು ಮಾಡಿದ ರಸಗೊಬ್ಬರ"
+                                        : "Recommended Fertilizer"}
+
+                                </h2>
+
+
+                                <p>
+
+                                    {isKannada
+
+                                        ? "ಪ್ರಸ್ತುತ ಮಣ್ಣಿನ ಪೋಷಕಾಂಶಗಳ ಸ್ಥಿತಿಯನ್ನು ಆಧರಿಸಿದೆ"
+
+                                        : "Based on the current soil nutrient conditions"}
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        {/* =================================================
+                            RECOMMENDED PRODUCT
+                        ================================================= */}
+
+                        <div className="fertilizer-product">
+
+                            <span>
+
+                                {isKannada
+                                    ? "ಶಿಫಾರಸು ಮಾಡಿದ ಉತ್ಪನ್ನ"
+                                    : "Recommended Product"}
+
+                            </span>
+
+
+                            <strong>
+
+                                {recommendation.recommended_fertilizer
+
+                                    ||
+
+                                    (
+                                        isKannada
+
+                                            ? "ಶಿಫಾರಸು ಸ್ವೀಕರಿಸಲಾಗಿದೆ"
+
+                                            : "Recommendation received"
+                                    )}
+
+                            </strong>
+
+                        </div>
+
+
+                        {/* =================================================
+                            MODEL ACCURACY
+                        ================================================= */}
+
+                        {recommendation.accuracy != null && (
+
+                            <div className="fertilizer-accuracy">
+
+                                <div>
+
+                                    <span>
+
+                                        {isKannada
+                                            ? "ಮಾದರಿ ನಿಖರತೆ"
+                                            : "Model Accuracy"}
+
+                                    </span>
+
+
+                                    <small>
+
+                                        {isKannada
+                                            ? "ತರಬೇತಿ ಪರೀಕ್ಷಾ ಫಲಿತಾಂಶ"
+                                            : "Training test result"}
+
+                                    </small>
+
+                                </div>
+
+
+                                <strong>
+
+                                    {Number(
+                                        recommendation.accuracy
+                                    ).toFixed(1)}%
+
+                                </strong>
+
+                            </div>
+
+                        )}
+
+
+                        {/* =================================================
+                            ADVICE
+                        ================================================= */}
+
+                        {recommendation.advice && (
+
+                            <div className="fertilizer-advice">
+
+                                <div className="advice-icon">
+                                    💡
+                                </div>
+
+
+                                <div>
+
+                                    <h3>
+
+                                        {isKannada
+                                            ? "ರಸಗೊಬ್ಬರ ಸಲಹೆ"
+                                            : "Fertilizer Advice"}
+
+                                    </h3>
+
+
+                                    <p>
+
+                                        {recommendation.advice}
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
+
+                        {/* =================================================
+                            ANALYSIS SUMMARY
+                        ================================================= */}
+
+                        <div className="recommendation-summary">
+
+
+                            <h3>
+
+                                📊{" "}
+
+                                {isKannada
+                                    ? "ವಿಶ್ಲೇಷಣೆಯ ಆಧಾರ"
+                                    : "Analysis Based On"}
+
+                            </h3>
+
+
+                            <p className="summary-description">
+
+                                {isKannada
+
+                                    ? "ಈ ಶಿಫಾರಸನ್ನು ಕೆಳಗಿನ ಮಣ್ಣು ಮತ್ತು ಪರಿಸರದ ಮೌಲ್ಯಗಳನ್ನು ಬಳಸಿ ರಚಿಸಲಾಗಿದೆ."
+
+                                    : "This recommendation was generated using the following soil and environmental values."}
+
+                            </p>
+
+
+                            <div className="summary-grid">
+
+
+                                <div>
+
+                                    <span>N</span>
+
+                                    <strong>
+                                        {sensorData?.nitrogen ?? "--"}
+                                    </strong>
+
+                                    <small>
+                                        mg/kg
+                                    </small>
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>P</span>
+
+                                    <strong>
+                                        {sensorData?.phosphorus ?? "--"}
+                                    </strong>
+
+                                    <small>
+                                        mg/kg
+                                    </small>
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>K</span>
+
+                                    <strong>
+                                        {sensorData?.potassium ?? "--"}
+                                    </strong>
+
+                                    <small>
+                                        mg/kg
+                                    </small>
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>pH</span>
+
+                                    <strong>
+                                        {sensorData?.ph ?? "--"}
+                                    </strong>
+
+                                    <small>
+                                        pH
+                                    </small>
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>
+
+                                        {isKannada
+                                            ? "ತೇವಾಂಶ"
+                                            : "Moisture"}
+
+                                    </span>
+
+                                    <strong>
+
+                                        {sensorData?.soil_moisture ??
+                                            "--"}
+
+                                        %
+
+                                    </strong>
+
+                                    <small>
+
+                                        {isKannada
+                                            ? "ಮಣ್ಣಿನ ತೇವಾಂಶ"
+                                            : "Soil moisture"}
+
+                                    </small>
+
+                                </div>
+
+
+                                <div>
+
+                                    <span>
+
+                                        {isKannada
+                                            ? "ತಾಪಮಾನ"
+                                            : "Temperature"}
+
+                                    </span>
+
+                                    <strong>
+
+                                        {sensorData?.temperature ??
+                                            "--"}
+
+                                        °C
+
+                                    </strong>
+
+                                    <small>
+
+                                        {isKannada
+                                            ? "ತಾಪಮಾನ"
+                                            : "Temperature"}
+
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                    </section>
+
+                )}
+
+            </div>
+
+        </div>
+
+    );
+
+}
+
+
+export default Fertilizer;

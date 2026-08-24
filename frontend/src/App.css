@@ -1,0 +1,190 @@
+/* =========================================================
+   AI SMART AGRICULTURE
+   GLOBAL APP STYLES
+   ========================================================= */
+
+
+/* =========================================================
+   ROOT
+   ========================================================= */
+
+#root {
+    min-height: 100vh;
+    width: 100%;
+}
+
+
+/* =========================================================
+   GLOBAL BOX SIZING
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   BODY
+   ========================================================= */
+
+body {
+    margin: 0;
+
+    min-width: 320px;
+    min-height: 100vh;
+
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    background: #f4f8f2;
+
+    color: #263326;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* =========================================================
+   LINKS
+   ========================================================= */
+
+a {
+    color: inherit;
+
+    text-decoration: none;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+button {
+    font-family: inherit;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+/* =========================================================
+   INPUTS
+   ========================================================= */
+
+input,
+textarea,
+select {
+    font-family: inherit;
+}
+
+
+/* =========================================================
+   KANNADA / INDIAN LANGUAGE SUPPORT
+   ========================================================= */
+
+[lang="kn"],
+.kannada,
+.kannada-text {
+    font-family:
+        "Noto Sans Kannada",
+        "Noto Sans",
+        "Tunga",
+        sans-serif;
+
+    letter-spacing: normal;
+}
+
+
+/* =========================================================
+   GENERAL INDIAN LANGUAGE TEXT
+   ========================================================= */
+
+[lang="hi"],
+[lang="te"],
+[lang="ta"],
+[lang="ml"],
+[lang="mr"] {
+    letter-spacing: normal;
+}
+
+
+/* =========================================================
+   IMAGES
+   ========================================================= */
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+
+::-webkit-scrollbar-track {
+    background: #edf3eb;
+}
+
+
+::-webkit-scrollbar-thumb {
+    background: #b7c9b5;
+
+    border-radius: 10px;
+}
+
+
+::-webkit-scrollbar-thumb:hover {
+    background: #91aa8f;
+}
+
+
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+::selection {
+    background: #cfe4cf;
+
+    color: #18351e;
+}
+
+
+/* =========================================================
+   ACCESSIBILITY / FOCUS
+   ========================================================= */
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+    outline: 2px solid #2e7d46;
+
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    body {
+        min-width: 320px;
+    }
+
+}
+

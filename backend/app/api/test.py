@@ -1,0 +1,20 @@
+from fastapi import APIRouter, Depends
+
+from app.core.security import get_current_user
+
+
+router = APIRouter(
+    prefix="/test",
+    tags=["Test"]
+)
+
+
+@router.get("/protected")
+def protected_route(
+        user=Depends(get_current_user)
+):
+
+    return {
+        "message": "Protected API accessed",
+        "user": user
+    }

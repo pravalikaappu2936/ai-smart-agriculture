@@ -1,0 +1,157 @@
+/* =========================================
+   BACK TO DASHBOARD BUTTON
+   ========================================= */
+
+.back-dashboard-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 10px 18px;
+
+    margin-bottom: 24px;
+
+    border: 1px solid rgba(46, 125, 50, 0.25);
+    border-radius: 12px;
+
+    background: rgba(255, 255, 255, 0.9);
+
+    color: #2e7d32;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, 0.08);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease,
+        color 0.2s ease;
+
+    backdrop-filter: blur(8px);
+}
+
+
+/* =========================================
+   ARROW
+   ========================================= */
+
+.back-dashboard-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 28px;
+    height: 28px;
+
+    border-radius: 50%;
+
+    background: #e8f5e9;
+
+    color: #2e7d32;
+
+    font-size: 18px;
+    font-weight: 700;
+
+    line-height: 1;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+}
+
+
+/* =========================================
+   TEXT
+   ========================================= */
+
+.back-dashboard-text {
+    white-space: nowrap;
+}
+
+
+/* =========================================
+   HOVER
+   ========================================= */
+
+.back-dashboard-button:hover {
+    background: #2e7d32;
+
+    color: white;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 7px 18px rgba(46, 125, 50, 0.25);
+}
+
+
+.back-dashboard-button:hover
+.back-dashboard-arrow {
+
+    background: rgba(255, 255, 255, 0.2);
+
+    color: white;
+
+    transform: translateX(-3px);
+}
+
+
+/* =========================================
+   ACTIVE / CLICK
+   ========================================= */
+
+.back-dashboard-button:active {
+
+    transform: translateY(0);
+
+    box-shadow:
+        0 3px 8px rgba(46, 125, 50, 0.2);
+}
+
+
+/* =========================================
+   FOCUS
+   ========================================= */
+
+.back-dashboard-button:focus-visible {
+
+    outline: 3px solid rgba(46, 125, 50, 0.25);
+
+    outline-offset: 3px;
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 600px) {
+
+    .back-dashboard-button {
+
+        padding: 9px 14px;
+
+        margin-bottom: 18px;
+
+        border-radius: 10px;
+
+        font-size: 13px;
+
+    }
+
+
+    .back-dashboard-arrow {
+
+        width: 26px;
+        height: 26px;
+
+        font-size: 17px;
+
+    }
+
+}

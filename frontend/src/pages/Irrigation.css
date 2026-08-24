@@ -1,0 +1,1447 @@
+/* =========================================================
+   IRRIGATION PAGE
+========================================================= */
+
+.irrigation-page {
+    min-height: 100vh;
+    width: 100%;
+    padding: 28px;
+    box-sizing: border-box;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f4faf5 0%,
+            #eef7ef 50%,
+            #f8fbf8 100%
+        );
+
+    color: #26382b;
+}
+
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+.irrigation-top-bar {
+    width: 100%;
+    max-width: 1250px;
+    min-height: 42px;
+
+    margin: 0 auto 20px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 16px;
+}
+
+
+/* =========================================================
+   LANGUAGE / BACK BUTTON
+========================================================= */
+
+.irrigation-language-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 42px;
+    padding: 10px 18px;
+
+    border: 1px solid #cfe2d0;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #176b35;
+
+    font-size: 14px;
+    font-weight: 750;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 3px 10px rgba(23, 107, 53, 0.06);
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.irrigation-language-button:hover {
+    background: #176b35;
+    color: #ffffff;
+    border-color: #176b35;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 14px rgba(23, 107, 53, 0.15);
+}
+
+.irrigation-language-button:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.irrigation-header {
+    width: 100%;
+    max-width: 1250px;
+
+    margin: 0 auto 26px;
+}
+
+.irrigation-eyebrow {
+    display: inline-block;
+
+    margin-bottom: 7px;
+
+    color: #5b8a66;
+
+    font-size: 11px;
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+}
+
+.irrigation-header h1 {
+    margin: 0 0 8px;
+
+    color: #176b35;
+
+    font-size: 34px;
+    line-height: 1.2;
+    font-weight: 800;
+
+    letter-spacing: -0.7px;
+}
+
+.irrigation-header p {
+    max-width: 780px;
+
+    margin: 0;
+
+    color: #69756c;
+
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.irrigation-error {
+    width: 100%;
+    max-width: 1250px;
+
+    margin: 0 auto 20px;
+    padding: 14px 18px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: flex-start;
+
+    gap: 10px;
+
+    border: 1px solid #edc4c4;
+    border-radius: 12px;
+
+    background: #fff5f5;
+    color: #b42318;
+
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   MAIN CONTAINER
+========================================================= */
+
+.irrigation-container {
+    width: 100%;
+    max-width: 1250px;
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.4fr)
+        minmax(360px, 0.9fr);
+
+    gap: 24px;
+
+    align-items: stretch;
+}
+
+
+/* =========================================================
+   MAIN CARDS
+========================================================= */
+
+.irrigation-analysis-card,
+.irrigation-result-card {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border: 1px solid #dfebdf;
+    border-radius: 20px;
+
+    box-shadow:
+        0 10px 30px rgba(40, 90, 50, 0.07);
+}
+
+.irrigation-analysis-card {
+    padding: 25px;
+}
+
+.irrigation-result-card {
+    padding: 25px;
+
+    min-height: 100%;
+
+    position: sticky;
+    top: 20px;
+
+    align-self: start;
+}
+
+
+/* =========================================================
+   CARD HEADING
+========================================================= */
+
+.irrigation-card-heading {
+    width: 100%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 18px;
+
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+
+    border-bottom: 1px solid #e4ebe4;
+}
+
+.irrigation-card-heading > div:first-child {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+}
+
+.irrigation-card-heading > div:first-child > span {
+    width: 42px;
+    height: 42px;
+
+    flex: 0 0 42px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 12px;
+
+    background: #eaf7ec;
+
+    font-size: 21px;
+}
+
+.irrigation-card-heading h2,
+.result-heading h2 {
+    margin: 0 0 4px;
+
+    color: #176b35;
+
+    font-size: 20px;
+    line-height: 1.25;
+}
+
+.irrigation-card-heading p,
+.result-heading p {
+    margin: 0;
+
+    color: #778078;
+
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+
+/* =========================================================
+   LIVE INDICATOR
+========================================================= */
+
+.irrigation-live-indicator {
+    flex-shrink: 0;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    min-height: 30px;
+
+    padding: 7px 12px;
+
+    box-sizing: border-box;
+
+    border-radius: 20px;
+
+    background: #eaf7ec;
+    color: #28753b;
+
+    font-size: 11px;
+    font-weight: 800;
+
+    white-space: nowrap;
+}
+
+.irrigation-live-indicator i {
+    width: 8px;
+    height: 8px;
+
+    flex: 0 0 8px;
+
+    display: inline-block;
+
+    border-radius: 50%;
+
+    background: #35a853;
+
+    animation: livePulse 1.5s infinite;
+}
+
+@keyframes livePulse {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.45;
+        transform: scale(0.8);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+/* =========================================================
+   SENSOR GRID
+========================================================= */
+
+.irrigation-sensor-grid {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin-bottom: 25px;
+}
+
+
+/* =========================================================
+   SENSOR CARD
+========================================================= */
+
+.irrigation-sensor-card {
+    min-width: 0;
+    min-height: 116px;
+
+    padding: 14px 8px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    border: 1px solid #dfeadf;
+    border-radius: 13px;
+
+    background: #f8fcf8;
+
+    text-align: center;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.irrigation-sensor-card:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 6px 15px rgba(23, 107, 53, 0.08);
+}
+
+.irrigation-sensor-card.important {
+    background: #eef9f0;
+    border-color: #b9dcbc;
+}
+
+.sensor-icon {
+    margin-bottom: 7px;
+
+    font-size: 20px;
+    line-height: 1;
+}
+
+.irrigation-sensor-card span {
+    display: block;
+
+    width: 100%;
+
+    margin-bottom: 5px;
+
+    color: #6d776f;
+
+    font-size: 11px;
+    font-weight: 650;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.irrigation-sensor-card strong {
+    display: block;
+
+    color: #176b35;
+
+    font-size: 20px;
+    line-height: 1.2;
+
+    font-weight: 800;
+
+    overflow-wrap: anywhere;
+}
+
+.irrigation-sensor-card small {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #8a938b;
+
+    font-size: 10px;
+    line-height: 1.2;
+}
+
+
+/* =========================================================
+   LOCATION
+========================================================= */
+
+.irrigation-location-box {
+    width: 100%;
+    min-height: 72px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 13px;
+
+    margin-bottom: 20px;
+    padding: 15px 16px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #cfe3d1;
+    border-radius: 13px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f1f9f2,
+            #f8fcf8
+        );
+}
+
+.irrigation-location-icon {
+    width: 42px;
+    height: 42px;
+
+    flex: 0 0 42px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 12px;
+
+    background: #e2f2e4;
+
+    font-size: 21px;
+}
+
+.irrigation-location-box > div:last-child {
+    min-width: 0;
+}
+
+.irrigation-location-box strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #176b35;
+
+    font-size: 13px;
+}
+
+.irrigation-location-box p {
+    margin: 0;
+
+    color: #69756c;
+
+    font-size: 14px;
+    font-weight: 650;
+
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+}
+
+.irrigation-location-box small {
+    display: block;
+
+    margin-top: 4px;
+
+    color: #3d8a4e;
+
+    font-size: 11px;
+}
+
+.location-detected {
+    color: #26382b !important;
+}
+
+
+/* =========================================================
+   INPUT SECTION
+========================================================= */
+
+.irrigation-input-section {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 7px;
+
+    margin-bottom: 18px;
+}
+
+.irrigation-input-section label {
+    color: #37423a;
+
+    font-size: 13px;
+    line-height: 1.3;
+
+    font-weight: 750;
+}
+
+.irrigation-input-section select {
+    width: 100%;
+    height: 46px;
+
+    box-sizing: border-box;
+
+    padding: 0 14px;
+
+    border: 1px solid #d4dfd5;
+    border-radius: 11px;
+
+    background: #ffffff;
+    color: #29382d;
+
+    font-size: 14px;
+
+    outline: none;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.irrigation-input-section select:hover {
+    border-color: #a9c6ad;
+}
+
+.irrigation-input-section select:focus {
+    border-color: #4c9b5c;
+
+    box-shadow:
+        0 0 0 3px rgba(76, 155, 92, 0.1);
+}
+
+
+/* =========================================================
+   WEATHER PREVIEW
+========================================================= */
+
+.irrigation-weather-preview {
+    width: 100%;
+
+    margin-bottom: 18px;
+    padding: 16px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #dce9dd;
+    border-radius: 13px;
+
+    background: #f8fbf8;
+}
+
+.irrigation-weather-preview > div:first-child {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 14px;
+}
+
+.irrigation-weather-preview > div:first-child > span {
+    flex: 0 0 auto;
+
+    font-size: 25px;
+}
+
+.irrigation-weather-preview strong {
+    display: block;
+
+    color: #176b35;
+
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.irrigation-weather-preview small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #788279;
+
+    font-size: 11px;
+}
+
+.irrigation-weather-values {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 8px;
+}
+
+.irrigation-weather-values div {
+    min-width: 0;
+    min-height: 58px;
+
+    padding: 10px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    border: 1px solid #e1e9e1;
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    text-align: center;
+}
+
+.irrigation-weather-values span {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #7a847c;
+
+    font-size: 10px;
+}
+
+.irrigation-weather-values strong {
+    color: #26382b;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   PREDICT BUTTON
+========================================================= */
+
+.irrigation-predict-button {
+    width: 100%;
+    min-height: 48px;
+
+    margin-top: 5px;
+    padding: 13px 20px;
+
+    box-sizing: border-box;
+
+    border: none;
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #176b35,
+            #2d8a48
+        );
+
+    color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 7px 16px rgba(23, 107, 53, 0.18);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.irrigation-predict-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 10px 20px rgba(23, 107, 53, 0.23);
+}
+
+.irrigation-predict-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.irrigation-predict-button:disabled {
+    opacity: 0.55;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+    box-shadow: none;
+}
+
+
+/* =========================================================
+   RESULT HEADING
+========================================================= */
+
+.result-heading {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding-bottom: 18px;
+
+    border-bottom: 1px solid #e4ebe4;
+}
+
+.result-heading > span {
+    width: 44px;
+    height: 44px;
+
+    flex: 0 0 44px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    border-radius: 13px;
+
+    background: #eaf7ec;
+
+    font-size: 22px;
+}
+
+.result-heading > div {
+    min-width: 0;
+}
+
+
+/* =========================================================
+   EMPTY RESULT
+========================================================= */
+
+.irrigation-empty-result {
+    min-height: 370px;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    text-align: center;
+}
+
+.irrigation-empty-result > div {
+    margin-bottom: 18px;
+
+    font-size: 60px;
+
+    animation:
+        irrigationFloat
+        2.5s
+        ease-in-out
+        infinite;
+}
+
+@keyframes irrigationFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-7px);
+    }
+}
+
+.irrigation-empty-result strong {
+    color: #176b35;
+
+    font-size: 16px;
+}
+
+.irrigation-empty-result p {
+    max-width: 350px;
+
+    margin: 8px 0 0;
+
+    color: #747d76;
+
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   STATUS BADGE
+========================================================= */
+
+.irrigation-status-badge {
+    width: 100%;
+
+    margin: 25px 0;
+
+    padding: 16px;
+
+    box-sizing: border-box;
+
+    border-radius: 15px;
+
+    text-align: center;
+
+    font-size: 20px;
+    line-height: 1.3;
+
+    font-weight: 800;
+}
+
+.status-now {
+    background: #fff0f0;
+    color: #c62828;
+
+    border: 1px solid #efc3c3;
+}
+
+.status-soon {
+    background: #fff6e8;
+    color: #e36c00;
+
+    border: 1px solid #f0d0a8;
+}
+
+.status-monitor {
+    background: #fffbea;
+    color: #a66a00;
+
+    border: 1px solid #eadba4;
+}
+
+.status-none {
+    background: #edf8ef;
+    color: #28783b;
+
+    border: 1px solid #c5e0c9;
+}
+
+
+/* =========================================================
+   RESULT GRID
+========================================================= */
+
+.irrigation-result-grid {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+}
+
+.irrigation-result-item {
+    min-width: 0;
+    min-height: 70px;
+
+    padding: 14px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+
+    border: 1px solid #e1e8e1;
+    border-radius: 11px;
+
+    background: #fafcfa;
+}
+
+.irrigation-result-item span {
+    display: block;
+
+    margin-bottom: 6px;
+
+    color: #7b847d;
+
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.irrigation-result-item strong {
+    display: block;
+
+    color: #26382b;
+
+    font-size: 14px;
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   MODEL PREDICTION
+========================================================= */
+
+.irrigation-model-prediction {
+    width: 100%;
+
+    margin-top: 17px;
+    padding: 17px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #d4e5d6;
+    border-radius: 13px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f3faf4,
+            #f9fcf9
+        );
+}
+
+.irrigation-model-prediction-header {
+    width: 100%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 13px;
+}
+
+.irrigation-model-prediction-header h3 {
+    margin: 0;
+
+    color: #176b35;
+
+    font-size: 14px;
+}
+
+.irrigation-model-prediction-badge {
+    flex-shrink: 0;
+
+    padding: 5px 9px;
+
+    border-radius: 20px;
+
+    background: #e3f3e5;
+    color: #28783b;
+
+    font-size: 10px;
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   PROBABILITY LIST
+========================================================= */
+
+.irrigation-probability-list {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+}
+
+.irrigation-probability-row {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        105px
+        minmax(0, 1fr)
+        52px;
+
+    align-items: center;
+
+    gap: 9px;
+}
+
+.irrigation-probability-label {
+    color: #4f5c52;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.irrigation-probability-bar {
+    width: 100%;
+    height: 8px;
+
+    overflow: hidden;
+
+    border-radius: 10px;
+
+    background: #e8eee8;
+}
+
+.irrigation-probability-fill {
+    height: 100%;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            #3d9250,
+            #176b35
+        );
+
+    transition:
+        width 0.6s ease;
+}
+
+.irrigation-probability-value {
+    color: #176b35;
+
+    font-size: 11px;
+    font-weight: 800;
+
+    text-align: right;
+}
+
+
+/* =========================================================
+   ADVICE
+========================================================= */
+
+.irrigation-advice {
+    width: 100%;
+
+    margin-top: 17px;
+    padding: 17px;
+
+    box-sizing: border-box;
+
+    border-radius: 13px;
+
+    background: #f0f8f1;
+
+    border: 1px solid #cfe3d1;
+}
+
+.irrigation-advice h3 {
+    margin: 0 0 7px;
+
+    color: #176b35;
+
+    font-size: 14px;
+}
+
+.irrigation-advice p {
+    margin: 0;
+
+    color: #465249;
+
+    font-size: 13px;
+    line-height: 1.65;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   NOTIFICATION
+========================================================= */
+
+.irrigation-notification {
+    width: 100%;
+
+    margin-top: 13px;
+    padding: 15px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 5px;
+
+    border-radius: 12px;
+
+    background: #f7f8f7;
+
+    border: 1px solid #e1e6e1;
+}
+
+.irrigation-notification strong {
+    color: #59635b;
+
+    font-size: 13px;
+}
+
+.irrigation-notification span {
+    color: #747c75;
+
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.irrigation-notification small {
+    color: #647067;
+
+    font-size: 11px;
+}
+
+.irrigation-notification.sent {
+    background: #eef8ef;
+
+    border-color: #c6e0c9;
+}
+
+.irrigation-notification.sent strong {
+    color: #176b35;
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+.irrigation-loading {
+    width: 100%;
+
+    min-height: 120px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    color: #176b35;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+
+    .irrigation-page {
+        padding: 24px;
+    }
+
+    .irrigation-container {
+        grid-template-columns: 1fr;
+
+        align-items: start;
+    }
+
+    .irrigation-result-card {
+        position: static;
+
+        min-height: auto;
+    }
+
+    .irrigation-sensor-grid {
+        grid-template-columns:
+            repeat(5, minmax(0, 1fr));
+    }
+}
+
+
+/* =========================================================
+   SMALL TABLET
+========================================================= */
+
+@media (max-width: 850px) {
+
+    .irrigation-sensor-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    .irrigation-container {
+        gap: 18px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE TABLET
+========================================================= */
+
+@media (max-width: 700px) {
+
+    .irrigation-page {
+        padding: 18px;
+    }
+
+    .irrigation-top-bar {
+        flex-direction: column;
+
+        align-items: stretch;
+    }
+
+    .irrigation-language-button {
+        width: 100%;
+    }
+
+    .irrigation-header h1 {
+        font-size: 30px;
+    }
+
+    .irrigation-analysis-card,
+    .irrigation-result-card {
+        padding: 20px;
+
+        border-radius: 17px;
+    }
+
+    .irrigation-sensor-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .irrigation-weather-values {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 500px) {
+
+    .irrigation-page {
+        padding: 13px;
+    }
+
+    .irrigation-analysis-card,
+    .irrigation-result-card {
+        padding: 17px;
+
+        border-radius: 16px;
+    }
+
+    .irrigation-header {
+        margin-bottom: 20px;
+    }
+
+    .irrigation-header h1 {
+        font-size: 27px;
+    }
+
+    .irrigation-header p {
+        font-size: 13px;
+    }
+
+    .irrigation-card-heading {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .irrigation-live-indicator {
+        align-self: flex-start;
+    }
+
+    .irrigation-sensor-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 8px;
+    }
+
+    .irrigation-sensor-card {
+        min-height: 105px;
+
+        padding: 12px 7px;
+    }
+
+    .irrigation-sensor-card strong {
+        font-size: 18px;
+    }
+
+    .irrigation-location-box {
+        align-items: flex-start;
+
+        padding: 13px;
+    }
+
+    .irrigation-weather-values {
+        grid-template-columns: 1fr;
+    }
+
+    .irrigation-result-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .irrigation-model-prediction-header {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .irrigation-probability-row {
+        grid-template-columns:
+            85px
+            minmax(0, 1fr)
+            45px;
+
+        gap: 7px;
+    }
+
+    .irrigation-probability-label {
+        font-size: 10px;
+    }
+
+    .irrigation-probability-value {
+        font-size: 10px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL DEVICES
+========================================================= */
+
+@media (max-width: 360px) {
+
+    .irrigation-page {
+        padding: 10px;
+    }
+
+    .irrigation-analysis-card,
+    .irrigation-result-card {
+        padding: 14px;
+    }
+
+    .irrigation-sensor-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .irrigation-header h1 {
+        font-size: 24px;
+    }
+
+    .irrigation-weather-values {
+        grid-template-columns: 1fr;
+    }
+
+    .irrigation-probability-row {
+        grid-template-columns:
+            75px
+            minmax(0, 1fr)
+            40px;
+
+        gap: 5px;
+    }
+}
