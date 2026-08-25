@@ -32,6 +32,7 @@ from app.api.prediction import router as prediction_router
 from app.api.iot import router as iot_router
 from app.api.notifications import router as notifications_router
 from app.api.assistant import router as assistant_router
+from app.api.tts import router as tts_router
 
 
 # =========================================================
@@ -105,6 +106,7 @@ app.include_router(notifications_router)
 
 app.include_router(assistant_router)
 
+app.include_router(tts_router)
 
 # =========================================================
 # ROOT

@@ -1,15 +1,16 @@
-import io
 import edge_tts
+import tempfile
+import os
 
 
-# =========================================================
-# TTS VOICES
-# =========================================================
+# ============================================================
+# Supported languages and Microsoft Neural Voices
+# ============================================================
 
-TTS_VOICES = {
+VOICE_MAP = {
     "English": "en-IN-NeerjaNeural",
-    "Kannada": "kn-IN-SapnaNeural",
     "Hindi": "hi-IN-SwaraNeural",
+    "Kannada": "kn-IN-SapnaNeural",
     "Telugu": "te-IN-ShrutiNeural",
     "Tamil": "ta-IN-PallaviNeural",
     "Malayalam": "ml-IN-SobhanaNeural",
@@ -17,75 +18,34 @@ TTS_VOICES = {
 }
 
 
-# =========================================================
-# NORMALIZE LANGUAGE
-# =========================================================
-
-def normalize_tts_language(language: str) -> str:
-
-    if not language:
-        return "English"
-
-    language = language.strip().lower()
-
-    for supported_language in TTS_VOICES:
-
-        if language == supported_language.lower():
-            return supported_language
-
-    return "English"
-
-
-# =========================================================
-# GENERATE SPEECH
-# =========================================================
-
-async def generate_speech(
-    text: str,
-    language: str = "English"
-) -> bytes:
+async def generate_speech(text: str, language: str) -> str:
+    """
+    Convert text into speech and return the generated MP3 path.
+    """
 
     if not text or not text.strip():
-        raise ValueError("Text cannot be empty.")
+        raise ValueError("Text cannot be empty")
 
-    text = text.strip()
+    voice = VOICE_MAP.get(language)
 
-    language = normalize_tts_language(language)
+    if not voice:
+        # Fallback to Indian English
+        voice = VOICE_MAP["English"]
 
-    voice = TTS_VOICES[language]
+    # Create temporary MP3 file
+    temp_file = tempfile.NamedTemporaryFile(
+        delete=False,
+        suffix=".mp3"
+    )
 
-    print("=================================")
-    print("TEXT TO SPEECH")
-    print("Language:", language)
-    print("Voice:", voice)
-    print("=================================")
+    output_path = temp_file.name
+    temp_file.close()
 
     communicate = edge_tts.Communicate(
         text=text,
-        voice=voice,
-        rate="+0%",
-        volume="+0%",
-        pitch="+0Hz"
+        voice=voice
     )
 
-    audio_buffer = io.BytesIO()
+    await communicate.save(output_path)
 
-    async for chunk in communicate.stream():
-
-        if chunk["type"] == "audio":
-
-            audio_buffer.write(
-                chunk["data"]
-            )
-
-    audio_buffer.seek(0)
-
-    audio = audio_buffer.read()
-
-    if not audio:
-
-        raise RuntimeError(
-            "TTS service returned empty audio."
-        )
-
-    return audio
+    return output_path
