@@ -64,21 +64,18 @@ app.add_middleware(
     CORSMiddleware,
 
     allow_origins=[
-        # Local development
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-
-        # Vercel frontend
-        "https://ai-smart-agriculture-qjfj79qwc-pravalikaappu2936.vercel.app",
     ],
+
+    allow_origin_regex=r"https://ai-smart-agriculture-[a-z0-9]+-pravalikaappu2936\.vercel\.app",
 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # =========================================================
 # ROUTERS
