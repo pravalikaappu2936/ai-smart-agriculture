@@ -552,6 +552,79 @@ export const sendAssistantMessage = async (
 
 
 // =========================================================
+// AI ASSISTANT - TEXT TO SPEECH
+// =========================================================
+
+export const speakAssistantResponse = async (
+    text,
+    language = "English"
+) => {
+
+    if (
+        !text ||
+        !text.trim()
+    ) {
+
+        throw new Error(
+            "TTS text cannot be empty."
+        );
+    }
+
+    console.log(
+        "AI Assistant TTS request:",
+        {
+            language,
+            text: text.trim(),
+            endpoint:
+                `${API_BASE_URL}/tts/speak`,
+        }
+    );
+
+    try {
+
+        const response =
+            await ASSISTANT_API.post(
+                "/tts/speak",
+                {
+                    text: text.trim(),
+                    language,
+                },
+                {
+                    responseType: "blob",
+                }
+            );
+
+        console.log(
+            "AI Assistant TTS response received."
+        );
+
+        return response.data;
+
+    } catch (error) {
+
+        console.error(
+            "AI Assistant TTS request failed:",
+            {
+                status:
+                    error?.response?.status,
+
+                data:
+                    error?.response?.data,
+
+                message:
+                    error?.message,
+
+                code:
+                    error?.code,
+            }
+        );
+
+        throw error;
+    }
+};
+
+
+// =========================================================
 // DEFAULT EXPORT
 // =========================================================
 

@@ -9,7 +9,8 @@ import {
 } from "react-router-dom";
 
 import {
-    sendAssistantMessage
+    sendAssistantMessage,
+    speakAssistantResponse
 } from "../services/api";
 
 import "./Assistant.css";
@@ -49,50 +50,6 @@ const SPEECH_LANGUAGES = {
     Malayalam: "ml-IN",
 
     Marathi: "mr-IN"
-};
-
-
-// =========================================================
-// TEXT TO SPEECH LANGUAGE CODES
-// =========================================================
-
-const VOICE_LANGUAGE_CODES = {
-
-    English: [
-        "en-IN",
-        "en-US",
-        "en-GB"
-    ],
-
-    Kannada: [
-        "kn-IN",
-        "kn"
-    ],
-
-    Hindi: [
-        "hi-IN",
-        "hi"
-    ],
-
-    Telugu: [
-        "te-IN",
-        "te"
-    ],
-
-    Tamil: [
-        "ta-IN",
-        "ta"
-    ],
-
-    Malayalam: [
-        "ml-IN",
-        "ml"
-    ],
-
-    Marathi: [
-        "mr-IN",
-        "mr"
-    ]
 };
 
 
@@ -252,9 +209,6 @@ function Assistant() {
     const [speechEnabled, setSpeechEnabled] =
         useState(true);
 
-    const [availableVoices, setAvailableVoices] =
-        useState([]);
-
 
     // =====================================================
     // REFS
@@ -266,48 +220,8 @@ function Assistant() {
     const recognitionRef =
         useRef(null);
 
-
-    // =====================================================
-    // LOAD BROWSER VOICES
-    // =====================================================
-
-    useEffect(() => {
-
-        if (
-            typeof window === "undefined" ||
-            !window.speechSynthesis
-        ) {
-            return;
-        }
-
-
-        const loadVoices = () => {
-
-            const voices =
-                window.speechSynthesis.getVoices();
-
-            setAvailableVoices(voices);
-        };
-
-
-        loadVoices();
-
-        window.speechSynthesis.addEventListener(
-            "voiceschanged",
-            loadVoices
-        );
-
-
-        return () => {
-
-            window.speechSynthesis.removeEventListener(
-                "voiceschanged",
-                loadVoices
-            );
-
-        };
-
-    }, []);
+    const audioRef =
+        useRef(null);
 
 
     // =====================================================
@@ -449,12 +363,46 @@ function Assistant() {
 
     const stopSpeaking = () => {
 
+        // Stop backend-generated audio
+
+        if (audioRef.current) {
+
+            try {
+
+                audioRef.current.pause();
+
+                audioRef.current.currentTime = 0;
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to stop audio:",
+                    error
+                );
+            }
+
+            audioRef.current = null;
+        }
+
+
+        // Cancel any browser speech synthesis
+
         if (
             typeof window !== "undefined" &&
             window.speechSynthesis
         ) {
 
-            window.speechSynthesis.cancel();
+            try {
+
+                window.speechSynthesis.cancel();
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to cancel speech:",
+                    error
+                );
+            }
         }
     };
 
@@ -608,162 +556,137 @@ function Assistant() {
 
 
     // =====================================================
-    // FIND TTS VOICE
+    // BACKEND TEXT TO SPEECH
     // =====================================================
 
-    const findMatchingVoice = (
-        selectedLanguage
-    ) => {
-
-        if (
-            typeof window === "undefined" ||
-            !window.speechSynthesis
-        ) {
-
-            return null;
-        }
-
-
-        const voices =
-            availableVoices.length > 0
-                ? availableVoices
-                : window.speechSynthesis.getVoices();
-
-
-        const preferredLanguages =
-            VOICE_LANGUAGE_CODES[
-                selectedLanguage
-            ] || [
-                SPEECH_LANGUAGES[
-                    selectedLanguage
-                ] || "en-IN"
-            ];
-
-
-        let matchingVoice =
-            voices.find((voice) => {
-
-                if (!voice.lang) {
-                    return false;
-                }
-
-
-                return preferredLanguages.some(
-                    (code) =>
-                        voice.lang.toLowerCase() ===
-                        code.toLowerCase()
-                );
-
-            });
-
-
-        if (matchingVoice) {
-            return matchingVoice;
-        }
-
-
-        matchingVoice =
-            voices.find((voice) => {
-
-                if (!voice.lang) {
-                    return false;
-                }
-
-
-                const voiceLanguage =
-                    voice.lang
-                        .toLowerCase()
-                        .split("-")[0];
-
-
-                return preferredLanguages.some(
-                    (code) => {
-
-                        const languageCode =
-                            code
-                                .toLowerCase()
-                                .split("-")[0];
-
-
-                        return (
-                            voiceLanguage ===
-                            languageCode
-                        );
-                    }
-                );
-
-            });
-
-
-        return matchingVoice || null;
-    };
-
-
-    // =====================================================
-    // TEXT TO SPEECH
-    // =====================================================
-
-    const speakResponse = (text) => {
+    const speakResponse = async (text) => {
 
         if (
             !speechEnabled ||
             !text ||
-            typeof window === "undefined" ||
-            !window.speechSynthesis
+            !text.trim()
         ) {
 
             return;
         }
 
 
-        stopSpeaking();
+        try {
+
+            // Stop currently playing audio
+
+            stopSpeaking();
 
 
-        const speechLanguage =
-            SPEECH_LANGUAGES[language] ||
-            "en-IN";
-
-
-        const selectedVoice =
-            findMatchingVoice(language);
-
-
-        const utterance =
-            new SpeechSynthesisUtterance(
-                text
+            console.log(
+                "Generating voice reply:",
+                {
+                    language,
+                    text: text.trim()
+                }
             );
 
 
-        utterance.lang =
-            speechLanguage;
+            // Request audio from FastAPI
+
+            const audioBlob =
+                await speakAssistantResponse(
+                    text,
+                    language
+                );
 
 
-        if (selectedVoice) {
+            if (!audioBlob) {
 
-            utterance.voice =
-                selectedVoice;
-        }
+                console.error(
+                    "TTS returned empty audio."
+                );
 
-
-        utterance.rate = 0.95;
-
-        utterance.pitch = 1;
-
-        utterance.volume = 1;
+                return;
+            }
 
 
-        utterance.onerror = (event) => {
+            // Create temporary browser URL
+
+            const audioUrl =
+                URL.createObjectURL(
+                    audioBlob
+                );
+
+
+            // Create audio player
+
+            const audio =
+                new Audio(audioUrl);
+
+
+            audioRef.current = audio;
+
+
+            audio.volume = 1.0;
+
+
+            // Cleanup after playback
+
+            audio.onended = () => {
+
+                URL.revokeObjectURL(
+                    audioUrl
+                );
+
+
+                if (
+                    audioRef.current === audio
+                ) {
+
+                    audioRef.current = null;
+                }
+            };
+
+
+            // Handle playback errors
+
+            audio.onerror = (event) => {
+
+                console.error(
+                    "Audio playback error:",
+                    event
+                );
+
+
+                URL.revokeObjectURL(
+                    audioUrl
+                );
+
+
+                if (
+                    audioRef.current === audio
+                ) {
+
+                    audioRef.current = null;
+                }
+            };
+
+
+            // Play generated audio
+
+            await audio.play();
+
+
+            console.log(
+                "Voice reply started successfully."
+            );
+
+        } catch (error) {
 
             console.error(
-                "Text-to-speech error:",
-                event
+                "Backend TTS error:",
+                error
             );
-        };
 
-
-        window.speechSynthesis.speak(
-            utterance
-        );
+            // TTS failure does not affect
+            // the displayed AI response.
+        }
     };
 
 
@@ -865,7 +788,7 @@ function Assistant() {
 
             if (speechEnabled) {
 
-                speakResponse(
+                await speakResponse(
                     finalResponse
                 );
             }
@@ -1161,8 +1084,8 @@ function Assistant() {
                 >
 
                     {voiceSupported
-                        ? "🎤 Voice available"
-                        : "🎤 Voice unavailable"}
+                        ? "🎤 Voice input available"
+                        : "🎤 Voice input unavailable"}
 
                 </span>
 
@@ -1409,8 +1332,9 @@ function Assistant() {
                 </span>
 
                 <span>
-                    Voice input and voice replies
-                    are supported in compatible browsers.
+                    Voice input is supported in compatible
+                    browsers. Voice replies are generated
+                    by the AI voice service.
                 </span>
 
                 <span className="footer-separator">
