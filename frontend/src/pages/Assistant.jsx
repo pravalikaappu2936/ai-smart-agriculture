@@ -10,7 +10,7 @@ import {
 
 import {
     sendAssistantMessage,
-    speakAssistantResponse
+    generateAssistantSpeech
 } from "../services/api";
 
 import "./Assistant.css";
@@ -220,7 +220,8 @@ function Assistant() {
     const recognitionRef =
         useRef(null);
 
-    const audioRef =
+    // Stores backend-generated audio
+    const speechAudioRef =
         useRef(null);
 
 
@@ -234,11 +235,9 @@ function Assistant() {
             return;
         }
 
-
         const SpeechRecognition =
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
-
 
         if (!SpeechRecognition) {
 
@@ -309,7 +308,6 @@ function Assistant() {
                     "Microphone permission was denied. Please allow microphone access in your browser."
                 );
             }
-
         };
 
 
@@ -338,7 +336,6 @@ function Assistant() {
             }
 
             recognitionRef.current = null;
-
         };
 
     }, [language]);
@@ -358,51 +355,39 @@ function Assistant() {
 
 
     // =====================================================
-    // STOP SPEAKING
+    // STOP VOICE
     // =====================================================
 
     const stopSpeaking = () => {
 
         // Stop backend-generated audio
-
-        if (audioRef.current) {
+        if (speechAudioRef.current) {
 
             try {
 
-                audioRef.current.pause();
+                speechAudioRef.current.pause();
 
-                audioRef.current.currentTime = 0;
+                speechAudioRef.current.currentTime = 0;
 
             } catch (error) {
 
                 console.error(
-                    "Unable to stop audio:",
+                    "Unable to stop backend audio:",
                     error
                 );
             }
 
-            audioRef.current = null;
+            speechAudioRef.current = null;
         }
 
 
-        // Cancel any browser speech synthesis
-
+        // Also stop browser speech synthesis
         if (
             typeof window !== "undefined" &&
             window.speechSynthesis
         ) {
 
-            try {
-
-                window.speechSynthesis.cancel();
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to cancel speech:",
-                    error
-                );
-            }
+            window.speechSynthesis.cancel();
         }
     };
 
@@ -482,7 +467,6 @@ function Assistant() {
 
             return previous;
         });
-
     };
 
 
@@ -551,7 +535,6 @@ function Assistant() {
                 error
             );
         }
-
     };
 
 
@@ -573,24 +556,22 @@ function Assistant() {
 
         try {
 
-            // Stop currently playing audio
-
+            // Stop previous audio
             stopSpeaking();
 
 
             console.log(
-                "Generating voice reply:",
+                "Generating backend TTS:",
                 {
                     language,
-                    text: text.trim()
+                    text
                 }
             );
 
 
-            // Request audio from FastAPI
-
+            // Request MP3 from FastAPI
             const audioBlob =
-                await speakAssistantResponse(
+                await generateAssistantSpeech(
                     text,
                     language
                 );
@@ -598,35 +579,30 @@ function Assistant() {
 
             if (!audioBlob) {
 
-                console.error(
-                    "TTS returned empty audio."
+                throw new Error(
+                    "No audio received from TTS server."
                 );
-
-                return;
             }
 
 
             // Create temporary browser URL
-
             const audioUrl =
                 URL.createObjectURL(
                     audioBlob
                 );
 
 
-            // Create audio player
-
             const audio =
                 new Audio(audioUrl);
 
 
-            audioRef.current = audio;
+            // Store audio reference
+            speechAudioRef.current =
+                audio;
 
 
-            audio.volume = 1.0;
+            audio.volume = 1;
 
-
-            // Cleanup after playback
 
             audio.onended = () => {
 
@@ -634,58 +610,39 @@ function Assistant() {
                     audioUrl
                 );
 
-
-                if (
-                    audioRef.current === audio
-                ) {
-
-                    audioRef.current = null;
-                }
+                speechAudioRef.current =
+                    null;
             };
 
-
-            // Handle playback errors
 
             audio.onerror = (event) => {
 
                 console.error(
-                    "Audio playback error:",
+                    "Backend TTS audio error:",
                     event
                 );
-
 
                 URL.revokeObjectURL(
                     audioUrl
                 );
 
-
-                if (
-                    audioRef.current === audio
-                ) {
-
-                    audioRef.current = null;
-                }
+                speechAudioRef.current =
+                    null;
             };
 
-
-            // Play generated audio
 
             await audio.play();
 
 
-            console.log(
-                "Voice reply started successfully."
-            );
-
         } catch (error) {
 
             console.error(
-                "Backend TTS error:",
+                "Backend TTS failed:",
                 error
             );
 
-            // TTS failure does not affect
-            // the displayed AI response.
+            speechAudioRef.current =
+                null;
         }
     };
 
@@ -748,6 +705,10 @@ function Assistant() {
 
         try {
 
+            // -------------------------------------------------
+            // AI RESPONSE
+            // -------------------------------------------------
+
             const result =
                 await sendAssistantMessage(
                     message,
@@ -767,7 +728,7 @@ function Assistant() {
 
 
             // -------------------------------------------------
-            // AI RESPONSE
+            // ADD AI RESPONSE TO CHAT
             // -------------------------------------------------
 
             setMessages((previous) => [
@@ -783,7 +744,7 @@ function Assistant() {
 
 
             // -------------------------------------------------
-            // VOICE RESPONSE
+            // BACKEND VOICE RESPONSE
             // -------------------------------------------------
 
             if (speechEnabled) {
@@ -827,8 +788,10 @@ function Assistant() {
                 errorMessage =
                     language === "Kannada"
                         ? "ನಿಮ್ಮ ಲಾಗಿನ್ ಅವಧಿ ಮುಗಿದಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗಿನ್ ಮಾಡಿ."
+
                         : language === "Hindi"
                             ? "आपका लॉगिन समाप्त हो गया है। कृपया फिर से लॉगिन करें।"
+
                             : "Your login session has expired. Please login again.";
             }
 
@@ -1084,8 +1047,8 @@ function Assistant() {
                 >
 
                     {voiceSupported
-                        ? "🎤 Voice input available"
-                        : "🎤 Voice input unavailable"}
+                        ? "🎤 Voice available"
+                        : "🎤 Voice unavailable"}
 
                 </span>
 
@@ -1236,6 +1199,7 @@ function Assistant() {
                         );
 
                         if (speechEnabled) {
+
                             stopSpeaking();
                         }
 
@@ -1296,6 +1260,7 @@ function Assistant() {
                         {input.length}/2000
                     </span>
 
+
                     <button
                         type="button"
                         className="send-button"
@@ -1332,9 +1297,8 @@ function Assistant() {
                 </span>
 
                 <span>
-                    Voice input is supported in compatible
-                    browsers. Voice replies are generated
-                    by the AI voice service.
+                    Voice input and voice replies
+                    are supported in compatible browsers.
                 </span>
 
                 <span className="footer-separator">

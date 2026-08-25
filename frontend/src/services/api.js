@@ -478,7 +478,7 @@ export const markAllNotificationsAsRead = async () => {
 
 
 // =========================================================
-// AI ASSISTANT
+// AI ASSISTANT - CHAT
 // =========================================================
 
 export const sendAssistantMessage = async (
@@ -555,7 +555,7 @@ export const sendAssistantMessage = async (
 // AI ASSISTANT - TEXT TO SPEECH
 // =========================================================
 
-export const speakAssistantResponse = async (
+export const generateAssistantSpeech = async (
     text,
     language = "English"
 ) => {
@@ -566,15 +566,18 @@ export const speakAssistantResponse = async (
     ) {
 
         throw new Error(
-            "TTS text cannot be empty."
+            "Text for speech cannot be empty."
         );
     }
+
+    const cleanText =
+        text.trim();
 
     console.log(
         "AI Assistant TTS request:",
         {
+            text: cleanText,
             language,
-            text: text.trim(),
             endpoint:
                 `${API_BASE_URL}/tts/speak`,
         }
@@ -586,16 +589,23 @@ export const speakAssistantResponse = async (
             await ASSISTANT_API.post(
                 "/tts/speak",
                 {
-                    text: text.trim(),
+                    text: cleanText,
                     language,
                 },
                 {
                     responseType: "blob",
+                    headers: {
+                        Accept: "audio/mpeg",
+                    },
                 }
             );
 
         console.log(
-            "AI Assistant TTS response received."
+            "AI Assistant TTS audio received:",
+            {
+                type: response.data?.type,
+                size: response.data?.size,
+            }
         );
 
         return response.data;
