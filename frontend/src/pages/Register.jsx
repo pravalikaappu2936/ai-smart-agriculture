@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Register.css";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "https://ai-smart-agriculture-jf61.onrender.com";
 
 function Register() {
     const navigate = useNavigate();
