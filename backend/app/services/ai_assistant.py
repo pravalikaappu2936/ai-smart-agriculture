@@ -1,9 +1,6 @@
-import ollama
+import os
 
-from app.core.config import (
-    OLLAMA_BASE_URL,
-    OLLAMA_MODEL
-)
+from groq import Groq
 
 
 # =========================================================
@@ -126,10 +123,6 @@ Respond ONLY in natural Kannada.
 
 Use Kannada Unicode script.
 
-Example:
-ಭತ್ತಕ್ಕೆ ಮಣ್ಣಿನ ಪರೀಕ್ಷೆಯ ಆಧಾರದ ಮೇಲೆ ಸಮತೋಲಿತ NPK ಗೊಬ್ಬರವನ್ನು
-ಬಳಸುವುದು ಉತ್ತಮ.
-
 Do NOT write Kannada using English transliteration.
 
 Do NOT produce mojibake such as:
@@ -216,7 +209,6 @@ def get_ai_response(
     # -----------------------------------------------------
 
     if not message or not message.strip():
-
         raise ValueError(
             "Message cannot be empty."
         )
@@ -230,7 +222,7 @@ def get_ai_response(
     language = normalize_language(language)
 
     # -----------------------------------------------------
-    # GET LANGUAGE INSTRUCTION
+    # LANGUAGE INSTRUCTION
     # -----------------------------------------------------
 
     language_instruction = LANGUAGE_INSTRUCTIONS.get(
@@ -280,22 +272,42 @@ Therefore:
 """
 
     # -----------------------------------------------------
-    # CREATE OLLAMA CLIENT
+    # GET GROQ API KEY
+    # -----------------------------------------------------
+
+    api_key = os.getenv("GROQ_API_KEY")
+
+    if not api_key:
+        raise RuntimeError(
+            "GROQ_API_KEY is not configured on the server."
+        )
+
+    # -----------------------------------------------------
+    # GET MODEL
+    # -----------------------------------------------------
+
+    model = os.getenv(
+        "GROQ_MODEL",
+        "openai/gpt-oss-20b"
+    )
+
+    # -----------------------------------------------------
+    # CREATE GROQ CLIENT
     # -----------------------------------------------------
 
     try:
 
-        client = ollama.Client(
-            host=OLLAMA_BASE_URL
+        client = Groq(
+            api_key=api_key
         )
 
         # -------------------------------------------------
-        # SEND REQUEST TO OLLAMA
+        # SEND REQUEST TO GROQ
         # -------------------------------------------------
 
-        response = client.chat(
+        response = client.chat.completions.create(
 
-            model=OLLAMA_MODEL,
+            model=model,
 
             messages=[
 
@@ -316,9 +328,9 @@ Therefore:
 
             ],
 
-            options={
-                "temperature": 0.3
-            }
+            temperature=0.3,
+
+            max_completion_tokens=1024
         )
 
         # -------------------------------------------------
@@ -327,8 +339,9 @@ Therefore:
 
         answer = (
             response
-            .get("message", {})
-            .get("content", "")
+            .choices[0]
+            .message
+            .content
         )
 
         # -------------------------------------------------
@@ -336,30 +349,16 @@ Therefore:
         # -------------------------------------------------
 
         if not isinstance(answer, str):
-
             raise RuntimeError(
-                "Ollama returned an invalid response."
+                "Groq returned an invalid response."
             )
 
         answer = answer.strip()
 
         if not answer:
-
             raise RuntimeError(
-                "Ollama returned an empty response."
+                "Groq returned an empty response."
             )
-
-        # -------------------------------------------------
-        # IMPORTANT
-        #
-        # DO NOT:
-        #
-        # answer.encode(...)
-        # answer.decode(...)
-        #
-        # The Ollama Python client already returns
-        # Unicode text.
-        # -------------------------------------------------
 
         return answer
 
@@ -374,18 +373,16 @@ Therefore:
         raise
 
     # -----------------------------------------------------
-    # OLLAMA / CONNECTION ERROR
+    # GROQ / CONNECTION ERROR
     # -----------------------------------------------------
 
     except Exception as error:
 
         print(
-            "Ollama AI Assistant Error:",
+            "Groq AI Assistant Error:",
             repr(error)
         )
 
         raise RuntimeError(
-            "Unable to connect to Ollama. "
-            "Make sure Ollama is running and the "
-            "selected model is installed."
+            "Unable to connect to the Groq AI service."
         )

@@ -13,4 +13,4 @@ requests
 email-validator
 openai
 shap
-ollama
+groq
