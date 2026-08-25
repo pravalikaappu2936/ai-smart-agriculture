@@ -46,6 +46,49 @@ const SPEECH_LANGUAGES = {
 
 
 // =========================================================
+// VOICE LANGUAGE MATCHING
+// =========================================================
+
+const VOICE_LANGUAGE_CODES = {
+    English: [
+        "en-IN",
+        "en-US",
+        "en-GB"
+    ],
+
+    Kannada: [
+        "kn-IN",
+        "kn"
+    ],
+
+    Hindi: [
+        "hi-IN",
+        "hi"
+    ],
+
+    Telugu: [
+        "te-IN",
+        "te"
+    ],
+
+    Tamil: [
+        "ta-IN",
+        "ta"
+    ],
+
+    Malayalam: [
+        "ml-IN",
+        "ml"
+    ],
+
+    Marathi: [
+        "mr-IN",
+        "mr"
+    ]
+};
+
+
+// =========================================================
 // PLACEHOLDERS
 // =========================================================
 
@@ -172,6 +215,9 @@ function Assistant() {
     const [speechEnabled, setSpeechEnabled] =
         useState(true);
 
+    const [availableVoices, setAvailableVoices] =
+        useState([]);
+
 
     // =====================================================
     // REFS
@@ -185,6 +231,58 @@ function Assistant() {
 
 
     // =====================================================
+    // LOAD TEXT-TO-SPEECH VOICES
+    // =====================================================
+
+    useEffect(() => {
+
+        if (
+            typeof window === "undefined" ||
+            !window.speechSynthesis
+        ) {
+
+            return;
+        }
+
+
+        const loadVoices = () => {
+
+            const voices =
+                window.speechSynthesis.getVoices();
+
+            console.log(
+                "Available speech voices:",
+                voices
+            );
+
+            setAvailableVoices(voices);
+        };
+
+
+        // Load immediately
+        loadVoices();
+
+
+        // Chrome/Edge may load voices asynchronously
+        window.speechSynthesis.addEventListener(
+            "voiceschanged",
+            loadVoices
+        );
+
+
+        return () => {
+
+            window.speechSynthesis.removeEventListener(
+                "voiceschanged",
+                loadVoices
+            );
+
+        };
+
+    }, []);
+
+
+    // =====================================================
     // BACK TO DASHBOARD
     // =====================================================
 
@@ -192,16 +290,23 @@ function Assistant() {
 
         stopSpeaking();
 
+
         if (isListening) {
 
             try {
+
                 recognitionRef.current?.stop();
+
             }
 
             catch (error) {
+
                 console.log(error);
+
             }
+
         }
+
 
         navigate("/dashboard");
     };
@@ -412,6 +517,7 @@ function Assistant() {
 
             }
 
+
             return previous;
 
         });
@@ -440,7 +546,9 @@ function Assistant() {
 
 
         if (!recognition) {
+
             return;
+
         }
 
 
@@ -466,6 +574,7 @@ function Assistant() {
             }
 
             return;
+
         }
 
 
@@ -503,6 +612,109 @@ function Assistant() {
 
 
     // =====================================================
+    // FIND MATCHING SPEECH VOICE
+    // =====================================================
+
+    const findMatchingVoice = (selectedLanguage) => {
+
+        if (
+            typeof window === "undefined" ||
+            !window.speechSynthesis
+        ) {
+
+            return null;
+
+        }
+
+
+        const voices =
+            availableVoices.length > 0
+                ? availableVoices
+                : window.speechSynthesis.getVoices();
+
+
+        const preferredLanguages =
+            VOICE_LANGUAGE_CODES[
+                selectedLanguage
+            ] || [
+                SPEECH_LANGUAGES[
+                    selectedLanguage
+                ] || "en-IN"
+            ];
+
+
+        // -------------------------------------------------
+        // EXACT LANGUAGE MATCH
+        // -------------------------------------------------
+
+        let matchingVoice =
+            voices.find((voice) => {
+
+                if (!voice.lang) {
+                    return false;
+                }
+
+
+                return preferredLanguages.some(
+                    (code) =>
+                        voice.lang.toLowerCase() ===
+                        code.toLowerCase()
+                );
+
+            });
+
+
+        if (matchingVoice) {
+
+            return matchingVoice;
+
+        }
+
+
+        // -------------------------------------------------
+        // LANGUAGE PREFIX MATCH
+        // -------------------------------------------------
+
+        matchingVoice =
+            voices.find((voice) => {
+
+                if (!voice.lang) {
+                    return false;
+                }
+
+
+                const voiceLanguage =
+                    voice.lang
+                        .toLowerCase()
+                        .split("-")[0];
+
+
+                return preferredLanguages.some(
+                    (code) => {
+
+                        const languageCode =
+                            code
+                                .toLowerCase()
+                                .split("-")[0];
+
+
+                        return (
+                            voiceLanguage ===
+                            languageCode
+                        );
+
+                    }
+                );
+
+            });
+
+
+        return matchingVoice || null;
+
+    };
+
+
+    // =====================================================
     // TEXT TO SPEECH
     // =====================================================
 
@@ -515,20 +727,96 @@ function Assistant() {
         ) {
 
             return;
+
         }
 
 
         stopSpeaking();
 
 
+        const speechLanguage =
+            SPEECH_LANGUAGES[language] ||
+            "en-IN";
+
+
+        const selectedVoice =
+            findMatchingVoice(language);
+
+
+        console.log(
+            "================================="
+        );
+
+        console.log(
+            "TEXT TO SPEECH"
+        );
+
+        console.log(
+            "Selected language:",
+            language
+        );
+
+        console.log(
+            "Required speech language:",
+            speechLanguage
+        );
+
+
+        if (selectedVoice) {
+
+            console.log(
+                "Using voice:",
+                selectedVoice.name
+            );
+
+            console.log(
+                "Voice language:",
+                selectedVoice.lang
+            );
+
+        }
+
+        else {
+
+            console.warn(
+                `No matching ${language} voice found in this browser.`
+            );
+
+        }
+
+
+        console.log(
+            "================================="
+        );
+
+
+        // -------------------------------------------------
+        // CREATE UTTERANCE
+        // -------------------------------------------------
+
         const utterance =
             new SpeechSynthesisUtterance(text);
 
 
         utterance.lang =
-            SPEECH_LANGUAGES[language] ||
-            "en-IN";
+            speechLanguage;
 
+
+        // -------------------------------------------------
+        // SELECT MATCHING VOICE
+        // -------------------------------------------------
+
+        if (selectedVoice) {
+
+            utterance.voice =
+                selectedVoice;
+
+        }
+
+
+        // -------------------------------------------------
+        // SPEECH SETTINGS
+        // -------------------------------------------------
 
         utterance.rate = 0.95;
 
@@ -536,6 +824,24 @@ function Assistant() {
 
         utterance.volume = 1;
 
+
+        // -------------------------------------------------
+        // ERROR HANDLER
+        // -------------------------------------------------
+
+        utterance.onerror = (event) => {
+
+            console.error(
+                "Text-to-speech error:",
+                event
+            );
+
+        };
+
+
+        // -------------------------------------------------
+        // START SPEAKING
+        // -------------------------------------------------
 
         window.speechSynthesis.speak(
             utterance
@@ -578,6 +884,7 @@ function Assistant() {
         ) {
 
             return;
+
         }
 
 
@@ -661,16 +968,22 @@ function Assistant() {
                 (
                     language === "Kannada"
                         ? "ಕ್ಷಮಿಸಿ, ಯಾವುದೇ ಉತ್ತರವನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
+
                         : language === "Hindi"
-                            ? "क्षमा करें, मुझे कोई उत्तर नहीं मिला।"
+                            ? "क्षमा करें, मुझे कोई उत्तर नहीं मिला."
+
                             : language === "Telugu"
                                 ? "క్షమించండి, సమాధానం పొందలేకపోయాను."
+
                                 : language === "Tamil"
                                     ? "மன்னிக்கவும், பதிலைப் பெற முடியவில்லை."
+
                                     : language === "Malayalam"
                                         ? "ക്ഷമിക്കണം, മറുപടി ലഭിച്ചില്ല."
+
                                         : language === "Marathi"
                                             ? "क्षमस्व, मला उत्तर मिळाले नाही."
+
                                             : "Sorry, I could not generate a response."
                 );
 
@@ -725,7 +1038,8 @@ function Assistant() {
                     typeof detail === "string"
                 ) {
 
-                    errorMessage = detail;
+                    errorMessage =
+                        detail;
 
                 }
 
@@ -1261,4 +1575,3 @@ function Assistant() {
 
 
 export default Assistant;
-
