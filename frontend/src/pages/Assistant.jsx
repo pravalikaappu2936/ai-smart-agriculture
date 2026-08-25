@@ -31,25 +31,33 @@ const LANGUAGES = [
 
 
 // =========================================================
-// SPEECH LANGUAGE CODES
+// SPEECH RECOGNITION LANGUAGES
 // =========================================================
 
 const SPEECH_LANGUAGES = {
+
     English: "en-IN",
+
     Kannada: "kn-IN",
+
     Hindi: "hi-IN",
+
     Telugu: "te-IN",
+
     Tamil: "ta-IN",
+
     Malayalam: "ml-IN",
+
     Marathi: "mr-IN"
 };
 
 
 // =========================================================
-// VOICE LANGUAGE MATCHING
+// TEXT TO SPEECH LANGUAGE CODES
 // =========================================================
 
 const VOICE_LANGUAGE_CODES = {
+
     English: [
         "en-IN",
         "en-US",
@@ -89,7 +97,7 @@ const VOICE_LANGUAGE_CODES = {
 
 
 // =========================================================
-// PLACEHOLDERS
+// PLACEHOLDER
 // =========================================================
 
 const getPlaceholder = (language) => {
@@ -153,7 +161,7 @@ const getWelcomeMessage = (language) => {
 
 
 // =========================================================
-// FORMAT AI RESPONSE
+// FORMAT RESPONSE
 // =========================================================
 
 const formatResponse = (text) => {
@@ -170,14 +178,42 @@ const formatResponse = (text) => {
 
 
 // =========================================================
+// ERROR MESSAGE
+// =========================================================
+
+const getErrorMessage = (language) => {
+
+    switch (language) {
+
+        case "Kannada":
+            return "ಕ್ಷಮಿಸಿ, AI ಸಹಾಯಕದಿಂದ ಉತ್ತರ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.";
+
+        case "Hindi":
+            return "क्षमा करें, AI सहायक से उत्तर प्राप्त नहीं हो सका। कृपया फिर से प्रयास करें।";
+
+        case "Telugu":
+            return "క్షమించండి, AI సహాయకుడి నుండి సమాధానం పొందలేకపోయాము. దయచేసి మళ్లీ ప్రయత్నించండి.";
+
+        case "Tamil":
+            return "மன்னிக்கவும், AI உதவியாளரிடமிருந்து பதிலைப் பெற முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.";
+
+        case "Malayalam":
+            return "ക്ഷമിക്കണം, AI സഹായിയിൽ നിന്ന് മറുപടി ലഭിച്ചില്ല. ദയവായി വീണ്ടും ശ്രമിക്കുക.";
+
+        case "Marathi":
+            return "क्षमस्व, AI सहाय्याकडून उत्तर मिळू शकले नाही. कृपया पुन्हा प्रयत्न करा.";
+
+        default:
+            return "Sorry, I could not get a response from the AI Assistant. Please try again.";
+    }
+};
+
+
+// =========================================================
 // ASSISTANT COMPONENT
 // =========================================================
 
 function Assistant() {
-
-    // =====================================================
-    // NAVIGATION
-    // =====================================================
 
     const navigate = useNavigate();
 
@@ -193,7 +229,8 @@ function Assistant() {
         }
     ]);
 
-    const [input, setInput] = useState("");
+    const [input, setInput] =
+        useState("");
 
     const [language, setLanguage] =
         useState("English");
@@ -231,7 +268,7 @@ function Assistant() {
 
 
     // =====================================================
-    // LOAD TEXT-TO-SPEECH VOICES
+    // LOAD BROWSER VOICES
     // =====================================================
 
     useEffect(() => {
@@ -240,7 +277,6 @@ function Assistant() {
             typeof window === "undefined" ||
             !window.speechSynthesis
         ) {
-
             return;
         }
 
@@ -250,20 +286,12 @@ function Assistant() {
             const voices =
                 window.speechSynthesis.getVoices();
 
-            console.log(
-                "Available speech voices:",
-                voices
-            );
-
             setAvailableVoices(voices);
         };
 
 
-        // Load immediately
         loadVoices();
 
-
-        // Chrome/Edge may load voices asynchronously
         window.speechSynthesis.addEventListener(
             "voiceschanged",
             loadVoices
@@ -283,40 +311,15 @@ function Assistant() {
 
 
     // =====================================================
-    // BACK TO DASHBOARD
-    // =====================================================
-
-    const handleBackToDashboard = () => {
-
-        stopSpeaking();
-
-
-        if (isListening) {
-
-            try {
-
-                recognitionRef.current?.stop();
-
-            }
-
-            catch (error) {
-
-                console.log(error);
-
-            }
-
-        }
-
-
-        navigate("/dashboard");
-    };
-
-
-    // =====================================================
-    // INITIALIZE SPEECH RECOGNITION
+    // SPEECH RECOGNITION
     // =====================================================
 
     useEffect(() => {
+
+        if (typeof window === "undefined") {
+            return;
+        }
+
 
         const SpeechRecognition =
             window.SpeechRecognition ||
@@ -348,25 +351,15 @@ function Assistant() {
             "en-IN";
 
 
-        // -------------------------------------------------
-        // START
-        // -------------------------------------------------
-
         recognition.onstart = () => {
 
             setIsListening(true);
-
         };
 
-
-        // -------------------------------------------------
-        // RESULT
-        // -------------------------------------------------
 
         recognition.onresult = (event) => {
 
             let transcript = "";
-
 
             for (
                 let i = event.resultIndex;
@@ -378,15 +371,11 @@ function Assistant() {
                     event.results[i][0].transcript;
             }
 
-
-            setInput(transcript);
-
+            setInput(
+                transcript.trim()
+            );
         };
 
-
-        // -------------------------------------------------
-        // ERROR
-        // -------------------------------------------------
 
         recognition.onerror = (event) => {
 
@@ -395,29 +384,24 @@ function Assistant() {
                 event.error
             );
 
-
             setIsListening(false);
 
 
-            if (event.error === "not-allowed") {
+            if (
+                event.error === "not-allowed"
+            ) {
 
                 alert(
                     "Microphone permission was denied. Please allow microphone access in your browser."
                 );
-
             }
 
         };
 
 
-        // -------------------------------------------------
-        // END
-        // -------------------------------------------------
-
         recognition.onend = () => {
 
             setIsListening(false);
-
         };
 
 
@@ -425,25 +409,18 @@ function Assistant() {
             recognition;
 
 
-        // -------------------------------------------------
-        // CLEANUP
-        // -------------------------------------------------
-
         return () => {
 
             try {
 
                 recognition.stop();
 
-            }
-
-            catch (error) {
+            } catch (error) {
 
                 console.log(
                     "Speech cleanup:",
                     error
                 );
-
             }
 
             recognitionRef.current = null;
@@ -467,6 +444,48 @@ function Assistant() {
 
 
     // =====================================================
+    // STOP SPEAKING
+    // =====================================================
+
+    const stopSpeaking = () => {
+
+        if (
+            typeof window !== "undefined" &&
+            window.speechSynthesis
+        ) {
+
+            window.speechSynthesis.cancel();
+        }
+    };
+
+
+    // =====================================================
+    // BACK TO DASHBOARD
+    // =====================================================
+
+    const handleBackToDashboard = () => {
+
+        stopSpeaking();
+
+
+        if (isListening) {
+
+            try {
+
+                recognitionRef.current?.stop();
+
+            } catch (error) {
+
+                console.log(error);
+            }
+        }
+
+
+        navigate("/dashboard");
+    };
+
+
+    // =====================================================
     // CHANGE LANGUAGE
     // =====================================================
 
@@ -482,14 +501,10 @@ function Assistant() {
 
                 recognitionRef.current?.stop();
 
-            }
-
-            catch (error) {
+            } catch (error) {
 
                 console.log(error);
-
             }
-
         }
 
 
@@ -514,19 +529,17 @@ function Assistant() {
                             )
                     }
                 ];
-
             }
 
 
             return previous;
-
         });
 
     };
 
 
     // =====================================================
-    // START / STOP VOICE INPUT
+    // VOICE INPUT
     // =====================================================
 
     const toggleVoiceInput = () => {
@@ -546,15 +559,9 @@ function Assistant() {
 
 
         if (!recognition) {
-
             return;
-
         }
 
-
-        // -------------------------------------------------
-        // STOP
-        // -------------------------------------------------
 
         if (isListening) {
 
@@ -562,25 +569,17 @@ function Assistant() {
 
                 recognition.stop();
 
-            }
-
-            catch (error) {
+            } catch (error) {
 
                 console.error(
                     "Unable to stop speech recognition:",
                     error
                 );
-
             }
 
             return;
-
         }
 
-
-        // -------------------------------------------------
-        // START
-        // -------------------------------------------------
 
         try {
 
@@ -597,25 +596,24 @@ function Assistant() {
 
             recognition.start();
 
-        }
-
-        catch (error) {
+        } catch (error) {
 
             console.error(
                 "Unable to start voice recognition:",
                 error
             );
-
         }
 
     };
 
 
     // =====================================================
-    // FIND MATCHING SPEECH VOICE
+    // FIND TTS VOICE
     // =====================================================
 
-    const findMatchingVoice = (selectedLanguage) => {
+    const findMatchingVoice = (
+        selectedLanguage
+    ) => {
 
         if (
             typeof window === "undefined" ||
@@ -623,7 +621,6 @@ function Assistant() {
         ) {
 
             return null;
-
         }
 
 
@@ -643,10 +640,6 @@ function Assistant() {
             ];
 
 
-        // -------------------------------------------------
-        // EXACT LANGUAGE MATCH
-        // -------------------------------------------------
-
         let matchingVoice =
             voices.find((voice) => {
 
@@ -665,15 +658,9 @@ function Assistant() {
 
 
         if (matchingVoice) {
-
             return matchingVoice;
-
         }
 
-
-        // -------------------------------------------------
-        // LANGUAGE PREFIX MATCH
-        // -------------------------------------------------
 
         matchingVoice =
             voices.find((voice) => {
@@ -702,7 +689,6 @@ function Assistant() {
                             voiceLanguage ===
                             languageCode
                         );
-
                     }
                 );
 
@@ -710,7 +696,6 @@ function Assistant() {
 
 
         return matchingVoice || null;
-
     };
 
 
@@ -722,12 +707,12 @@ function Assistant() {
 
         if (
             !speechEnabled ||
-            !window.speechSynthesis ||
-            !text
+            !text ||
+            typeof window === "undefined" ||
+            !window.speechSynthesis
         ) {
 
             return;
-
         }
 
 
@@ -743,80 +728,22 @@ function Assistant() {
             findMatchingVoice(language);
 
 
-        console.log(
-            "================================="
-        );
-
-        console.log(
-            "TEXT TO SPEECH"
-        );
-
-        console.log(
-            "Selected language:",
-            language
-        );
-
-        console.log(
-            "Required speech language:",
-            speechLanguage
-        );
-
-
-        if (selectedVoice) {
-
-            console.log(
-                "Using voice:",
-                selectedVoice.name
-            );
-
-            console.log(
-                "Voice language:",
-                selectedVoice.lang
-            );
-
-        }
-
-        else {
-
-            console.warn(
-                `No matching ${language} voice found in this browser.`
-            );
-
-        }
-
-
-        console.log(
-            "================================="
-        );
-
-
-        // -------------------------------------------------
-        // CREATE UTTERANCE
-        // -------------------------------------------------
-
         const utterance =
-            new SpeechSynthesisUtterance(text);
+            new SpeechSynthesisUtterance(
+                text
+            );
 
 
         utterance.lang =
             speechLanguage;
 
 
-        // -------------------------------------------------
-        // SELECT MATCHING VOICE
-        // -------------------------------------------------
-
         if (selectedVoice) {
 
             utterance.voice =
                 selectedVoice;
-
         }
 
-
-        // -------------------------------------------------
-        // SPEECH SETTINGS
-        // -------------------------------------------------
 
         utterance.rate = 0.95;
 
@@ -825,46 +752,18 @@ function Assistant() {
         utterance.volume = 1;
 
 
-        // -------------------------------------------------
-        // ERROR HANDLER
-        // -------------------------------------------------
-
         utterance.onerror = (event) => {
 
             console.error(
                 "Text-to-speech error:",
                 event
             );
-
         };
 
-
-        // -------------------------------------------------
-        // START SPEAKING
-        // -------------------------------------------------
 
         window.speechSynthesis.speak(
             utterance
         );
-
-    };
-
-
-    // =====================================================
-    // STOP SPEAKING
-    // =====================================================
-
-    const stopSpeaking = () => {
-
-        if (
-            typeof window !== "undefined" &&
-            window.speechSynthesis
-        ) {
-
-            window.speechSynthesis.cancel();
-
-        }
-
     };
 
 
@@ -884,13 +783,8 @@ function Assistant() {
         ) {
 
             return;
-
         }
 
-
-        // -------------------------------------------------
-        // STOP LISTENING
-        // -------------------------------------------------
 
         if (isListening) {
 
@@ -898,14 +792,10 @@ function Assistant() {
 
                 recognitionRef.current?.stop();
 
-            }
-
-            catch (error) {
+            } catch (error) {
 
                 console.log(error);
-
             }
-
         }
 
 
@@ -913,7 +803,7 @@ function Assistant() {
 
 
         // -------------------------------------------------
-        // ADD USER MESSAGE
+        // USER MESSAGE
         // -------------------------------------------------
 
         setMessages((previous) => [
@@ -935,26 +825,11 @@ function Assistant() {
 
         try {
 
-            console.log(
-                "Sending assistant request:",
-                {
-                    message,
-                    language
-                }
-            );
-
-
             const result =
                 await sendAssistantMessage(
                     message,
                     language
                 );
-
-
-            console.log(
-                "Assistant API response:",
-                result
-            );
 
 
             const responseText =
@@ -965,31 +840,11 @@ function Assistant() {
 
             const finalResponse =
                 responseText ||
-                (
-                    language === "Kannada"
-                        ? "ಕ್ಷಮಿಸಿ, ಯಾವುದೇ ಉತ್ತರವನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
-
-                        : language === "Hindi"
-                            ? "क्षमा करें, मुझे कोई उत्तर नहीं मिला."
-
-                            : language === "Telugu"
-                                ? "క్షమించండి, సమాధానం పొందలేకపోయాను."
-
-                                : language === "Tamil"
-                                    ? "மன்னிக்கவும், பதிலைப் பெற முடியவில்லை."
-
-                                    : language === "Malayalam"
-                                        ? "ക്ഷമിക്കണം, മറുപടി ലഭിച്ചില്ല."
-
-                                        : language === "Marathi"
-                                            ? "क्षमस्व, मला उत्तर मिळाले नाही."
-
-                                            : "Sorry, I could not generate a response."
-                );
+                getErrorMessage(language);
 
 
             // -------------------------------------------------
-            // ADD AI RESPONSE
+            // AI RESPONSE
             // -------------------------------------------------
 
             setMessages((previous) => [
@@ -1005,16 +860,18 @@ function Assistant() {
 
 
             // -------------------------------------------------
-            // VOICE REPLY
+            // VOICE RESPONSE
             // -------------------------------------------------
 
-            speakResponse(
-                finalResponse
-            );
+            if (speechEnabled) {
 
-        }
+                speakResponse(
+                    finalResponse
+                );
+            }
 
-        catch (error) {
+
+        } catch (error) {
 
             console.error(
                 "Assistant error:",
@@ -1023,45 +880,60 @@ function Assistant() {
 
 
             let errorMessage =
-                "Sorry, I could not connect to the AI Agriculture Assistant.";
+                getErrorMessage(language);
+
+
+            const detail =
+                error?.response?.data?.detail;
 
 
             if (
-                error?.response?.data?.detail
+                typeof detail === "string" &&
+                detail.trim()
             ) {
 
-                const detail =
-                    error.response.data.detail;
-
-
-                if (
-                    typeof detail === "string"
-                ) {
-
-                    errorMessage =
-                        detail;
-
-                }
-
-                else if (
-                    typeof detail === "object"
-                ) {
-
-                    errorMessage =
-                        detail.message ||
-                        JSON.stringify(detail);
-
-                }
-
+                errorMessage =
+                    detail;
             }
 
-            else if (
+
+            if (
+                error?.response?.status === 401
+            ) {
+
+                errorMessage =
+                    language === "Kannada"
+                        ? "ನಿಮ್ಮ ಲಾಗಿನ್ ಅವಧಿ ಮುಗಿದಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಲಾಗಿನ್ ಮಾಡಿ."
+                        : language === "Hindi"
+                            ? "आपका लॉगिन समाप्त हो गया है। कृपया फिर से लॉगिन करें।"
+                            : "Your login session has expired. Please login again.";
+            }
+
+
+            if (
+                error?.response?.status === 404
+            ) {
+
+                errorMessage =
+                    "AI Assistant endpoint was not found. Please check the deployed backend URL.";
+            }
+
+
+            if (
+                error?.response?.status === 500
+            ) {
+
+                errorMessage =
+                    "The AI Assistant server encountered an error. Please check the backend configuration.";
+            }
+
+
+            if (
                 error?.message === "Network Error"
             ) {
 
                 errorMessage =
-                    "Cannot connect to the backend. Please make sure the FastAPI backend is running.";
-
+                    "Cannot connect to the backend. Please check the backend server and API URL.";
             }
 
 
@@ -1077,14 +949,10 @@ function Assistant() {
 
             ]);
 
-        }
-
-        finally {
+        } finally {
 
             setLoading(false);
-
         }
-
     };
 
 
@@ -1102,9 +970,7 @@ function Assistant() {
             event.preventDefault();
 
             handleSend();
-
         }
-
     };
 
 
@@ -1123,14 +989,10 @@ function Assistant() {
 
                 recognitionRef.current?.stop();
 
-            }
-
-            catch (error) {
+            } catch (error) {
 
                 console.log(error);
-
             }
-
         }
 
 
@@ -1146,7 +1008,6 @@ function Assistant() {
 
 
         setInput("");
-
     };
 
 
@@ -1158,9 +1019,8 @@ function Assistant() {
 
         <div className="assistant-page">
 
-
             {/* =================================================
-                TOP NAVIGATION
+                TOP BAR
             ================================================= */}
 
             <div className="assistant-topbar">
@@ -1204,9 +1064,7 @@ function Assistant() {
                 <div className="assistant-title-area">
 
                     <div className="assistant-logo">
-
                         🌱
-
                     </div>
 
 
@@ -1242,16 +1100,14 @@ function Assistant() {
                     onClick={clearChat}
                     disabled={loading}
                 >
-
                     🗑 Clear Chat
-
                 </button>
 
             </div>
 
 
             {/* =================================================
-                LANGUAGE
+                LANGUAGE BAR
             ================================================= */}
 
             <div className="assistant-language">
@@ -1261,7 +1117,6 @@ function Assistant() {
                     <span className="language-icon">
                         🌐
                     </span>
-
 
                     <label
                         htmlFor="assistant-language"
@@ -1315,7 +1170,7 @@ function Assistant() {
 
 
             {/* =================================================
-                CHAT
+                CHAT AREA
             ================================================= */}
 
             <div className="assistant-chat">
@@ -1339,15 +1194,9 @@ function Assistant() {
 
                             <div className="message-label">
 
-                                <span>
-
-                                    {
-                                        message.role === "user"
-                                            ? "You"
-                                            : "🌱 AI Assistant"
-                                    }
-
-                                </span>
+                                {message.role === "user"
+                                    ? "You"
+                                    : "🌱 AI Assistant"}
 
                             </div>
 
@@ -1367,7 +1216,6 @@ function Assistant() {
                             </div>
 
                         </div>
-
                     )
                 )}
 
@@ -1381,18 +1229,14 @@ function Assistant() {
                     <div className="assistant-message ai-message">
 
                         <div className="message-label">
-
                             🌱 AI Assistant
-
                         </div>
 
 
                         <div className="typing-indicator">
 
                             <span></span>
-
                             <span></span>
-
                             <span></span>
 
                             <span className="thinking-text">
@@ -1402,7 +1246,6 @@ function Assistant() {
                         </div>
 
                     </div>
-
                 )}
 
 
@@ -1462,12 +1305,18 @@ function Assistant() {
                             ? "speech-button active"
                             : "speech-button"
                     }
-                    onClick={() =>
+                    onClick={() => {
+
                         setSpeechEnabled(
                             (previous) =>
                                 !previous
-                        )
-                    }
+                        );
+
+                        if (speechEnabled) {
+                            stopSpeaking();
+                        }
+
+                    }}
                 >
 
                     {speechEnabled
@@ -1518,21 +1367,29 @@ function Assistant() {
                 />
 
 
-                <button
-                    type="button"
-                    className="send-button"
-                    onClick={handleSend}
-                    disabled={
-                        loading ||
-                        !input.trim()
-                    }
-                >
+                <div className="input-bottom-row">
 
-                    {loading
-                        ? "..."
-                        : "Send ➤"}
+                    <span className="character-count">
+                        {input.length}/2000
+                    </span>
 
-                </button>
+                    <button
+                        type="button"
+                        className="send-button"
+                        onClick={handleSend}
+                        disabled={
+                            loading ||
+                            !input.trim()
+                        }
+                    >
+
+                        {loading
+                            ? "Thinking..."
+                            : "Send ➤"}
+
+                    </button>
+
+                </div>
 
             </div>
 
@@ -1568,9 +1425,7 @@ function Assistant() {
             </div>
 
         </div>
-
     );
-
 }
 
 

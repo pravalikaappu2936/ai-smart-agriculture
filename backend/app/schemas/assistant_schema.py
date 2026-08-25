@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -12,7 +14,22 @@ SUPPORTED_LANGUAGES = [
     "Telugu",
     "Tamil",
     "Malayalam",
-    "Marathi"
+    "Marathi",
+]
+
+
+# =========================================================
+# LANGUAGE TYPE
+# =========================================================
+
+LanguageType = Literal[
+    "English",
+    "Kannada",
+    "Hindi",
+    "Telugu",
+    "Tamil",
+    "Malayalam",
+    "Marathi",
 ]
 
 
@@ -21,6 +38,9 @@ SUPPORTED_LANGUAGES = [
 # =========================================================
 
 class AssistantRequest(BaseModel):
+    """
+    Request model for the AI Agriculture Assistant.
+    """
 
     message: str = Field(
         ...,
@@ -29,7 +49,7 @@ class AssistantRequest(BaseModel):
         description="User's agriculture-related question"
     )
 
-    language: str = Field(
+    language: LanguageType = Field(
         default="English",
         description="Preferred response language"
     )
@@ -40,9 +60,21 @@ class AssistantRequest(BaseModel):
 # =========================================================
 
 class AssistantResponse(BaseModel):
+    """
+    Response model returned by the AI Agriculture Assistant.
+    """
 
-    success: bool
+    success: bool = Field(
+        ...,
+        description="Whether the request was processed successfully"
+    )
 
-    response: str
+    response: str = Field(
+        ...,
+        description="AI generated response"
+    )
 
-    language: str
+    language: LanguageType = Field(
+        ...,
+        description="Language used for the AI response"
+    )

@@ -9,11 +9,9 @@ const API_BASE_URL =
     import.meta.env.VITE_API_URL ||
     "https://ai-smart-agriculture-jf61.onrender.com";
 
+
 // =========================================================
-// NORMAL AXIOS INSTANCE
-// =========================================================
-// Used by Crop, Soil, Fertilizer, Irrigation, Weather,
-// IoT and Notification modules.
+// NORMAL API INSTANCE
 // =========================================================
 
 const API = axios.create({
@@ -23,15 +21,12 @@ const API = axios.create({
         "Content-Type": "application/json",
     },
 
-    timeout: 15000,
+    timeout: 30000,
 });
 
 
 // =========================================================
-// AI ASSISTANT AXIOS INSTANCE
-// =========================================================
-// Assistant responses can take longer because the backend
-// may need to process AI/model requests.
+// AI ASSISTANT API INSTANCE
 // =========================================================
 
 const ASSISTANT_API = axios.create({
@@ -46,14 +41,25 @@ const ASSISTANT_API = axios.create({
 
 
 // =========================================================
-// JWT TOKEN INTERCEPTOR - NORMAL API
+// GET JWT TOKEN
+// =========================================================
+
+const getToken = () => {
+    return localStorage.getItem("token");
+};
+
+
+// =========================================================
+// ADD JWT TO NORMAL API REQUESTS
 // =========================================================
 
 API.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem("token");
+
+        const token = getToken();
 
         if (token) {
+
             config.headers = config.headers || {};
 
             config.headers.Authorization =
@@ -70,14 +76,16 @@ API.interceptors.request.use(
 
 
 // =========================================================
-// JWT TOKEN INTERCEPTOR - AI ASSISTANT
+// ADD JWT TO ASSISTANT REQUESTS
 // =========================================================
 
 ASSISTANT_API.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem("token");
+
+        const token = getToken();
 
         if (token) {
+
             config.headers = config.headers || {};
 
             config.headers.Authorization =
@@ -94,29 +102,36 @@ ASSISTANT_API.interceptors.request.use(
 
 
 // =========================================================
-// NORMAL API RESPONSE ERROR HANDLER
+// NORMAL API RESPONSE INTERCEPTOR
 // =========================================================
 
 API.interceptors.response.use(
+
     (response) => {
         return response;
     },
 
     (error) => {
+
         if (error.response) {
+
             console.error(
                 "API Error:",
                 error.response.status,
                 error.response.data
             );
+
         } else if (error.request) {
+
             console.error(
-                "Server did not respond:",
+                "API Server did not respond:",
                 error.message
             );
+
         } else {
+
             console.error(
-                "Request Error:",
+                "API Request Error:",
                 error.message
             );
         }
@@ -127,32 +142,41 @@ API.interceptors.response.use(
 
 
 // =========================================================
-// AI ASSISTANT RESPONSE ERROR HANDLER
+// ASSISTANT RESPONSE INTERCEPTOR
 // =========================================================
 
 ASSISTANT_API.interceptors.response.use(
+
     (response) => {
         return response;
     },
 
     (error) => {
+
         if (error.code === "ECONNABORTED") {
+
             console.error(
                 "AI Assistant timeout:",
                 error.message
             );
+
         } else if (error.response) {
+
             console.error(
                 "AI Assistant API Error:",
                 error.response.status,
                 error.response.data
             );
+
         } else if (error.request) {
+
             console.error(
                 "AI Assistant server did not respond:",
                 error.message
             );
+
         } else {
+
             console.error(
                 "AI Assistant request error:",
                 error.message
@@ -173,10 +197,11 @@ export const apiRequest = async (
     endpoint,
     data = null
 ) => {
+
     const response = await API({
-        method: method,
+        method,
         url: endpoint,
-        data: data,
+        data,
     });
 
     return response.data;
@@ -187,478 +212,343 @@ export const apiRequest = async (
 // IOT
 // =========================================================
 
-export const getLatestSensorData =
-    async () => {
+export const getLatestSensorData = async () => {
 
-        const response =
-            await API.get(
-                "/iot/latest"
-            );
+    const response =
+        await API.get("/iot/latest");
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // CROP
 // =========================================================
 
-export const getCropRecommendation =
-    async (data) => {
+export const getCropRecommendation = async (data) => {
 
-        const response =
-            await API.post(
-                "/crop/recommend",
-                data
-            );
+    const response =
+        await API.post(
+            "/crop/recommend",
+            data
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // SOIL
 // =========================================================
 
-export const getSoilAnalysis =
-    async (data) => {
+export const getSoilAnalysis = async (data) => {
 
-        const response =
-            await API.post(
-                "/soil/analyze",
-                data
-            );
+    const response =
+        await API.post(
+            "/soil/analyze",
+            data
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // FERTILIZER
 // =========================================================
 
-export const getFertilizerRecommendation =
-    async (data) => {
+export const getFertilizerRecommendation = async (data) => {
 
-        const response =
-            await API.post(
-                "/fertilizer/recommend",
-                data
-            );
+    const response =
+        await API.post(
+            "/fertilizer/recommend",
+            data
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // IRRIGATION
 // =========================================================
 
-export const getIrrigationPrediction =
-    async (data) => {
+export const getIrrigationPrediction = async (data) => {
 
-        try {
+    const response =
+        await API.post(
+            "/irrigation/predict",
+            data
+        );
 
-            console.log(
-                "================================="
-            );
-
-            console.log(
-                "IRRIGATION REQUEST"
-            );
-
-            console.log(
-                data
-            );
-
-            console.log(
-                "================================="
-            );
-
-            const response =
-                await API.post(
-                    "/irrigation/predict",
-                    data
-                );
-
-            console.log(
-                "IRRIGATION RESPONSE:",
-                response.data
-            );
-
-            return response.data;
-
-        } catch (error) {
-
-            console.error(
-                "================================="
-            );
-
-            console.error(
-                "IRRIGATION API ERROR"
-            );
-
-            console.error(
-                error?.response?.status
-            );
-
-            console.error(
-                error?.response?.data
-            );
-
-            console.error(
-                error?.message
-            );
-
-            console.error(
-                "================================="
-            );
-
-            throw error;
-        }
-    };
+    return response.data;
+};
 
 
 // =========================================================
-// WEATHER - LOCATION
+// WEATHER - CURRENT
 // =========================================================
 
-export const getCurrentWeather =
-    async (location) => {
+export const getCurrentWeather = async (location) => {
 
-        if (
-            !location ||
-            !location.trim()
-        ) {
+    if (!location || !location.trim()) {
 
-            throw new Error(
-                "Location is required."
-            );
-        }
+        throw new Error(
+            "Location is required."
+        );
+    }
 
-        const response =
-            await API.post(
-                "/weather/current",
-                {
-                    location:
-                        location.trim(),
-                }
-            );
+    const response =
+        await API.post(
+            "/weather/current",
+            {
+                location: location.trim(),
+            }
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // WEATHER - COORDINATES
 // =========================================================
-// Used by Irrigation and Weather modules
-// when browser GPS coordinates are available.
-// =========================================================
 
-export const getWeatherByCoordinates =
-    async (
-        latitude,
-        longitude
-    ) => {
+export const getWeatherByCoordinates = async (
+    latitude,
+    longitude
+) => {
 
-        if (
-            latitude === null ||
-            latitude === undefined ||
-            longitude === null ||
-            longitude === undefined
-        ) {
+    if (
+        latitude === null ||
+        latitude === undefined ||
+        longitude === null ||
+        longitude === undefined
+    ) {
 
-            throw new Error(
-                "Latitude and longitude are required."
-            );
-        }
+        throw new Error(
+            "Latitude and longitude are required."
+        );
+    }
 
-        const response =
-            await API.post(
-                "/weather/current-by-coordinates",
-                {
-                    latitude:
-                        Number(latitude),
+    const response =
+        await API.post(
+            "/weather/current-by-coordinates",
+            {
+                latitude: Number(latitude),
+                longitude: Number(longitude),
+            }
+        );
 
-                    longitude:
-                        Number(longitude),
-                }
-            );
-
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // WEATHER SEARCH
 // =========================================================
 
-export const searchWeatherLocations =
-    async (
-        village,
-        district = "",
-        state = ""
-    ) => {
+export const searchWeatherLocations = async (
+    village,
+    district = "",
+    state = ""
+) => {
 
-        if (
-            !village ||
-            !village.trim()
-        ) {
+    if (!village || !village.trim()) {
 
-            throw new Error(
-                "Village/location is required."
-            );
-        }
+        throw new Error(
+            "Village/location is required."
+        );
+    }
 
-        const response =
-            await API.get(
-                "/weather/search",
-                {
-                    params: {
+    const response =
+        await API.get(
+            "/weather/search",
+            {
+                params: {
+                    village: village.trim(),
+                    district: district.trim(),
+                    state: state.trim(),
+                },
+            }
+        );
 
-                        village:
-                            village.trim(),
-
-                        district:
-                            district.trim(),
-
-                        state:
-                            state.trim(),
-                    },
-                }
-            );
-
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // WEATHER STATUS
 // =========================================================
 
-export const getWeatherStatus =
-    async () => {
+export const getWeatherStatus = async () => {
 
-        const response =
-            await API.get(
-                "/weather/"
-            );
+    const response =
+        await API.get("/weather/");
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // WEATHER FORECAST
 // =========================================================
 
-export const getWeatherForecast =
-    async (location) => {
+export const getWeatherForecast = async (location) => {
 
-        if (
-            !location ||
-            !location.trim()
-        ) {
+    if (!location || !location.trim()) {
 
-            throw new Error(
-                "Location is required."
-            );
-        }
+        throw new Error(
+            "Location is required."
+        );
+    }
 
-        const response =
-            await API.post(
-                "/weather/forecast",
-                {
-                    location:
-                        location.trim(),
-                }
-            );
+    const response =
+        await API.post(
+            "/weather/forecast",
+            {
+                location: location.trim(),
+            }
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // NOTIFICATIONS
 // =========================================================
 
-export const getNotifications =
-    async () => {
+export const getNotifications = async () => {
 
-        const response =
-            await API.get(
-                "/notifications/"
-            );
+    const response =
+        await API.get(
+            "/notifications/"
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // UNREAD NOTIFICATIONS
 // =========================================================
 
-export const getUnreadNotifications =
-    async () => {
+export const getUnreadNotifications = async () => {
 
-        const response =
-            await API.get(
-                "/notifications/unread"
-            );
+    const response =
+        await API.get(
+            "/notifications/unread"
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // MARK NOTIFICATION READ
 // =========================================================
 
-export const markNotificationAsRead =
-    async (
-        notificationId
-    ) => {
+export const markNotificationAsRead = async (
+    notificationId
+) => {
 
-        const response =
-            await API.put(
-                `/notifications/${notificationId}/read`
-            );
+    const response =
+        await API.put(
+            `/notifications/${notificationId}/read`
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // MARK ALL NOTIFICATIONS READ
 // =========================================================
 
-export const markAllNotificationsAsRead =
-    async () => {
+export const markAllNotificationsAsRead = async () => {
 
-        const response =
-            await API.put(
-                "/notifications/read-all"
-            );
+    const response =
+        await API.put(
+            "/notifications/read-all"
+        );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 
 // =========================================================
 // AI ASSISTANT
 // =========================================================
-// Uses ASSISTANT_API instead of the normal API instance.
-// Timeout = 60 seconds.
-// =========================================================
 
-export const sendAssistantMessage =
-    async (
-        message,
-        language = "English"
-    ) => {
+export const sendAssistantMessage = async (
+    message,
+    language = "English"
+) => {
 
-        if (
-            !message ||
-            !message.trim()
-        ) {
+    if (
+        !message ||
+        !message.trim()
+    ) {
 
-            throw new Error(
-                "Assistant message cannot be empty."
-            );
+        throw new Error(
+            "Assistant message cannot be empty."
+        );
+    }
+
+    const cleanMessage =
+        message.trim();
+
+    console.log(
+        "AI Assistant request:",
+        {
+            message: cleanMessage,
+            language,
+            endpoint:
+                `${API_BASE_URL}/assistant/chat`,
         }
+    );
+
+    try {
+
+        const response =
+            await ASSISTANT_API.post(
+                "/assistant/chat",
+                {
+                    message: cleanMessage,
+                    language,
+                }
+            );
 
         console.log(
-            "================================="
+            "AI Assistant response:",
+            response.data
         );
 
-        console.log(
-            "ASSISTANT REQUEST"
+        return response.data;
+
+    } catch (error) {
+
+        console.error(
+            "AI Assistant request failed:",
+            {
+                status:
+                    error?.response?.status,
+
+                data:
+                    error?.response?.data,
+
+                message:
+                    error?.message,
+
+                code:
+                    error?.code,
+            }
         );
 
-        console.log(
-            "Message:",
-            message.trim()
-        );
-
-        console.log(
-            "Language:",
-            language
-        );
-
-        console.log(
-            "================================="
-        );
-
-        try {
-
-            const response =
-                await ASSISTANT_API.post(
-                    "/assistant/chat",
-                    {
-                        message:
-                            message.trim(),
-
-                        language:
-                            language,
-                    }
-                );
-
-            console.log(
-                "================================="
-            );
-
-            console.log(
-                "ASSISTANT RESPONSE"
-            );
-
-            console.log(
-                response.data
-            );
-
-            console.log(
-                "================================="
-            );
-
-            return response.data;
-
-        } catch (error) {
-
-            console.error(
-                "================================="
-            );
-
-            console.error(
-                "ASSISTANT API ERROR"
-            );
-
-            console.error(
-                "Status:",
-                error?.response?.status
-            );
-
-            console.error(
-                "Response:",
-                error?.response?.data
-            );
-
-            console.error(
-                "Code:",
-                error?.code
-            );
-
-            console.error(
-                "Message:",
-                error?.message
-            );
-
-            console.error(
-                "================================="
-            );
-
-            throw error;
-        }
-    };
+        throw error;
+    }
+};
 
 
 // =========================================================
