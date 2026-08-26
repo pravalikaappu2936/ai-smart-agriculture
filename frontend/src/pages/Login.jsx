@@ -180,7 +180,7 @@ function Login() {
     };
 
     // ========================================
-    // LOGOUT / LOGIN PAGE FORM
+    // LOGIN PAGE
     // ========================================
 
     return (
@@ -188,27 +188,41 @@ function Login() {
 
             <div className="login-container">
 
-                {/* LOGO */}
+                {/* ==================================
+                    AI SMART AGRICULTURE BRANDING
+                    ================================== */}
 
-                <div className="login-logo">
+                <div className="login-branding">
 
-                    🌾
+                    <img
+                        src="/logo.png"
+                        alt="AI Smart Agriculture"
+                        className="login-logo-image"
+                    />
 
-                    <span>
-                        Smart Agriculture
-                    </span>
+                    <h1 className="login-brand-title">
+                        AI Smart Agriculture
+                    </h1>
+
+                    <p className="login-brand-subtitle">
+                        Smart Farming • Better Tomorrow
+                    </p>
 
                 </div>
 
 
-                {/* TITLE */}
+                {/* ==================================
+                    LOGIN TITLE
+                    ================================== */}
 
-                <h1>
+                <h2 className="login-heading">
                     Login
-                </h1>
+                </h2>
 
 
-                {/* LOGIN FORM */}
+                {/* ==================================
+                    LOGIN FORM
+                    ================================== */}
 
                 <form
                     onSubmit={handleLogin}

@@ -4,12 +4,11 @@
 
 .login-page {
     min-height: 100vh;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
-
     padding: 25px;
-
     background:
         linear-gradient(
             135deg,
@@ -17,7 +16,6 @@
             #eaf4e6 50%,
             #f7faf5 100%
         );
-
     box-sizing: border-box;
 }
 
@@ -29,19 +27,13 @@
 .login-container {
     width: 100%;
     max-width: 430px;
-
     padding: 40px;
-
     background: #ffffff;
-
     border: 1px solid #dfe8dc;
     border-radius: 20px;
-
     box-shadow:
         0 12px 35px rgba(40, 70, 40, 0.09);
-
     box-sizing: border-box;
-
     animation: loginAppear 0.45s ease;
 }
 
@@ -51,7 +43,6 @@
 ======================================== */
 
 @keyframes loginAppear {
-
     from {
         opacity: 0;
         transform: translateY(15px);
@@ -61,50 +52,76 @@
         opacity: 1;
         transform: translateY(0);
     }
-
 }
 
 
 /* ========================================
-   LOGO
+   AI SMART AGRICULTURE BRANDING
 ======================================== */
 
-.login-logo {
+.login-branding {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-
-    gap: 9px;
-
-    margin-bottom: 25px;
-
-    color: #2f6b35;
-
-    font-size: 25px;
-    font-weight: 700;
-}
-
-
-/* Logo icon */
-
-.login-logo:first-letter {
-    font-size: 30px;
+    text-align: center;
+    margin-bottom: 26px;
 }
 
 
 /* ========================================
-   TITLE
+   LOGO IMAGE
 ======================================== */
 
-.login-container h1 {
-    margin: 0 0 25px;
+.login-logo-image {
+    width: 105px;
+    height: 105px;
+    object-fit: contain;
+    display: block;
+    margin-bottom: 10px;
+}
 
-    text-align: center;
 
+/* ========================================
+   BRAND TITLE
+======================================== */
+
+.login-brand-title {
+    margin: 0;
     color: #2c5932;
+    font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: -0.5px;
+}
 
-    font-size: 30px;
-    font-weight: 700;
+
+/* ========================================
+   BRAND SUBTITLE
+======================================== */
+
+.login-brand-subtitle {
+    margin: 7px 0 0;
+    color: #718074;
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+
+/* ========================================
+   LOGIN HEADING
+======================================== */
+
+.login-heading {
+    margin: 0 0 24px;
+    text-align: center;
+    color: #344a37;
+    font-size: 23px;
+    line-height: 1.3;
+    font-weight: 650;
 }
 
 
@@ -123,11 +140,8 @@
 
 .form-group label {
     display: block;
-
     margin-bottom: 7px;
-
     color: #435146;
-
     font-size: 14px;
     font-weight: 600;
 }
@@ -139,23 +153,15 @@
 
 .form-group input {
     width: 100%;
-
     box-sizing: border-box;
-
     padding: 13px 14px;
-
     border: 1px solid #cfdacf;
-
     border-radius: 9px;
-
     outline: none;
-
     background: #ffffff;
-
     color: #28352b;
-
+    font-family: inherit;
     font-size: 14px;
-
     transition:
         border-color 0.2s ease,
         box-shadow 0.2s ease,
@@ -163,21 +169,23 @@
 }
 
 
-/* Placeholder */
+/* ========================================
+   PLACEHOLDER
+======================================== */
 
 .form-group input::placeholder {
     color: #9aa49b;
 }
 
 
-/* Input focus */
+/* ========================================
+   INPUT FOCUS
+======================================== */
 
 .form-group input:focus {
     border-color: #55935d;
-
     box-shadow:
         0 0 0 3px rgba(85, 147, 93, 0.1);
-
     background: #fbfefb;
 }
 
@@ -185,15 +193,6 @@
 /* ========================================
    BROWSER AUTOFILL
 ======================================== */
-
-/*
-   Keeps browser autofill visually consistent
-   with the application.
-
-   NOTE:
-   This does NOT delete credentials saved in
-   Chrome/Edge password manager.
-*/
 
 .form-group input:-webkit-autofill,
 .form-group input:-webkit-autofill:hover,
@@ -214,21 +213,13 @@
 
 .login-error {
     margin-bottom: 15px;
-
     padding: 12px;
-
     border-radius: 8px;
-
     background: #fff0ee;
-
     border: 1px solid #f1cbc6;
-
     color: #a83327;
-
     font-size: 14px;
-
     line-height: 1.5;
-
     white-space: pre-line;
 }
 
@@ -239,21 +230,14 @@
 
 .login-container form button {
     width: 100%;
-
     padding: 13px;
-
     border: none;
-
     border-radius: 9px;
-
     background: #3d7b43;
-
-    color: white;
-
+    color: #ffffff;
+    font-family: inherit;
     font-size: 15px;
-
-    font-weight: 600;
-
+    font-weight: 650;
     cursor: pointer;
 
     transition:
@@ -263,11 +247,12 @@
 }
 
 
-/* Hover */
+/* ========================================
+   BUTTON HOVER
+======================================== */
 
 .login-container form button:hover:not(:disabled) {
     background: #326638;
-
     transform: translateY(-1px);
 
     box-shadow:
@@ -275,22 +260,23 @@
 }
 
 
-/* Click */
+/* ========================================
+   BUTTON ACTIVE
+======================================== */
 
 .login-container form button:active:not(:disabled) {
     transform: translateY(0);
 }
 
 
-/* Disabled */
+/* ========================================
+   BUTTON DISABLED
+======================================== */
 
 .login-container form button:disabled {
     opacity: 0.6;
-
     cursor: not-allowed;
-
     transform: none;
-
     box-shadow: none;
 }
 
@@ -301,33 +287,30 @@
 
 .register-link {
     margin: 22px 0 0;
-
     text-align: center;
-
     color: #727b73;
-
     font-size: 14px;
 }
 
 
-/* Register link */
+/* ========================================
+   REGISTER LINK
+======================================== */
 
 .register-link a {
     color: #39713f;
-
     font-weight: 700;
-
     text-decoration: none;
-
     transition: color 0.2s ease;
 }
 
 
-/* Hover */
+/* ========================================
+   REGISTER LINK HOVER
+======================================== */
 
 .register-link a:hover {
     color: #285d30;
-
     text-decoration: underline;
 }
 
@@ -342,33 +325,59 @@
         padding: 18px;
     }
 
-
     .login-container {
         padding: 30px 22px;
-
         border-radius: 16px;
     }
 
-
-    .login-logo {
-        font-size: 22px;
+    .login-logo-image {
+        width: 85px;
+        height: 85px;
     }
 
+    .login-brand-title {
+        font-size: 24px;
+    }
 
-    .login-container h1 {
-        font-size: 26px;
+    .login-brand-subtitle {
+        font-size: 13px;
+    }
 
+    .login-heading {
+        font-size: 21px;
         margin-bottom: 22px;
     }
-
 
     .form-group input {
         padding: 12px;
     }
 
-
     .login-container form button {
         padding: 12px;
     }
+}
 
+
+/* ========================================
+   VERY SMALL SCREENS
+======================================== */
+
+@media (max-width: 360px) {
+
+    .login-page {
+        padding: 12px;
+    }
+
+    .login-container {
+        padding: 25px 18px;
+    }
+
+    .login-logo-image {
+        width: 75px;
+        height: 75px;
+    }
+
+    .login-brand-title {
+        font-size: 22px;
+    }
 }

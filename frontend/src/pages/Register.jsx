@@ -139,34 +139,50 @@ function Register() {
 
             <div className="register-container">
 
-                {/* LOGO */}
+                {/* ==================================
+                    AI SMART AGRICULTURE BRANDING
+                    ================================== */}
 
-                <div className="register-logo">
+                <div className="register-branding">
 
-                    🌾
+                    <img
+                        src="/logo.png"
+                        alt="AI Smart Agriculture"
+                        className="register-logo-image"
+                    />
 
-                    <span>
-                        Smart Agriculture
-                    </span>
+                    <h1 className="register-brand-title">
+                        AI Smart Agriculture
+                    </h1>
+
+                    <p className="register-brand-subtitle">
+                        Smart Farming • Better Tomorrow
+                    </p>
 
                 </div>
 
 
-                {/* TITLE */}
+                {/* ==================================
+                    CREATE ACCOUNT TITLE
+                    ================================== */}
 
-                <h1>
+                <h2 className="register-heading">
                     Create Account
-                </h1>
+                </h2>
 
 
-                {/* SUBTITLE */}
+                {/* ==================================
+                    SUBTITLE
+                    ================================== */}
 
                 <p className="register-subtitle">
-                    Register to access Smart Agriculture.
+                    Register to access AI Smart Agriculture.
                 </p>
 
 
-                {/* REGISTER FORM */}
+                {/* ==================================
+                    REGISTER FORM
+                    ================================== */}
 
                 <form
                     onSubmit={handleRegister}

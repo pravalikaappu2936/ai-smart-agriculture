@@ -40,6 +40,7 @@ function Dashboard() {
     const [lastUpdated, setLastUpdated] =
         useState(null);
 
+
     // ========================================
     // LANGUAGE
     // ========================================
@@ -117,6 +118,7 @@ function Dashboard() {
             return;
 
         }
+
 
         try {
 
@@ -481,9 +483,29 @@ function Dashboard() {
             <header className="dashboard-header">
 
 
+                {/* ========================================
+                    AI SMART AGRICULTURE BRAND
+                ======================================== */}
+
                 <div className="dashboard-brand">
 
-                    🌾 Smart Agriculture
+                    <img
+                        src="/logo.png"
+                        alt="AI Smart Agriculture"
+                        className="dashboard-brand-logo"
+                    />
+
+                    <div className="dashboard-brand-text">
+
+                        <span className="dashboard-brand-title">
+                            AI Smart Agriculture
+                        </span>
+
+                        <span className="dashboard-brand-subtitle">
+                            Smart Farming • Better Tomorrow
+                        </span>
+
+                    </div>
 
                 </div>
 
@@ -491,7 +513,9 @@ function Dashboard() {
                 <div className="dashboard-header-actions">
 
 
-                    {/* LANGUAGE SWITCH */}
+                    {/* ========================================
+                        LANGUAGE SWITCH
+                    ======================================== */}
 
                     <div className="language-switcher">
 
@@ -525,7 +549,9 @@ function Dashboard() {
                     </div>
 
 
-                    {/* AI ASSISTANT */}
+                    {/* ========================================
+                        AI ASSISTANT
+                    ======================================== */}
 
                     <button
                         className="ai-assistant-button"
@@ -543,28 +569,28 @@ function Dashboard() {
                                 : "AI Agriculture Assistant"
                         }
                     >
-
                         🤖
-
                     </button>
 
 
-                    {/* NOTIFICATIONS */}
+                    {/* ========================================
+                        NOTIFICATIONS
+                    ======================================== */}
 
                     <NotificationBell />
 
 
-                    {/* LOGOUT */}
+                    {/* ========================================
+                        LOGOUT
+                    ======================================== */}
 
                     <button
                         className="dashboard-logout"
                         onClick={handleLogout}
                     >
-
                         {isKannada
                             ? "ಲಾಗ್‌ಔಟ್"
                             : "Logout"}
-
                     </button>
 
 
@@ -667,7 +693,9 @@ function Dashboard() {
                     </div>
 
 
-                    {/* REFRESH CONTROLS */}
+                    {/* ========================================
+                        REFRESH CONTROLS
+                    ======================================== */}
 
                     <div className="sensor-refresh-bar">
 
@@ -675,13 +703,11 @@ function Dashboard() {
                         <div className="last-updated">
 
                             {lastUpdated
-
                                 ? (
                                     isKannada
                                         ? `ಕೊನೆಯ ನವೀಕರಣ: ${lastUpdated.toLocaleTimeString()}`
                                         : `Last updated: ${lastUpdated.toLocaleTimeString()}`
                                 )
-
                                 : (
                                     isKannada
                                         ? "ಸೆನ್ಸರ್ ಡೇಟಾಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದೆ..."
@@ -698,13 +724,11 @@ function Dashboard() {
                         >
 
                             {refreshing
-
                                 ? (
                                     isKannada
                                         ? "🔄 ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ..."
                                         : "🔄 Refreshing..."
                                 )
-
                                 : (
                                     isKannada
                                         ? "🔄 ಸೆನ್ಸರ್‌ಗಳನ್ನು ನವೀಕರಿಸಿ"
@@ -716,7 +740,9 @@ function Dashboard() {
                     </div>
 
 
-                    {/* LOADING */}
+                    {/* ========================================
+                        LOADING
+                    ======================================== */}
 
                     {loading && (
 
@@ -731,7 +757,9 @@ function Dashboard() {
                     )}
 
 
-                    {/* ERROR */}
+                    {/* ========================================
+                        ERROR
+                    ======================================== */}
 
                     {!loading &&
                         sensorError && (
@@ -745,7 +773,9 @@ function Dashboard() {
                         )}
 
 
-                    {/* SENSOR DATA */}
+                    {/* ========================================
+                        SENSOR DATA
+                    ======================================== */}
 
                     {sensorData && (
 
@@ -1074,9 +1104,7 @@ function Dashboard() {
             </main>
 
         </div>
-
     );
-
 }
 
 
