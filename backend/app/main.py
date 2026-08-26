@@ -73,7 +73,8 @@ app.add_middleware(
         "https://ai-smart-agriculture-ten.vercel.app",
     ],
 
-    allow_origin_regex=r"https://aismartagriculture-t9riqlnag-pravalikaappu2936.vercel.app/dashboard",
+    # Allow Vercel deployment URLs belonging to your project
+    allow_origin_regex=r"https://[a-z0-9-]+-pravalikaappu2936\.vercel\.app",
 
     allow_credentials=True,
     allow_methods=["*"],
