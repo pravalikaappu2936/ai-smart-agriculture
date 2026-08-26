@@ -69,14 +69,11 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
 
-        # Vercel production
-        "https://ai-smart-agriculture.vercel.app",
-
-        # Current Vercel deployment
-        "https://aismartagriculture-55x6uxdnt-pravalikaappu2936.vercel.app",
+        # Production Vercel
+        "https://ai-smart-agriculture-ten.vercel.app",
     ],
 
-    allow_origin_regex=r"https://(ai-smart-agriculture|aismartagriculture)-[a-z0-9]+-pravalikaappu2936\.vercel\.app",
+    allow_origin_regex=r"https://aismartagriculture-t9riqlnag-pravalikaappu2936.vercel.app/dashboard",
 
     allow_credentials=True,
     allow_methods=["*"],
