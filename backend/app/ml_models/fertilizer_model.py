@@ -1,3 +1,7 @@
+import json
+from pathlib import Path
+
+import joblib
 import numpy as np
 import pandas as pd
 
@@ -7,6 +11,25 @@ from sklearn.metrics import accuracy_score
 
 from app.services.dataset_service import (
     load_fertilizer_data
+)
+
+
+# =========================================================
+# PATHS
+# =========================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_PATH = (
+    BASE_DIR /
+    "saved_models" /
+    "fertilizer_random_forest.pkl"
+)
+
+METADATA_PATH = (
+    BASE_DIR /
+    "saved_models" /
+    "fertilizer_model_metadata.json"
 )
 
 
@@ -132,9 +155,11 @@ def prepare_fertilizer_data():
 
 
     dataset = dataset[
+
         dataset[
             "recommended_fertilizer"
         ] != ""
+
     ]
 
 
@@ -203,7 +228,9 @@ def train_fertilizer_model():
     class_counts = y.value_counts()
 
     use_stratify = (
+
         class_counts.min() >= 2
+
     )
 
 
@@ -282,17 +309,80 @@ def train_fertilizer_model():
 
 
 # =========================================================
+# LOAD SAVED MODEL
+# =========================================================
+
+def load_fertilizer_model():
+
+    if not MODEL_PATH.exists():
+
+        raise FileNotFoundError(
+
+            "Saved fertilizer model not found: "
+
+            f"{MODEL_PATH}"
+
+        )
+
+
+    model = joblib.load(
+
+        MODEL_PATH
+
+    )
+
+
+    return model
+
+
+# =========================================================
+# LOAD MODEL ACCURACY
+# =========================================================
+
+def load_fertilizer_accuracy():
+
+    if not METADATA_PATH.exists():
+
+        return 0.0
+
+
+    try:
+
+        with open(
+
+            METADATA_PATH,
+
+            "r",
+
+            encoding="utf-8"
+
+        ) as file:
+
+            metadata = json.load(file)
+
+
+        return float(
+
+            metadata.get(
+
+                "accuracy",
+
+                0.0
+
+            )
+
+        )
+
+    except Exception:
+
+        return 0.0
+
+
+# =========================================================
 # PREDICT FERTILIZER
 # =========================================================
 
 def predict_fertilizer(features):
-
-    # -----------------------------------------------------
-    # Train model
-    # -----------------------------------------------------
-
-    model, accuracy = train_fertilizer_model()
-
 
     # -----------------------------------------------------
     # Convert input
@@ -326,19 +416,60 @@ def predict_fertilizer(features):
     # Validate number of features
     # -----------------------------------------------------
 
+    if features.ndim != 2:
+
+        raise ValueError(
+
+            "Fertilizer input must contain "
+            "one or more rows of features."
+
+        )
+
+
     if features.shape[1] != len(
+
         FEATURE_NAMES
+
     ):
 
         raise ValueError(
 
             f"Expected "
+
             f"{len(FEATURE_NAMES)} "
+
             f"fertilizer features, "
+
             f"received "
+
             f"{features.shape[1]}."
 
         )
+
+
+    # -----------------------------------------------------
+    # Validate numeric values
+    # -----------------------------------------------------
+
+    if not np.all(
+
+        np.isfinite(features)
+
+    ):
+
+        raise ValueError(
+
+            "Fertilizer input contains "
+            "invalid numeric values."
+
+        )
+
+
+    # -----------------------------------------------------
+    # Load saved model
+    # -----------------------------------------------------
+
+    model = load_fertilizer_model()
 
 
     # -----------------------------------------------------
@@ -366,6 +497,13 @@ def predict_fertilizer(features):
 
 
     # -----------------------------------------------------
+    # Accuracy
+    # -----------------------------------------------------
+
+    accuracy = load_fertilizer_accuracy()
+
+
+    # -----------------------------------------------------
     # Result
     # -----------------------------------------------------
 
@@ -377,7 +515,7 @@ def predict_fertilizer(features):
         "accuracy":
             round(
 
-                float(accuracy) * 100,
+                accuracy,
 
                 2
 

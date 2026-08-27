@@ -991,7 +991,7 @@ function Crop() {
                             <div className="model-stats">
 
                                 <span>
-                                    2,200
+                                    50000
                                 </span>
 
                                 <small>
