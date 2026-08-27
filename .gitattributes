@@ -1,0 +1,2 @@
+backend/app/ml_models/saved_models/crop_random_forest.pkl filter=lfs diff=lfs merge=lfs -text
+backend/app/ml_models/saved_models/soil_random_forest.pkl filter=lfs diff=lfs merge=lfs -text

@@ -10,7 +10,8 @@ from app.ml_models.crop_preprocessing import (
 )
 
 from app.ml_models.crop_model import (
-    predict_crop
+    predict_crop,
+    load_crop_model
 )
 
 from app.ml_models.crop_recommendation import (
@@ -35,6 +36,9 @@ def crop_status(
     )
 ):
 
+    # Load currently active crop model
+    model_data = load_crop_model()
+
     return {
         "message":
             "Crop Recommendation Module Ready",
@@ -45,8 +49,34 @@ def crop_status(
         "model":
             "Random Forest",
 
-        "dataset":
-            "2200 crop records"
+        "dataset_records":
+            model_data.get(
+                "dataset_records",
+                0
+            ),
+
+        "crop_classes":
+            len(
+                model_data.get(
+                    "crop_classes",
+                    []
+                )
+            ),
+
+        "model_accuracy":
+            round(
+                model_data.get(
+                    "accuracy",
+                    0
+                ) * 100,
+                2
+            ),
+
+        "crops":
+            model_data.get(
+                "crop_classes",
+                []
+            )
     }
 
 

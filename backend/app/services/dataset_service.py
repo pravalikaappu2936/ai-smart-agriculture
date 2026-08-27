@@ -17,7 +17,7 @@ DATASET_DIR = BASE_DIR / "dataset"
 
 CROP_DATASET = DATASET_DIR / "crop_data.csv"
 
-SOIL_DATASET = DATASET_DIR / "soil_data.csv"
+SOIL_DATASET = DATASET_DIR / "soil_data_50000.csv"
 
 FERTILIZER_DATASET = DATASET_DIR / "fertilizer_data.csv"
 

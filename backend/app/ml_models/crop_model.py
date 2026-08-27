@@ -157,7 +157,7 @@ def train_crop_model():
     # -----------------------------------------------------
 
     model = RandomForestClassifier(
-        n_estimators=300,
+        n_estimators=100,
         max_depth=None,
         min_samples_split=2,
         min_samples_leaf=1,
