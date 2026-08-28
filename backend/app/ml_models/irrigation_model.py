@@ -93,26 +93,74 @@ except Exception as exc:
 # =========================================================
 # CROP WATER FACTOR
 # =========================================================
+# IMPORTANT:
+# These values MUST match the irrigation training dataset.
+# =========================================================
 
 CROP_WATER_FACTOR = {
 
-    "rice": 1.00,
-    "maize": 0.75,
-    "chickpea": 0.45,
-    "cotton": 0.70,
-    "wheat": 0.65,
-    "groundnut": 0.60,
-    "banana": 0.90,
+    # -----------------------------------------------------
+    # Original crops used by the training dataset
+    # -----------------------------------------------------
 
+    "rice": 1.30,
+    "maize": 1.00,
+    "chickpea": 0.75,
+    "cotton": 1.10,
+    "wheat": 0.90,
+    "groundnut": 0.85,
+    "banana": 1.25,
+
+    # -----------------------------------------------------
     # Additional crops
-    "sugarcane": 1.20,
-    "tomato": 0.80,
-    "potato": 0.70,
-    "onion": 0.60,
-    "millet": 0.50,
-    "soybean": 0.70,
-    "sorghum": 0.55,
-    "barley": 0.55
+    # -----------------------------------------------------
+
+    "sugarcane": 1.25,
+    "tomato": 1.15,
+    "potato": 1.05,
+    "onion": 0.95,
+    "turmeric": 1.00,
+    "chilli": 0.95,
+    "sorghum": 0.75,
+    "millet": 0.65,
+    "ragi": 0.70,
+    "soybean": 0.90,
+    "pigeon_pea": 0.75,
+    "okra": 1.00,
+    "cabbage": 1.00,
+    "carrot": 0.90
+
+}
+
+
+# =========================================================
+# CROP ALIASES
+# =========================================================
+
+CROP_ALIASES = {
+
+    "pigeonpea": "pigeon_pea",
+    "pigeon pea": "pigeon_pea",
+    "pigeon-pea": "pigeon_pea",
+
+    "ground nut": "groundnut",
+    "ground-nut": "groundnut",
+
+    "chilli pepper": "chilli",
+    "chili": "chilli",
+
+    "corn": "maize",
+
+    "chick pea": "chickpea",
+    "chick-pea": "chickpea",
+
+    "sugar cane": "sugarcane",
+    "sugar-cane": "sugarcane",
+
+    "soy bean": "soybean",
+    "soy-bean": "soybean",
+
+    "ragi millet": "ragi"
 
 }
 
@@ -134,6 +182,31 @@ def normalize_crop(crop_type):
         .strip()
         .lower()
     )
+
+    # Normalize repeated spaces
+
+    crop = " ".join(
+        crop.split()
+    )
+
+    # Check aliases
+
+    if crop in CROP_ALIASES:
+
+        crop = CROP_ALIASES[crop]
+
+    # Convert hyphen format
+
+    normalized = crop.replace(
+        "-",
+        "_"
+    )
+
+    if normalized in CROP_WATER_FACTOR:
+
+        crop = normalized
+
+    # Validate
 
     if crop not in CROP_WATER_FACTOR:
 
@@ -275,7 +348,25 @@ CROP_MOISTURE_LIMITS = {
         "good": 50
     },
 
+    "turmeric": {
+        "critical": 25,
+        "low": 35,
+        "good": 55
+    },
+
+    "chilli": {
+        "critical": 23,
+        "low": 33,
+        "good": 53
+    },
+
     "millet": {
+        "critical": 18,
+        "low": 28,
+        "good": 48
+    },
+
+    "ragi": {
         "critical": 18,
         "low": 28,
         "good": 48
@@ -287,13 +378,31 @@ CROP_MOISTURE_LIMITS = {
         "good": 55
     },
 
-    "sorghum": {
+    "pigeon_pea": {
         "critical": 20,
         "low": 30,
         "good": 50
     },
 
-    "barley": {
+    "okra": {
+        "critical": 25,
+        "low": 35,
+        "good": 55
+    },
+
+    "cabbage": {
+        "critical": 25,
+        "low": 35,
+        "good": 55
+    },
+
+    "carrot": {
+        "critical": 22,
+        "low": 32,
+        "good": 52
+    },
+
+    "sorghum": {
         "critical": 20,
         "low": 30,
         "good": 50
@@ -525,7 +634,6 @@ def predict_irrigation(features):
             "Irrigation features are missing."
         )
 
-
     if features.empty:
 
         raise ValueError(
@@ -642,22 +750,20 @@ def predict_irrigation(features):
             ]
 
 
-            # ---------------------------------------------
-            # KEEP DATAFRAME FEATURE NAMES
-            # ---------------------------------------------
-
             model_features = (
+
                 features[
                     model_columns
                 ]
                 .copy()
                 .astype(float)
+
             )
 
 
-            # ---------------------------------------------
+            # -------------------------------------------------
             # SCALE
-            # ---------------------------------------------
+            # -------------------------------------------------
 
             if scaler is not None:
 
@@ -670,9 +776,9 @@ def predict_irrigation(features):
                 values = model_features
 
 
-            # ---------------------------------------------
+            # -------------------------------------------------
             # RANDOM FOREST PREDICTION
-            # ---------------------------------------------
+            # -------------------------------------------------
 
             prediction = model.predict(
                 values
@@ -692,9 +798,9 @@ def predict_irrigation(features):
             )
 
 
-            # ---------------------------------------------
+            # -------------------------------------------------
             # PREDICTION PROBABILITIES
-            # ---------------------------------------------
+            # -------------------------------------------------
 
             if hasattr(
                 model,
@@ -707,17 +813,14 @@ def predict_irrigation(features):
                     )
                 )
 
-
                 classes = model.classes_
 
-
-                if (
-                    len(probabilities) > 0
-                ):
+                if len(probabilities) > 0:
 
                     prediction_probabilities = {
 
                         str(label):
+
                             round(
                                 float(probability),
                                 4
@@ -733,7 +836,6 @@ def predict_irrigation(features):
                         )
 
                     }
-
 
                     print(
                         "Prediction probabilities:",
@@ -753,21 +855,17 @@ def predict_irrigation(features):
     # IRRIGATION SCORE
     # =====================================================
 
-    # Score represents water stress.
-    #
-    # Higher score = greater irrigation requirement.
-    #
-    # This score is intentionally based on the agricultural
-    # decision inputs rather than replacing the dataset model.
-
     limits = (
         CROP_MOISTURE_LIMITS.get(
+
             crop,
+
             {
                 "critical": 25,
                 "low": 35,
                 "good": 55
             }
+
         )
     )
 
@@ -845,8 +943,9 @@ def predict_irrigation(features):
     )
 
 
-    # Critical moisture should always produce
-    # a strong irrigation score.
+    # =====================================================
+    # CRITICAL MOISTURE OVERRIDE
+    # =====================================================
 
     if soil_moisture <= critical:
 

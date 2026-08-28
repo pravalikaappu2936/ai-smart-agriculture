@@ -90,7 +90,7 @@ def calculate_irrigation(
 # =========================================================
 
 def generate_dataset(
-    number_of_rows=2000
+    number_of_rows=50000
 ):
 
     random.seed(42)
@@ -325,5 +325,5 @@ def generate_dataset(
 if __name__ == "__main__":
 
     generate_dataset(
-        number_of_rows=2000
+        number_of_rows=50000
     )
