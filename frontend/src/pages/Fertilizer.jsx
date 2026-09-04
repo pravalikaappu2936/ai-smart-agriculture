@@ -87,25 +87,37 @@ function Fertilizer() {
     ];
 
 
+    // =====================================================
+    // CROP CHANGE
+    // =====================================================
+
     const handleCropChange = (event) => {
 
         const crop =
-            event.target.value;
+            String(event.target.value || "")
+                .trim()
+                .toLowerCase();
+
+
+        console.log(
+            "Selected fertilizer crop:",
+            crop
+        );
+
 
         setSelectedCrop(crop);
+
 
         localStorage.setItem(
             "selectedCrop",
             crop
         );
 
-        /*
-         * Clear old recommendation when
-         * crop is changed.
-         */
 
+        // Clear old recommendation
         setRecommendation(null);
 
+        // Clear previous error
         setError("");
 
     };
@@ -119,6 +131,7 @@ function Fertilizer() {
         useState(
             localStorage.getItem("language") || "en"
         );
+
 
     const isKannada =
         language === "kn";
@@ -144,38 +157,101 @@ function Fertilizer() {
 
         try {
 
-            setLoading(true);
-
             setError("");
+
 
             const response =
                 await getLatestSensorData();
 
 
             console.log(
-                "Fertilizer IoT response:",
+                "===================================="
+            );
+
+            console.log(
+                "FERTILIZER IOT RESPONSE:"
+            );
+
+            console.log(
                 response
             );
 
-
-            let data;
-
-            if (response?.data) {
-
-                data = response.data;
-
-            } else {
-
-                data = response;
-
-            }
+            console.log(
+                "===================================="
+            );
 
 
-            setSensorData(data);
+            /*
+             * Backend response can be:
+             *
+             * {
+             *     status: "success",
+             *     data: {...}
+             * }
+             *
+             * or directly:
+             *
+             * {
+             *     nitrogen: 80,
+             *     ...
+             * }
+             */
+
+
+            const data =
+                response?.data || response;
+
+
+            // =================================================
+            // NORMALIZE SENSOR DATA
+            // =================================================
+
+            const normalizedData = {
+
+                nitrogen:
+                    data?.nitrogen,
+
+                phosphorus:
+                    data?.phosphorus,
+
+                potassium:
+                    data?.potassium,
+
+                ph:
+                    data?.ph ??
+                    data?.pH,
+
+                soil_moisture:
+                    data?.soil_moisture ??
+                    data?.moisture,
+
+                temperature:
+                    data?.temperature,
+
+                humidity:
+                    data?.humidity,
+
+                rainfall:
+                    data?.rainfall
+
+            };
+
+
+            console.log(
+                "Normalized fertilizer sensor data:",
+                normalizedData
+            );
+
+
+            setSensorData(
+                normalizedData
+            );
+
 
             setLastUpdated(
                 new Date()
             );
+
 
         }
 
@@ -188,14 +264,16 @@ function Fertilizer() {
 
 
             const detail =
-                err.response?.data?.detail;
+                err?.response?.data?.detail;
 
 
             if (
                 typeof detail === "string"
             ) {
 
-                setError(detail);
+                setError(
+                    detail
+                );
 
             }
 
@@ -225,7 +303,7 @@ function Fertilizer() {
 
 
     // =====================================================
-    // REFRESH SENSOR DATA EVERY 5 SECONDS
+    // INITIAL SENSOR LOAD + REFRESH
     // =====================================================
 
     useEffect(() => {
@@ -233,16 +311,22 @@ function Fertilizer() {
         loadSensorData();
 
 
+        /*
+         * Refresh every 30 seconds.
+         */
+
         const interval =
             setInterval(
                 loadSensorData,
-                5000
+                30000
             );
 
 
         return () => {
 
-            clearInterval(interval);
+            clearInterval(
+                interval
+            );
 
         };
 
@@ -256,10 +340,39 @@ function Fertilizer() {
     const handleRecommendation = async () => {
 
         // =================================================
+        // NORMALIZE CROP
+        // =================================================
+
+        const cropType =
+            String(
+                selectedCrop || ""
+            )
+                .trim()
+                .toLowerCase();
+
+
+        console.log(
+            "===================================="
+        );
+
+        console.log(
+            "SELECTED FERTILIZER CROP:"
+        );
+
+        console.log(
+            cropType
+        );
+
+        console.log(
+            "===================================="
+        );
+
+
+        // =================================================
         // CHECK CROP
         // =================================================
 
-        if (!selectedCrop) {
+        if (!cropType) {
 
             setError(
 
@@ -268,6 +381,34 @@ function Fertilizer() {
                     ? "ದಯವಿಟ್ಟು ಬೆಳೆ ಆಯ್ಕೆಮಾಡಿ."
 
                     : "Please select a crop."
+
+            );
+
+            return;
+
+        }
+
+
+        // =================================================
+        // CHECK VALID CROP
+        // =================================================
+
+        const validCrop =
+            crops.some(
+                crop =>
+                    crop.value === cropType
+            );
+
+
+        if (!validCrop) {
+
+            setError(
+
+                isKannada
+
+                    ? "ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಬೆಳೆ ಆಯ್ಕೆಮಾಡಿ."
+
+                    : "Please select a valid crop."
 
             );
 
@@ -306,93 +447,85 @@ function Fertilizer() {
             setError("");
 
 
-            // =============================================
-            // MAP IOT DATA
-            // =============================================
+            // =================================================
+            // CONVERT SENSOR VALUES TO NUMBERS
+            // =================================================
 
-            const inputData = {
+            const nitrogen =
+                Number(
+                    sensorData.nitrogen
+                );
 
-                nitrogen:
-                    Number(
-                        sensorData.nitrogen
-                    ),
 
-                phosphorus:
-                    Number(
-                        sensorData.phosphorus
-                    ),
+            const phosphorus =
+                Number(
+                    sensorData.phosphorus
+                );
 
-                potassium:
-                    Number(
-                        sensorData.potassium
-                    ),
 
-                ph:
-                    Number(
-                        sensorData.ph
-                    ),
+            const potassium =
+                Number(
+                    sensorData.potassium
+                );
 
-                moisture:
-                    Number(
-                        sensorData.soil_moisture
-                    ),
 
-                temperature:
-                    Number(
-                        sensorData.temperature
-                    ),
+            const ph =
+                Number(
+                    sensorData.ph
+                );
 
-                /*
-                 * Selected crop.
-                 */
 
-                crop_type:
-                    selectedCrop
+            const moisture =
+                Number(
+                    sensorData.soil_moisture
+                );
+
+
+            const temperature =
+                Number(
+                    sensorData.temperature
+                );
+
+
+            // =================================================
+            // SENSOR INPUT OBJECT
+            // =================================================
+
+            const sensorInput = {
+
+                nitrogen,
+
+                phosphorus,
+
+                potassium,
+
+                ph,
+
+                moisture,
+
+                temperature
 
             };
 
 
             console.log(
-                "Fertilizer recommendation input:",
-                inputData
+                "Fertilizer sensor values:",
+                sensorInput
             );
 
 
-            // =============================================
+            // =================================================
             // VALIDATE SENSOR VALUES
-            // =============================================
-
-            const sensorInput = {
-
-                nitrogen:
-                    inputData.nitrogen,
-
-                phosphorus:
-                    inputData.phosphorus,
-
-                potassium:
-                    inputData.potassium,
-
-                ph:
-                    inputData.ph,
-
-                moisture:
-                    inputData.moisture,
-
-                temperature:
-                    inputData.temperature
-
-            };
-
+            // =================================================
 
             const invalidFields =
-                Object.entries(sensorInput)
-
+                Object.entries(
+                    sensorInput
+                )
                     .filter(
                         ([, value]) =>
                             !Number.isFinite(value)
                     )
-
                     .map(
                         ([key]) =>
                             key
@@ -402,6 +535,12 @@ function Fertilizer() {
             if (
                 invalidFields.length > 0
             ) {
+
+                console.error(
+                    "Invalid fertilizer sensor fields:",
+                    invalidFields
+                );
+
 
                 setError(
 
@@ -418,9 +557,96 @@ function Fertilizer() {
             }
 
 
-            // =============================================
+            // =================================================
+            // FINAL FERTILIZER API PAYLOAD
+            // =================================================
+
+            const inputData = {
+
+                nitrogen:
+                    nitrogen,
+
+                phosphorus:
+                    phosphorus,
+
+                potassium:
+                    potassium,
+
+                ph:
+                    ph,
+
+                moisture:
+                    moisture,
+
+                temperature:
+                    temperature,
+
+                /*
+                 * IMPORTANT:
+                 *
+                 * FastAPI requires this field.
+                 *
+                 * crop_type is intentionally included
+                 * in the final request body.
+                 */
+
+                crop_type:
+                    cropType
+
+            };
+
+
+            // =================================================
+            // DEBUG PAYLOAD
+            // =================================================
+
+            console.log(
+                "===================================="
+            );
+
+            console.log(
+                "FERTILIZER API REQUEST PAYLOAD:"
+            );
+
+            console.log(
+                JSON.stringify(
+                    inputData,
+                    null,
+                    2
+                )
+            );
+
+            console.log(
+                "===================================="
+            );
+
+
+            // =================================================
+            // FINAL CROP CHECK
+            // =================================================
+
+            if (
+                !inputData.crop_type
+            ) {
+
+                setError(
+
+                    isKannada
+
+                        ? "ಬೆಳೆ ಪ್ರಕಾರ ಲಭ್ಯವಿಲ್ಲ."
+
+                        : "Crop type is missing."
+
+                );
+
+                return;
+
+            }
+
+
+            // =================================================
             // CALL FERTILIZER API
-            // =============================================
+            // =================================================
 
             const result =
                 await getFertilizerRecommendation(
@@ -428,31 +654,68 @@ function Fertilizer() {
                 );
 
 
+            // =================================================
+            // DEBUG RESPONSE
+            // =================================================
+
             console.log(
-                "Fertilizer recommendation result:",
+                "===================================="
+            );
+
+            console.log(
+                "FERTILIZER API RESPONSE:"
+            );
+
+            console.log(
                 result
             );
 
+            console.log(
+                "===================================="
+            );
 
-            setRecommendation(result);
+
+            setRecommendation(
+                result
+            );
+
 
         }
 
         catch (err) {
 
             console.error(
-                "Fertilizer recommendation error:",
+                "===================================="
+            );
+
+            console.error(
+                "FERTILIZER RECOMMENDATION ERROR:"
+            );
+
+            console.error(
                 err
+            );
+
+            console.error(
+                "BACKEND RESPONSE:"
+            );
+
+            console.error(
+                err?.response?.data
+            );
+
+            console.error(
+                "===================================="
             );
 
 
             const detail =
-                err.response?.data?.detail;
+                err?.response?.data?.detail;
 
 
-            // =============================================
+            // =================================================
             // FASTAPI VALIDATION ERROR
-            // =============================================
+            // =================================================
 
             if (
                 Array.isArray(detail)
@@ -463,31 +726,48 @@ function Fertilizer() {
                         (item) => {
 
                             const field =
-                                item.loc?.join(
+                                item?.loc?.join(
                                     " → "
                                 ) ||
                                 "Field";
 
 
-                            return `${field}: ${item.msg}`;
+                            return `${field}: ${
+                                item?.msg ||
+                                "Invalid value"
+                            }`;
 
                         }
                     );
 
 
                 setError(
-                    messages.join(" | ")
+                    messages.join(
+                        " | "
+                    )
                 );
 
             }
+
+
+            // =================================================
+            // STRING ERROR
+            // =================================================
 
             else if (
                 typeof detail === "string"
             ) {
 
-                setError(detail);
+                setError(
+                    detail
+                );
 
             }
+
+
+            // =================================================
+            // GENERAL ERROR
+            // =================================================
 
             else {
 
@@ -515,7 +795,7 @@ function Fertilizer() {
 
 
     // =====================================================
-    // GET SELECTED CROP DISPLAY NAME
+    // SELECTED CROP DATA
     // =====================================================
 
     const selectedCropData =
@@ -599,9 +879,7 @@ function Fertilizer() {
 
                 <div className="fertilizer-page-heading">
 
-
                     <div className="fertilizer-title-area">
-
 
                         <div className="fertilizer-title-icon">
 
@@ -635,13 +913,10 @@ function Fertilizer() {
 
                         </div>
 
-
                     </div>
 
 
-                    {/* =================================================
-                        AI STATUS
-                    ================================================= */}
+                    {/* AI STATUS */}
 
                     <div className="fertilizer-ai-status">
 
@@ -654,7 +929,6 @@ function Fertilizer() {
                             : "AI Model Active"}
 
                     </div>
-
 
                 </div>
 
@@ -751,7 +1025,9 @@ function Fertilizer() {
                                     >
 
                                         {isKannada
+
                                             ? crop.kannada
+
                                             : crop.english}
 
                                     </option>
@@ -767,9 +1043,7 @@ function Fertilizer() {
                             <div className="selected-crop-display">
 
                                 <span>
-
                                     🌱
-
                                 </span>
 
 
@@ -816,9 +1090,7 @@ function Fertilizer() {
                     <div className="fertilizer-error">
 
                         <span className="error-icon">
-
                             ⚠️
-
                         </span>
 
 
@@ -834,9 +1106,7 @@ function Fertilizer() {
 
 
                             <p>
-
                                 {error}
-
                             </p>
 
                         </div>
@@ -855,6 +1125,7 @@ function Fertilizer() {
                     <div className="fertilizer-loading">
 
                         <div className="loading-spinner"></div>
+
 
                         <span>
 
@@ -881,12 +1152,9 @@ function Fertilizer() {
                         <section className="fertilizer-sensor-section">
 
 
-                            {/* =================================================
-                                SECTION HEADER
-                            ================================================= */}
+                            {/* HEADER */}
 
                             <div className="fertilizer-section-header">
-
 
                                 <div>
 
@@ -926,13 +1194,10 @@ function Fertilizer() {
 
                                 </div>
 
-
                             </div>
 
 
-                            {/* =================================================
-                                SENSOR GRID
-                            ================================================= */}
+                            {/* SENSOR GRID */}
 
                             <div className="fertilizer-sensor-grid">
 
@@ -1272,13 +1537,12 @@ function Fertilizer() {
                             </div>
 
 
-                            {/* =================================================
-                                LAST UPDATED
-                            ================================================= */}
+                            {/* LAST UPDATED */}
 
                             <div className="fertilizer-last-updated">
 
                                 <span className="update-dot"></span>
+
 
                                 <span>
 
@@ -1297,7 +1561,9 @@ function Fertilizer() {
                                         : (
 
                                             isKannada
+
                                                 ? "ಡೇಟಾ ನವೀಕರಣಕ್ಕಾಗಿ ಕಾಯುತ್ತಿದೆ..."
+
                                                 : "Waiting for data update..."
 
                                         )}
@@ -1329,7 +1595,9 @@ function Fertilizer() {
                             <h2>
 
                                 {isKannada
+
                                     ? "ಸೆನ್ಸರ್ ಡೇಟಾ ಲಭ್ಯವಿಲ್ಲ"
+
                                     : "No Sensor Data"}
 
                             </h2>
@@ -1385,9 +1653,7 @@ function Fertilizer() {
                             <div className="model-information">
 
                                 <h3>
-
                                     Random Forest AI Model
-
                                 </h3>
 
 
@@ -1465,7 +1731,9 @@ function Fertilizer() {
                                     <span className="button-spinner"></span>
 
                                     {isKannada
-                                        ? "ಮಣ್ಣನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ..."
+
+                                        ? "ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ..."
+
                                         : "Analyzing Soil..."}
 
                                 </>
@@ -1500,9 +1768,7 @@ function Fertilizer() {
                     <section className="fertilizer-result">
 
 
-                        {/* =================================================
-                            RESULT HEADER
-                        ================================================= */}
+                        {/* RESULT HEADER */}
 
                         <div className="result-header">
 
@@ -1516,7 +1782,9 @@ function Fertilizer() {
                                 <h2>
 
                                     {isKannada
+
                                         ? "ಶಿಫಾರಸು ಮಾಡಿದ ರಸಗೊಬ್ಬರ"
+
                                         : "Recommended Fertilizer"}
 
                                 </h2>
@@ -1537,9 +1805,7 @@ function Fertilizer() {
                         </div>
 
 
-                        {/* =================================================
-                            SELECTED CROP
-                        ================================================= */}
+                        {/* SELECTED CROP */}
 
                         <div className="fertilizer-product">
 
@@ -1557,9 +1823,13 @@ function Fertilizer() {
                                 {selectedCropData
 
                                     ? (
+
                                         isKannada
+
                                             ? selectedCropData.kannada
+
                                             : selectedCropData.english
+
                                     )
 
                                     : selectedCrop}
@@ -1569,9 +1839,7 @@ function Fertilizer() {
                         </div>
 
 
-                        {/* =================================================
-                            RECOMMENDED PRODUCT
-                        ================================================= */}
+                        {/* RECOMMENDED FERTILIZER */}
 
                         <div className="fertilizer-product">
 
@@ -1603,9 +1871,7 @@ function Fertilizer() {
                         </div>
 
 
-                        {/* =================================================
-                            MODEL ACCURACY
-                        ================================================= */}
+                        {/* MODEL ACCURACY */}
 
                         {recommendation.accuracy != null && (
 
@@ -1646,9 +1912,7 @@ function Fertilizer() {
                         )}
 
 
-                        {/* =================================================
-                            ADVICE
-                        ================================================= */}
+                        {/* ADVICE */}
 
                         {recommendation.advice && (
 
@@ -1683,9 +1947,7 @@ function Fertilizer() {
                         )}
 
 
-                        {/* =================================================
-                            ANALYSIS SUMMARY
-                        ================================================= */}
+                        {/* ANALYSIS SUMMARY */}
 
                         <div className="recommendation-summary">
 
@@ -1735,9 +1997,13 @@ function Fertilizer() {
                                         {selectedCropData
 
                                             ? (
+
                                                 isKannada
+
                                                     ? selectedCropData.kannada
+
                                                     : selectedCropData.english
+
                                             )
 
                                             : "--"}
@@ -1760,11 +2026,18 @@ function Fertilizer() {
 
                                 <div>
 
-                                    <span>N</span>
+                                    <span>
+                                        N
+                                    </span>
+
 
                                     <strong>
-                                        {sensorData?.nitrogen ?? "--"}
+
+                                        {sensorData?.nitrogen ??
+                                            "--"}
+
                                     </strong>
+
 
                                     <small>
                                         mg/kg
@@ -1777,11 +2050,18 @@ function Fertilizer() {
 
                                 <div>
 
-                                    <span>P</span>
+                                    <span>
+                                        P
+                                    </span>
+
 
                                     <strong>
-                                        {sensorData?.phosphorus ?? "--"}
+
+                                        {sensorData?.phosphorus ??
+                                            "--"}
+
                                     </strong>
+
 
                                     <small>
                                         mg/kg
@@ -1794,11 +2074,18 @@ function Fertilizer() {
 
                                 <div>
 
-                                    <span>K</span>
+                                    <span>
+                                        K
+                                    </span>
+
 
                                     <strong>
-                                        {sensorData?.potassium ?? "--"}
+
+                                        {sensorData?.potassium ??
+                                            "--"}
+
                                     </strong>
+
 
                                     <small>
                                         mg/kg
@@ -1811,11 +2098,18 @@ function Fertilizer() {
 
                                 <div>
 
-                                    <span>pH</span>
+                                    <span>
+                                        pH
+                                    </span>
+
 
                                     <strong>
-                                        {sensorData?.ph ?? "--"}
+
+                                        {sensorData?.ph ??
+                                            "--"}
+
                                     </strong>
+
 
                                     <small>
                                         pH
@@ -1840,9 +2134,7 @@ function Fertilizer() {
                                     <strong>
 
                                         {sensorData?.soil_moisture ??
-                                            "--"}
-
-                                        %
+                                            "--"}%
 
                                     </strong>
 
@@ -1874,9 +2166,7 @@ function Fertilizer() {
                                     <strong>
 
                                         {sensorData?.temperature ??
-                                            "--"}
-
-                                        °C
+                                            "--"}°C
 
                                     </strong>
 

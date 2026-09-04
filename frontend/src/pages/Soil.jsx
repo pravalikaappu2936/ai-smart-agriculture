@@ -824,7 +824,7 @@ function Soil() {
         const interval =
             setInterval(
                 loadSensorData,
-                5000
+                30000
             );
 
         return () => {

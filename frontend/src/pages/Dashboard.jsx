@@ -79,7 +79,7 @@ function Dashboard() {
 
             refreshSensorData();
 
-        }, 30000);
+        }, 60000);
 
         return () => {
 

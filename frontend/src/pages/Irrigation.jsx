@@ -773,7 +773,7 @@ export default function Irrigation() {
 
                 loadSensorData();
 
-            }, 5000);
+            }, 30000);
 
 
         return () => {
@@ -804,7 +804,7 @@ export default function Irrigation() {
                     coordinates.longitude
                 );
 
-            }, 60000);
+            }, 30000);
 
 
         return () => {
