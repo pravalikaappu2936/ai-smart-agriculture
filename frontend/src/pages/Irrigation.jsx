@@ -15,318 +15,205 @@ import "./Irrigation.css";
 ========================================================= */
 
 const translations = {
-
     en: {
-
         back: "← Back to Dashboard",
-
         eyebrow: "SMART WATER MANAGEMENT",
-
         title: "Irrigation Prediction",
-
         subtitle:
             "Analyze live soil, sensor and weather conditions to determine the irrigation requirement for your crop.",
 
         analysis: "Irrigation Analysis",
-
         analysisSubtitle: "Live farm conditions",
-
         live: "LIVE",
 
         sensors: "Sensor Data",
-
         soilMoisture: "Soil Moisture",
-
         temperature: "Temperature",
-
         humidity: "Humidity",
-
         rainfall: "Rainfall",
-
         soilTemperature: "Soil Temperature",
-
         windSpeed: "Wind Speed",
-
         nitrogen: "Nitrogen",
-
         phosphorus: "Phosphorus",
-
         potassium: "Potassium",
-
         ph: "pH",
 
         location: "Farm Location",
-
         detecting: "Detecting location...",
-
         locationDetected: "Location detected",
-
         locationUnavailable: "Location unavailable",
 
         crop: "Select Crop",
-
         selectCrop: "Select your crop",
 
         weather: "Weather Preview",
-
         currentWeather: "Current weather conditions",
-
         rainForecast: "Rain Forecast",
-
         wind: "Wind",
-
         forecast: "Rain Probability",
 
         predict: "Predict Irrigation",
-
         predicting: "Analyzing...",
 
         result: "Irrigation Result",
-
         resultSubtitle: "AI-powered irrigation recommendation",
 
         waiting: "Waiting for prediction",
-
         waitingText:
             "Select your crop and analyze the current farm conditions to get an irrigation recommendation.",
 
         status: "Irrigation Status",
-
         waterNeed: "Water Need",
-
         reason: "Reason",
-
         score: "Irrigation Score",
-
         model: "Model",
-
         features: "Features Used",
-
         cropType: "Crop",
 
         moisture: "Soil Moisture",
-
         weatherTemperature: "Weather Temperature",
-
         weatherHumidity: "Weather Humidity",
-
         rainProbability: "Rain Probability",
-
         mlPrediction: "ML Prediction",
-
         modelPrediction: "Model Prediction",
-
         modelBased: "Machine learning output",
 
         advice: "Smart Advice",
 
         notification: "Notification",
-
         notificationSent: "Notification created",
-
-        notificationNotRequired:
-            "No notification required",
-
+        notificationNotRequired: "No notification required",
         notificationSuccess:
             "An irrigation notification has been created for your dashboard.",
-
         notificationNone:
             "Current conditions do not require an irrigation notification.",
 
         noData: "No sensor data available",
-
         loading: "Loading live farm data...",
 
         healthy: "Monitor",
-
         irrigateNow: "Irrigate now",
-
         irrigateSoon: "Irrigate soon",
-
         noIrrigation: "No irrigation",
 
         probabilityNow: "Irrigate Now",
-
         probabilitySoon: "Irrigate Soon",
-
         probabilityMonitor: "Monitor",
-
         probabilityNone: "No Irrigation",
 
         sensorUnavailable: "Unavailable",
-
         weatherUnavailable: "Weather unavailable",
 
         errorSensor:
             "Unable to load live sensor data.",
-
         errorWeather:
             "Unable to load weather information.",
-
         errorPrediction:
             "Unable to generate irrigation prediction.",
-
         selectCropError:
             "Please select a crop before predicting.",
-
     },
 
 
     kn: {
-
         back: "← ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ",
-
         eyebrow: "ಸ್ಮಾರ್ಟ್ ನೀರಾವರಿ ನಿರ್ವಹಣೆ",
-
         title: "ನೀರಾವರಿ ಮುನ್ಸೂಚನೆ",
-
         subtitle:
             "ನಿಮ್ಮ ಬೆಳೆಗೆ ನೀರಾವರಿ ಅಗತ್ಯವನ್ನು ನಿರ್ಧರಿಸಲು ಮಣ್ಣು, ಸೆನ್ಸರ್ ಮತ್ತು ಹವಾಮಾನ ಮಾಹಿತಿಯನ್ನು ವಿಶ್ಲೇಷಿಸಿ.",
 
         analysis: "ನೀರಾವರಿ ವಿಶ್ಲೇಷಣೆ",
-
         analysisSubtitle: "ಲೈವ್ ಕೃಷಿ ಪರಿಸ್ಥಿತಿಗಳು",
-
         live: "ಲೈವ್",
 
         sensors: "ಸೆನ್ಸರ್ ಮಾಹಿತಿ",
-
         soilMoisture: "ಮಣ್ಣಿನ ತೇವಾಂಶ",
-
         temperature: "ತಾಪಮಾನ",
-
         humidity: "ಆರ್ದ್ರತೆ",
-
         rainfall: "ಮಳೆ",
-
         soilTemperature: "ಮಣ್ಣಿನ ತಾಪಮಾನ",
-
         windSpeed: "ಗಾಳಿಯ ವೇಗ",
-
         nitrogen: "ಸಾರಜನಕ",
-
         phosphorus: "ರಂಜಕ",
-
         potassium: "ಪೊಟ್ಯಾಸಿಯಮ್",
-
         ph: "pH",
 
         location: "ಕೃಷಿ ಸ್ಥಳ",
-
         detecting: "ಸ್ಥಳ ಪತ್ತೆ ಮಾಡಲಾಗುತ್ತಿದೆ...",
-
         locationDetected: "ಸ್ಥಳ ಪತ್ತೆಯಾಗಿದೆ",
-
         locationUnavailable: "ಸ್ಥಳ ಲಭ್ಯವಿಲ್ಲ",
 
         crop: "ಬೆಳೆ ಆಯ್ಕೆಮಾಡಿ",
-
         selectCrop: "ನಿಮ್ಮ ಬೆಳೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
 
         weather: "ಹವಾಮಾನ ಮಾಹಿತಿ",
-
         currentWeather: "ಪ್ರಸ್ತುತ ಹವಾಮಾನ ಪರಿಸ್ಥಿತಿಗಳು",
-
         rainForecast: "ಮಳೆ ಮುನ್ಸೂಚನೆ",
-
         wind: "ಗಾಳಿ",
-
         forecast: "ಮಳೆಯ ಸಾಧ್ಯತೆ",
 
         predict: "ನೀರಾವರಿ ಮುನ್ಸೂಚನೆ",
-
         predicting: "ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...",
 
         result: "ನೀರಾವರಿ ಫಲಿತಾಂಶ",
-
         resultSubtitle: "AI ಆಧಾರಿತ ನೀರಾವರಿ ಶಿಫಾರಸು",
 
         waiting: "ಮುನ್ಸೂಚನೆಗಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ",
-
         waitingText:
             "ನಿಮ್ಮ ಬೆಳೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಪ್ರಸ್ತುತ ಕೃಷಿ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ವಿಶ್ಲೇಷಿಸಿ.",
 
         status: "ನೀರಾವರಿ ಸ್ಥಿತಿ",
-
         waterNeed: "ನೀರಿನ ಅಗತ್ಯ",
-
         reason: "ಕಾರಣ",
-
         score: "ನೀರಾವರಿ ಸ್ಕೋರ್",
-
         model: "ಮಾದರಿ",
-
         features: "ಬಳಸಿದ ವೈಶಿಷ್ಟ್ಯಗಳು",
-
         cropType: "ಬೆಳೆ",
 
         moisture: "ಮಣ್ಣಿನ ತೇವಾಂಶ",
-
         weatherTemperature: "ಹವಾಮಾನ ತಾಪಮಾನ",
-
         weatherHumidity: "ಹವಾಮಾನ ಆರ್ದ್ರತೆ",
-
         rainProbability: "ಮಳೆಯ ಸಾಧ್ಯತೆ",
-
         mlPrediction: "ML ಮುನ್ಸೂಚನೆ",
-
         modelPrediction: "ಮಾದರಿ ಮುನ್ಸೂಚನೆ",
-
         modelBased: "ಮಷಿನ್ ಲರ್ನಿಂಗ್ ಫಲಿತಾಂಶ",
 
         advice: "ಸ್ಮಾರ್ಟ್ ಸಲಹೆ",
 
         notification: "ಅಧಿಸೂಚನೆ",
-
         notificationSent: "ಅಧಿಸೂಚನೆ ರಚಿಸಲಾಗಿದೆ",
-
         notificationNotRequired:
             "ಅಧಿಸೂಚನೆ ಅಗತ್ಯವಿಲ್ಲ",
-
         notificationSuccess:
             "ನಿಮ್ಮ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗಾಗಿ ನೀರಾವರಿ ಅಧಿಸೂಚನೆಯನ್ನು ರಚಿಸಲಾಗಿದೆ.",
-
         notificationNone:
             "ಪ್ರಸ್ತುತ ಪರಿಸ್ಥಿತಿಗಳಿಗೆ ನೀರಾವರಿ ಅಧಿಸೂಚನೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
 
         noData: "ಸೆನ್ಸರ್ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ",
-
         loading: "ಲೈವ್ ಕೃಷಿ ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
 
         healthy: "ಮೇಲ್ವಿಚಾರಣೆ",
-
         irrigateNow: "ಈಗ ನೀರಾವರಿ ಮಾಡಿ",
-
         irrigateSoon: "ಶೀಘ್ರದಲ್ಲೇ ನೀರಾವರಿ ಮಾಡಿ",
-
         noIrrigation: "ನೀರಾವರಿ ಅಗತ್ಯವಿಲ್ಲ",
 
         probabilityNow: "ಈಗ ನೀರಾವರಿ",
-
         probabilitySoon: "ಶೀಘ್ರದಲ್ಲೇ ನೀರಾವರಿ",
-
         probabilityMonitor: "ಮೇಲ್ವಿಚಾರಣೆ",
-
         probabilityNone: "ನೀರಾವರಿ ಇಲ್ಲ",
 
         sensorUnavailable: "ಲಭ್ಯವಿಲ್ಲ",
-
         weatherUnavailable: "ಹವಾಮಾನ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ",
 
         errorSensor:
             "ಲೈವ್ ಸೆನ್ಸರ್ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
-
         errorWeather:
             "ಹವಾಮಾನ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
-
         errorPrediction:
             "ನೀರಾವರಿ ಮುನ್ಸೂಚನೆ ನೀಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
-
         selectCropError:
             "ಮುನ್ಸೂಚನೆ ನೀಡುವ ಮೊದಲು ಬೆಳೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
-
     },
-
 };
 
 
@@ -335,133 +222,111 @@ const translations = {
 ========================================================= */
 
 const CROPS = [
-
     {
         value: "rice",
         en: "Rice",
         kn: "ಭತ್ತ",
     },
-
     {
         value: "maize",
         en: "Maize",
         kn: "ಮೆಕ್ಕೆಜೋಳ",
     },
-
     {
         value: "chickpea",
         en: "Chickpea",
         kn: "ಕಡಲೆ",
     },
-
     {
         value: "cotton",
         en: "Cotton",
         kn: "ಹತ್ತಿ",
     },
-
     {
         value: "wheat",
         en: "Wheat",
         kn: "ಗೋಧಿ",
     },
-
     {
         value: "groundnut",
         en: "Groundnut",
         kn: "ಕಡಲೆಕಾಯಿ",
     },
-
     {
         value: "banana",
         en: "Banana",
         kn: "ಬಾಳೆಹಣ್ಣು",
     },
-
     {
         value: "sugarcane",
         en: "Sugarcane",
         kn: "ಕಬ್ಬು",
     },
-
     {
         value: "tomato",
         en: "Tomato",
         kn: "ಟೊಮೇಟೊ",
     },
-
     {
         value: "potato",
         en: "Potato",
         kn: "ಆಲೂಗಡ್ಡೆ",
     },
-
     {
         value: "onion",
         en: "Onion",
         kn: "ಈರುಳ್ಳಿ",
     },
-
     {
         value: "turmeric",
         en: "Turmeric",
         kn: "ಅರಿಶಿನ",
     },
-
     {
         value: "chilli",
         en: "Chilli",
         kn: "ಮೆಣಸಿನಕಾಯಿ",
     },
-
     {
         value: "sorghum",
         en: "Sorghum",
         kn: "ಜೋಳ",
     },
-
     {
         value: "millet",
         en: "Millet",
         kn: "ಸಿರಿಧಾನ್ಯ",
     },
-
     {
         value: "ragi",
         en: "Ragi",
         kn: "ರಾಗಿ",
     },
-
     {
         value: "soybean",
         en: "Soybean",
         kn: "ಸೋಯಾಬೀನ್",
     },
-
     {
         value: "pigeon_pea",
         en: "Pigeon Pea",
         kn: "ತೊಗರಿ ಬೇಳೆ",
     },
-
     {
         value: "okra",
         en: "Okra",
         kn: "ಬೆಂಡೆಕಾಯಿ",
     },
-
     {
         value: "cabbage",
         en: "Cabbage",
         kn: "ಎಲೆಕೋಸು",
     },
-
     {
         value: "carrot",
         en: "Carrot",
         kn: "ಕ್ಯಾರೆಟ್",
     },
-
 ];
 
 
@@ -470,28 +335,22 @@ const CROPS = [
 ========================================================= */
 
 const numberValue = (value, fallback = 0) => {
-
     const n = Number(value);
 
     return Number.isFinite(n)
         ? n
         : fallback;
-
 };
 
 
 const formatNumber = (value, digits = 1) => {
-
     const n = Number(value);
 
     if (!Number.isFinite(n)) {
-
         return "--";
-
     }
 
     return n.toFixed(digits);
-
 };
 
 
@@ -500,38 +359,30 @@ const formatNumber = (value, digits = 1) => {
 ========================================================= */
 
 const getStatusClass = (status = "") => {
-
     const value =
-        String(status).toLowerCase();
+        String(status).toLowerCase().trim();
 
     if (
         value.includes("irrigate now") ||
         value === "now"
     ) {
-
         return "status-now";
-
     }
 
     if (
         value.includes("irrigate soon") ||
         value === "soon"
     ) {
-
         return "status-soon";
-
     }
 
     if (
         value.includes("monitor")
     ) {
-
         return "status-monitor";
-
     }
 
     return "status-none";
-
 };
 
 
@@ -540,11 +391,8 @@ const getStatusClass = (status = "") => {
 ========================================================= */
 
 const translateStatus = (status, t) => {
-
     if (!status) {
-
         return "--";
-
     }
 
     const value =
@@ -553,37 +401,28 @@ const translateStatus = (status, t) => {
     if (
         value.includes("irrigate now")
     ) {
-
         return t.irrigateNow;
-
     }
 
     if (
         value.includes("irrigate soon")
     ) {
-
         return t.irrigateSoon;
-
     }
 
     if (
         value.includes("monitor")
     ) {
-
         return t.healthy;
-
     }
 
     if (
         value.includes("no irrigation")
     ) {
-
         return t.noIrrigation;
-
     }
 
     return status;
-
 };
 
 
@@ -595,15 +434,12 @@ const translateMLPrediction = (
     prediction,
     t
 ) => {
-
     if (
         prediction === null ||
         prediction === undefined ||
         prediction === ""
     ) {
-
         return "--";
-
     }
 
     const value =
@@ -612,37 +448,28 @@ const translateMLPrediction = (
     if (
         value.includes("irrigate now")
     ) {
-
         return t.irrigateNow;
-
     }
 
     if (
         value.includes("irrigate soon")
     ) {
-
         return t.irrigateSoon;
-
     }
 
     if (
         value.includes("monitor")
     ) {
-
         return t.healthy;
-
     }
 
     if (
         value.includes("no irrigation")
     ) {
-
         return t.noIrrigation;
-
     }
 
     return prediction;
-
 };
 
 
@@ -651,26 +478,11 @@ const translateMLPrediction = (
 ========================================================= */
 
 const normalizeProbability = (value) => {
-
     const n = Number(value);
 
     if (!Number.isFinite(n)) {
-
         return 0;
-
     }
-
-    /*
-     * Backend may return:
-     *
-     * 0.7695
-     *
-     * or
-     *
-     * 76.95
-     *
-     * Convert both to percentage.
-     */
 
     const percentage =
         n <= 1
@@ -684,7 +496,6 @@ const normalizeProbability = (value) => {
         ),
         100
     );
-
 };
 
 
@@ -698,49 +509,47 @@ export default function Irrigation() {
         useNavigate();
 
 
+    /* =====================================================
+       LANGUAGE
+    ===================================================== */
+
     const [language, setLanguage] =
         useState("en");
-
 
     const t =
         translations[language];
 
 
+    /* =====================================================
+       STATE
+    ===================================================== */
+
     const [cropType, setCropType] =
         useState("");
-
 
     const [sensorData, setSensorData] =
         useState(null);
 
-
     const [weatherData, setWeatherData] =
         useState(null);
-
 
     const [location, setLocation] =
         useState("");
 
-
     const [coordinates, setCoordinates] =
         useState(null);
-
 
     const [result, setResult] =
         useState(null);
 
-
     const [loading, setLoading] =
         useState(true);
-
 
     const [predicting, setPredicting] =
         useState(false);
 
-
     const [error, setError] =
         useState("");
-
 
     const [locationLoading, setLocationLoading] =
         useState(true);
@@ -759,10 +568,6 @@ export default function Irrigation() {
 
             const raw =
                 response?.data ?? response;
-
-            /*
-             * Handle possible API wrappers.
-             */
 
             const data =
                 raw?.data ??
@@ -827,8 +632,8 @@ export default function Irrigation() {
             );
 
             /*
-             * Weather failure should not destroy
-             * the sensor data or page.
+             * Weather failure should not
+             * destroy sensor data.
              */
 
         }
@@ -844,7 +649,6 @@ export default function Irrigation() {
 
         setLocationLoading(true);
 
-
         if (!navigator.geolocation) {
 
             setLocation(
@@ -854,7 +658,6 @@ export default function Irrigation() {
             setLocationLoading(false);
 
             return;
-
         }
 
 
@@ -870,11 +673,8 @@ export default function Irrigation() {
 
 
                 setCoordinates({
-
                     latitude,
-
                     longitude,
-
                 });
 
 
@@ -905,11 +705,9 @@ export default function Irrigation() {
                     err
                 );
 
-
                 setLocation(
                     t.locationUnavailable
                 );
-
 
                 setLocationLoading(false);
 
@@ -917,17 +715,11 @@ export default function Irrigation() {
 
 
             {
-
                 enableHighAccuracy: true,
-
                 timeout: 10000,
-
                 maximumAge: 300000,
-
             }
-
         );
-
     };
 
 
@@ -1000,9 +792,7 @@ export default function Irrigation() {
     useEffect(() => {
 
         if (!coordinates) {
-
             return;
-
         }
 
 
@@ -1010,11 +800,8 @@ export default function Irrigation() {
             setInterval(() => {
 
                 loadWeather(
-
                     coordinates.latitude,
-
                     coordinates.longitude
-
                 );
 
             }, 60000);
@@ -1178,7 +965,6 @@ export default function Irrigation() {
             );
 
             return;
-
         }
 
 
@@ -1189,20 +975,17 @@ export default function Irrigation() {
             );
 
             return;
-
         }
 
 
         setError("");
-
         setPredicting(true);
 
 
         try {
 
             /*
-             * These field names MUST match
-             * IrrigationInput.
+             * Field names match IrrigationInput.
              */
 
             const payload = {
@@ -1332,20 +1115,9 @@ export default function Irrigation() {
     const probabilities = useMemo(() => {
 
         if (!result) {
-
             return [];
-
         }
 
-
-        /*
-         * Backend currently returns:
-         *
-         * prediction_probabilities
-         *
-         * Also support the other names so the
-         * frontend remains compatible.
-         */
 
         const possible =
             result.prediction_probabilities ||
@@ -1361,7 +1133,6 @@ export default function Irrigation() {
             return [
 
                 {
-
                     label:
                         t.probabilityNow,
 
@@ -1372,11 +1143,10 @@ export default function Irrigation() {
                             possible["now"] ??
                             0
                         ),
-
                 },
 
-                {
 
+                {
                     label:
                         t.probabilitySoon,
 
@@ -1387,11 +1157,10 @@ export default function Irrigation() {
                             possible["soon"] ??
                             0
                         ),
-
                 },
 
-                {
 
+                {
                     label:
                         t.probabilityMonitor,
 
@@ -1401,11 +1170,10 @@ export default function Irrigation() {
                             possible["monitor"] ??
                             0
                         ),
-
                 },
 
-                {
 
+                {
                     label:
                         t.probabilityNone,
 
@@ -1416,7 +1184,6 @@ export default function Irrigation() {
                             possible["none"] ??
                             0
                         ),
-
                 },
 
             ];
@@ -1462,9 +1229,7 @@ export default function Irrigation() {
                         navigate("/dashboard")
                     }
                 >
-
                     {t.back}
-
                 </button>
 
 
@@ -1479,11 +1244,9 @@ export default function Irrigation() {
                         )
                     }
                 >
-
                     {language === "en"
                         ? "ಕನ್ನಡ"
                         : "English"}
-
                 </button>
 
             </div>
@@ -1818,7 +1581,6 @@ export default function Irrigation() {
                                 );
 
                                 setError("");
-
                                 setResult(null);
 
                             }}
@@ -2070,7 +1832,9 @@ export default function Irrigation() {
                                 </div>
 
 
-                                {/* RESULT GRID */}
+                                {/* =================================================
+                                   RESULT GRID
+                                ================================================= */}
 
                                 <div className="irrigation-result-grid">
 
@@ -2198,10 +1962,6 @@ export default function Irrigation() {
                                         }
                                     />
 
-
-                                    {/* =================================================
-                                       FIXED ML PREDICTION
-                                    ================================================= */}
 
                                     <ResultItem
                                         label={t.mlPrediction}
@@ -2470,17 +2230,11 @@ export default function Irrigation() {
 ========================================================= */
 
 function SensorCard({
-
     icon,
-
     label,
-
     value,
-
     unit,
-
     important = false,
-
 }) {
 
     return (
@@ -2532,11 +2286,8 @@ function SensorCard({
 ========================================================= */
 
 function ResultItem({
-
     label,
-
     value,
-
 }) {
 
     return (

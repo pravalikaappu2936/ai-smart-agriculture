@@ -19,7 +19,8 @@ from app.services.dataset_service import load_fertilizer_data
 BASE_DIR = Path(__file__).resolve().parent
 
 MODEL_DIR = (
-    BASE_DIR / "saved_models"
+    BASE_DIR /
+    "saved_models"
 )
 
 MODEL_PATH = (
@@ -62,12 +63,17 @@ _FERTILIZER_MODEL = None
 
 
 # =========================================================
-# PREPARE DATASET
+# PREPARE FERTILIZER DATA
 # =========================================================
 
 def prepare_fertilizer_data():
 
     dataset = load_fertilizer_data()
+
+
+    # -----------------------------------------------------
+    # CHECK DATASET
+    # -----------------------------------------------------
 
     if dataset is None or dataset.empty:
 
@@ -75,60 +81,80 @@ def prepare_fertilizer_data():
             "Fertilizer dataset is empty."
         )
 
+
     # -----------------------------------------------------
-    # Required columns
+    # REQUIRED COLUMNS
     # -----------------------------------------------------
 
     required_columns = [
 
         "nitrogen",
+
         "phosphorus",
+
         "potassium",
+
         "ph",
+
         "moisture",
+
         "temperature",
+
         "recommended_fertilizer"
 
     ]
 
+
     # -----------------------------------------------------
-    # Check columns
+    # CHECK MISSING COLUMNS
     # -----------------------------------------------------
 
     missing_columns = [
 
         column
+
         for column in required_columns
+
         if column not in dataset.columns
 
     ]
 
+
     if missing_columns:
 
         raise ValueError(
+
             "Fertilizer dataset is missing columns: "
+
             + ", ".join(missing_columns)
+
         )
 
+
     # -----------------------------------------------------
-    # Copy dataset
+    # COPY DATASET
     # -----------------------------------------------------
 
     dataset = dataset.copy()
 
+
     # -----------------------------------------------------
-    # Convert numeric columns
+    # CONVERT NUMERIC FEATURES
     # -----------------------------------------------------
 
     for column in FEATURE_NAMES:
 
         dataset[column] = pd.to_numeric(
+
             dataset[column],
+
             errors="coerce"
+
         )
 
+
     # -----------------------------------------------------
-    # Clean fertilizer labels
+    # CLEAN FERTILIZER LABELS
     # -----------------------------------------------------
 
     dataset[
@@ -145,78 +171,133 @@ def prepare_fertilizer_data():
 
     )
 
+
     # -----------------------------------------------------
-    # Remove invalid rows
+    # REMOVE INVALID NUMERIC ROWS
     # -----------------------------------------------------
 
     dataset = dataset.dropna(
+
         subset=FEATURE_NAMES
+
     )
 
-    dataset = dataset[
-        dataset[
-            "recommended_fertilizer"
-        ] != ""
-    ]
 
     # -----------------------------------------------------
-    # Validate dataset
+    # REMOVE EMPTY LABELS
+    # -----------------------------------------------------
+
+    dataset = dataset[
+
+        dataset[
+            "recommended_fertilizer"
+        ].str.len() > 0
+
+    ]
+
+
+    # -----------------------------------------------------
+    # REMOVE INVALID NUMERIC VALUES
+    # -----------------------------------------------------
+
+    dataset = dataset[
+
+        np.isfinite(
+
+            dataset[
+                FEATURE_NAMES
+            ].to_numpy()
+
+        ).all(axis=1)
+
+    ]
+
+
+    # -----------------------------------------------------
+    # VALIDATE RECORD COUNT
     # -----------------------------------------------------
 
     if len(dataset) < 2:
 
         raise ValueError(
+
             "Not enough valid fertilizer "
             "dataset records."
+
         )
 
-    # -----------------------------------------------------
-    # X
-    # -----------------------------------------------------
-
-    X = dataset[
-        FEATURE_NAMES
-    ].astype(float)
 
     # -----------------------------------------------------
-    # y
+    # INPUT FEATURES
+    # -----------------------------------------------------
+
+    X = (
+
+        dataset[
+            FEATURE_NAMES
+        ]
+
+        .astype(float)
+
+    )
+
+
+    # -----------------------------------------------------
+    # TARGET
     # -----------------------------------------------------
 
     y = dataset[
         "recommended_fertilizer"
     ]
 
+
     # -----------------------------------------------------
-    # Validate classes
+    # VALIDATE CLASSES
     # -----------------------------------------------------
 
     if y.nunique() < 2:
 
         raise ValueError(
+
             "Fertilizer dataset must contain "
-            "at least two different classes."
+            "at least two different fertilizer classes."
+
         )
+
 
     return X, y
 
 
 # =========================================================
-# TRAIN MODEL
+# TRAIN FERTILIZER MODEL
 # =========================================================
 
 def train_fertilizer_model():
 
+    # -----------------------------------------------------
+    # LOAD DATA
+    # -----------------------------------------------------
+
     X, y = prepare_fertilizer_data()
 
+
     # -----------------------------------------------------
-    # Train/test split
+    # CHECK CLASS DISTRIBUTION
     # -----------------------------------------------------
 
     class_counts = y.value_counts()
 
+
     use_stratify = (
+
         class_counts.min() >= 2
+
     )
+
+
+    # -----------------------------------------------------
+    # TRAIN / TEST SPLIT
+    # -----------------------------------------------------
 
     X_train, X_test, y_train, y_test = train_test_split(
 
@@ -232,11 +313,9 @@ def train_fertilizer_model():
 
     )
 
+
     # -----------------------------------------------------
-    # Random Forest
-    #
-    # Reduced from 200 trees to 100 trees
-    # to reduce model size and RAM usage.
+    # RANDOM FOREST
     # -----------------------------------------------------
 
     model = RandomForestClassifier(
@@ -253,88 +332,197 @@ def train_fertilizer_model():
 
     )
 
+
     # -----------------------------------------------------
-    # Train
+    # TRAIN
     # -----------------------------------------------------
 
-    model.fit(
-        X_train,
-        y_train
+    print()
+
+    print("=" * 60)
+
+    print("TRAINING FERTILIZER RANDOM FOREST MODEL")
+
+    print("=" * 60)
+
+    print(
+        f"Training records : {len(X_train)}"
     )
 
+    print(
+        f"Testing records  : {len(X_test)}"
+    )
+
+    print(
+        f"Features         : {len(FEATURE_NAMES)}"
+    )
+
+    print(
+        f"Classes          : {y.nunique()}"
+    )
+
+    print()
+
+
+    model.fit(
+
+        X_train,
+
+        y_train
+
+    )
+
+
     # -----------------------------------------------------
-    # Test
+    # PREDICTION
     # -----------------------------------------------------
 
     predictions = model.predict(
+
         X_test
+
     )
 
-    accuracy = accuracy_score(
-        y_test,
-        predictions
-    )
 
     # -----------------------------------------------------
-    # Save directory
+    # ACCURACY
+    # -----------------------------------------------------
+
+    accuracy = accuracy_score(
+
+        y_test,
+
+        predictions
+
+    )
+
+
+    # -----------------------------------------------------
+    # CREATE MODEL DIRECTORY
     # -----------------------------------------------------
 
     MODEL_DIR.mkdir(
+
         parents=True,
+
         exist_ok=True
+
     )
 
+
     # -----------------------------------------------------
-    # Save model
+    # SAVE MODEL
     # -----------------------------------------------------
 
     joblib.dump(
+
         model,
+
         MODEL_PATH,
+
         compress=3
+
     )
 
+
     # -----------------------------------------------------
-    # Save metadata
+    # SAVE METADATA
     # -----------------------------------------------------
 
     metadata = {
 
-        "accuracy":
-            float(accuracy),
+        "model": "Random Forest Classifier",
+
+        "accuracy": float(accuracy),
+
+        "accuracy_percent":
+            round(
+                accuracy * 100,
+                2
+            ),
 
         "dataset_records":
             int(len(X)),
 
+        "training_records":
+            int(len(X_train)),
+
+        "testing_records":
+            int(len(X_test)),
+
         "features":
             FEATURE_NAMES,
+
+        "feature_count":
+            len(FEATURE_NAMES),
 
         "classes":
             sorted(
                 y.unique().tolist()
-            )
+            ),
+
+        "class_count":
+            int(y.nunique()),
+
+        "n_estimators":
+            100,
+
+        "random_state":
+            42
 
     }
 
+
     with open(
+
         METADATA_PATH,
+
         "w",
+
         encoding="utf-8"
+
     ) as file:
 
         json.dump(
+
             metadata,
+
             file,
+
             indent=4
+
         )
 
-    print()
-    print("=" * 50)
+
+    # -----------------------------------------------------
+    # UPDATE CACHE
+    # -----------------------------------------------------
+
+    global _FERTILIZER_MODEL
+
+    _FERTILIZER_MODEL = model
+
+
+    # -----------------------------------------------------
+    # TRAINING INFORMATION
+    # -----------------------------------------------------
+
+    print("=" * 60)
+
     print("FERTILIZER MODEL TRAINED")
-    print("=" * 50)
+
+    print("=" * 60)
 
     print(
         f"Dataset records : {len(X)}"
+    )
+
+    print(
+        f"Training records: {len(X_train)}"
+    )
+
+    print(
+        f"Testing records : {len(X_test)}"
     )
 
     print(
@@ -353,7 +541,14 @@ def train_fertilizer_model():
         f"Model saved     : {MODEL_PATH}"
     )
 
-    print("=" * 50)
+    print(
+        f"Metadata saved  : {METADATA_PATH}"
+    )
+
+    print("=" * 60)
+
+    print()
+
 
     return model, accuracy
 
@@ -366,16 +561,18 @@ def load_fertilizer_model():
 
     global _FERTILIZER_MODEL
 
+
     # -----------------------------------------------------
-    # Return cached model
+    # RETURN CACHED MODEL
     # -----------------------------------------------------
 
     if _FERTILIZER_MODEL is not None:
 
         return _FERTILIZER_MODEL
 
+
     # -----------------------------------------------------
-    # Model must already exist
+    # CHECK MODEL FILE
     # -----------------------------------------------------
 
     if not MODEL_PATH.exists():
@@ -383,14 +580,17 @@ def load_fertilizer_model():
         raise FileNotFoundError(
 
             "Saved fertilizer model not found: "
+
             f"{MODEL_PATH}. "
 
-            "Train the model locally before deployment."
+            "Train the fertilizer model locally "
+            "before starting the application."
 
         )
 
+
     # -----------------------------------------------------
-    # Load model
+    # LOAD MODEL
     # -----------------------------------------------------
 
     try:
@@ -399,15 +599,43 @@ def load_fertilizer_model():
             "Loading fertilizer model..."
         )
 
+
         _FERTILIZER_MODEL = joblib.load(
+
             MODEL_PATH
+
         )
+
+
+        # -------------------------------------------------
+        # BASIC MODEL VALIDATION
+        # -------------------------------------------------
+
+        if not hasattr(
+
+            _FERTILIZER_MODEL,
+
+            "predict"
+
+        ):
+
+            raise ValueError(
+
+                "Saved fertilizer file is not "
+                "a valid prediction model."
+
+            )
+
 
         print(
+
             "Fertilizer model loaded successfully."
+
         )
 
+
         return _FERTILIZER_MODEL
+
 
     except Exception as error:
 
@@ -419,8 +647,11 @@ def load_fertilizer_model():
             f"Reason: {error}"
         )
 
+
         raise RuntimeError(
+
             "Fertilizer model could not be loaded."
+
         ) from error
 
 
@@ -430,33 +661,53 @@ def load_fertilizer_model():
 
 def load_fertilizer_accuracy():
 
+    # -----------------------------------------------------
+    # CHECK METADATA
+    # -----------------------------------------------------
+
     if not METADATA_PATH.exists():
 
         return 0.0
 
+
     try:
 
         with open(
+
             METADATA_PATH,
+
             "r",
+
             encoding="utf-8"
+
         ) as file:
 
             metadata = json.load(file)
 
+
         return float(
+
             metadata.get(
+
                 "accuracy",
+
                 0.0
+
             )
+
         )
+
 
     except Exception as error:
 
         print(
+
             "Unable to load fertilizer metadata:",
+
             error
+
         )
+
 
         return 0.0
 
@@ -468,72 +719,111 @@ def load_fertilizer_accuracy():
 def predict_fertilizer(features):
 
     # -----------------------------------------------------
-    # Convert input
+    # CONVERT INPUT TO NUMPY ARRAY
     # -----------------------------------------------------
 
-    features = np.asarray(
-        features,
-        dtype=np.float32
-    )
+    try:
+
+        features = np.asarray(
+
+            features,
+
+            dtype=np.float32
+
+        )
+
+    except Exception as error:
+
+        raise ValueError(
+
+            "Fertilizer input must contain "
+            "numeric values."
+
+        ) from error
+
 
     # -----------------------------------------------------
-    # Make 2D
+    # MAKE 2D
     # -----------------------------------------------------
 
     if features.ndim == 1:
 
         features = features.reshape(
+
             1,
+
             -1
+
         )
 
+
     # -----------------------------------------------------
-    # Validate dimensions
+    # VALIDATE DIMENSIONS
     # -----------------------------------------------------
 
     if features.ndim != 2:
 
         raise ValueError(
+
             "Fertilizer input must contain "
             "one or more rows of features."
+
         )
 
-    if features.shape[1] != len(
+
+    # -----------------------------------------------------
+    # VALIDATE FEATURE COUNT
+    # -----------------------------------------------------
+
+    expected_features = len(
+
         FEATURE_NAMES
-    ):
+
+    )
+
+
+    received_features = features.shape[1]
+
+
+    if received_features != expected_features:
 
         raise ValueError(
 
             f"Expected "
-            f"{len(FEATURE_NAMES)} "
-            f"fertilizer features, "
 
-            f"received "
-            f"{features.shape[1]}."
+            f"{expected_features} "
+
+            f"fertilizer features "
+
+            f"({', '.join(FEATURE_NAMES)}), "
+
+            f"but received "
+
+            f"{received_features}."
 
         )
 
+
     # -----------------------------------------------------
-    # Validate numeric values
+    # VALIDATE NUMERIC VALUES
     # -----------------------------------------------------
 
     if not np.all(
+
         np.isfinite(features)
+
     ):
 
         raise ValueError(
+
             "Fertilizer input contains "
             "invalid numeric values."
+
         )
 
-    # -----------------------------------------------------
-    # Load cached model
-    # -----------------------------------------------------
-
-    model = load_fertilizer_model()
 
     # -----------------------------------------------------
-    # Create DataFrame
+    # CREATE DATAFRAME
     # -----------------------------------------------------
 
     features_df = pd.DataFrame(
@@ -544,63 +834,129 @@ def predict_fertilizer(features):
 
     )
 
-    # -----------------------------------------------------
-    # Prediction
-    # -----------------------------------------------------
-
-    prediction = model.predict(
-        features_df
-    )[0]
 
     # -----------------------------------------------------
-    # Accuracy
-    #
-    # Read saved accuracy instead of
-    # retraining/retesting the model.
+    # LOAD MODEL
+    # -----------------------------------------------------
+
+    model = load_fertilizer_model()
+
+
+    # -----------------------------------------------------
+    # PREDICTION
+    # -----------------------------------------------------
+
+    try:
+
+        prediction = model.predict(
+
+            features_df
+
+        )[0]
+
+
+    except Exception as error:
+
+        print(
+
+            "Fertilizer model prediction error:",
+
+            error
+
+        )
+
+
+        raise RuntimeError(
+
+            "Unable to make fertilizer prediction."
+
+        ) from error
+
+
+    # -----------------------------------------------------
+    # MODEL ACCURACY
     # -----------------------------------------------------
 
     accuracy = load_fertilizer_accuracy()
 
+
     # -----------------------------------------------------
-    # Confidence
+    # CONFIDENCE
     # -----------------------------------------------------
 
     confidence = 0.0
 
+
     if hasattr(
+
         model,
+
         "predict_proba"
+
     ):
 
-        probabilities = model.predict_proba(
-            features_df
-        )[0]
+        try:
 
-        confidence = (
-            float(
-                np.max(probabilities)
-            ) * 100
-        )
+            probabilities = model.predict_proba(
+
+                features_df
+
+            )[0]
+
+
+            if len(probabilities) > 0:
+
+                confidence = (
+
+                    float(
+
+                        np.max(probabilities)
+
+                    ) * 100
+
+                )
+
+
+        except Exception as error:
+
+            print(
+
+                "Unable to calculate fertilizer "
+                "prediction confidence:",
+
+                error
+
+            )
+
 
     # -----------------------------------------------------
-    # Return result
+    # RETURN RESULT
     # -----------------------------------------------------
 
     return {
 
         "fertilizer":
+
             str(prediction),
 
         "accuracy":
+
             round(
+
                 accuracy * 100,
+
                 2
+
             ),
 
         "confidence":
+
             round(
+
                 confidence,
+
                 2
+
             )
 
     }

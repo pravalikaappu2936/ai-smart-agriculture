@@ -48,7 +48,9 @@ def fertilizer_recommendation(
 
             float(data.moisture),
 
-            float(data.temperature)
+            float(data.temperature),
+
+            str(data.crop_type)
 
         ]
 
@@ -79,7 +81,8 @@ def fertilizer_recommendation(
         if not fertilizer:
 
             raise ValueError(
-                "The fertilizer model did not return a fertilizer recommendation."
+                "The fertilizer model did not return "
+                "a fertilizer recommendation."
             )
 
 
@@ -114,21 +117,53 @@ def fertilizer_recommendation(
                     .lower()
                 ]
 
+
+                # -------------------------------------------------
+                # PREFER CROP-SPECIFIC ADVICE
+                # -------------------------------------------------
+
+                if (
+                    "crop_type"
+                    in dataset.columns
+                ):
+
+                    crop_rows = matching_rows[
+                        matching_rows[
+                            "crop_type"
+                        ]
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        ==
+                        str(data.crop_type)
+                        .strip()
+                        .lower()
+                    ]
+
+                    if not crop_rows.empty:
+
+                        matching_rows = crop_rows
+
+
                 if not matching_rows.empty:
 
                     advice_value = matching_rows[
                         "advice"
                     ].iloc[0]
 
+
                     if (
                         advice_value is not None
                         and
-                        str(advice_value).strip()
+                        str(
+                            advice_value
+                        ).strip()
                     ):
 
                         advice = str(
                             advice_value
                         ).strip()
+
 
         except Exception as advice_error:
 
@@ -146,7 +181,8 @@ def fertilizer_recommendation(
 
             advice = (
                 f"Use {fertilizer} according to "
-                "the crop requirement and soil condition. "
+                f"the requirements of {data.crop_type} "
+                "and the current soil condition. "
                 "Avoid excessive fertilizer application."
             )
 
@@ -167,6 +203,9 @@ def fertilizer_recommendation(
                     float(accuracy),
                     2
                 ),
+
+            "crop_type":
+                str(data.crop_type),
 
             "advice":
                 advice

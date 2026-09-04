@@ -33,31 +33,67 @@ function NotificationBell() {
             const data =
                 await getUnreadNotifications();
 
-            setNotifications(data);
 
-        } catch (error) {
+            /*
+             * Support both:
+             *
+             * [
+             *   {...},
+             *   {...}
+             * ]
+             *
+             * and:
+             *
+             * {
+             *   data: [...]
+             * }
+             */
+
+            const notificationData =
+                Array.isArray(data)
+                    ? data
+                    : Array.isArray(data?.data)
+                        ? data.data
+                        : [];
+
+
+            setNotifications(
+                notificationData
+            );
+
+        }
+
+        catch (error) {
 
             console.error(
                 "Notification error:",
                 error
             );
+
         }
+
     };
 
 
     // =====================================================
-    // INITIAL LOAD + REFRESH
+    // INITIAL LOAD + PERIODIC REFRESH
     // =====================================================
 
     useEffect(() => {
 
         loadNotifications();
 
+
+        /*
+         * Refresh every 15 seconds.
+         */
+
         const interval =
             setInterval(
                 loadNotifications,
-                5000
+                15000
             );
+
 
         return () => {
 
@@ -69,7 +105,7 @@ function NotificationBell() {
 
 
     // =====================================================
-    // MARK AS READ
+    // MARK SINGLE NOTIFICATION AS READ
     // =====================================================
 
     const handleRead = async (
@@ -82,6 +118,11 @@ function NotificationBell() {
                 notificationId
             );
 
+
+            /*
+             * Remove immediately from UI.
+             */
+
             setNotifications(
                 previous =>
                     previous.filter(
@@ -91,18 +132,22 @@ function NotificationBell() {
                     )
             );
 
-        } catch (error) {
+        }
+
+        catch (error) {
 
             console.error(
                 "Unable to mark notification:",
                 error
             );
+
         }
+
     };
 
 
     // =====================================================
-    // MARK ALL READ
+    // MARK ALL NOTIFICATIONS AS READ
     // =====================================================
 
     const handleMarkAllRead = async () => {
@@ -113,37 +158,79 @@ function NotificationBell() {
 
             setNotifications([]);
 
-        } catch (error) {
+        }
+
+        catch (error) {
 
             console.error(
                 "Unable to mark notifications:",
                 error
             );
+
         }
+
     };
 
+
+    // =====================================================
+    // TOGGLE NOTIFICATION PANEL
+    // =====================================================
+
+    const toggleNotifications = () => {
+
+        setOpen(
+            previous =>
+                !previous
+        );
+
+    };
+
+
+    // =====================================================
+    // UI
+    // =====================================================
 
     return (
 
         <div className="notification-container">
 
+
+            {/* =================================================
+                NOTIFICATION BUTTON
+            ================================================= */}
+
             <button
+
                 className="notification-button"
-                onClick={() =>
-                    setOpen(
-                        previous =>
-                            !previous
-                    )
+
+                onClick={
+                    toggleNotifications
                 }
+
+                aria-label="Notifications"
+
+                title="Notifications"
+
             >
 
-                🔔
+                <span className="notification-bell-icon">
+
+                    🔔
+
+                </span>
+
+
+                {/* =================================================
+                    UNREAD COUNT
+                ================================================= */}
 
                 {notifications.length > 0 && (
 
                     <span className="notification-count">
 
-                        {notifications.length}
+                        {notifications.length > 99
+                            ? "99+"
+                            : notifications.length}
 
                     </span>
 
@@ -152,24 +239,56 @@ function NotificationBell() {
             </button>
 
 
+            {/* =================================================
+                NOTIFICATION PANEL
+            ================================================= */}
+
             {open && (
 
                 <div className="notification-panel">
 
+
+                    {/* =================================================
+                        HEADER
+                    ================================================= */}
+
                     <div className="notification-header">
 
-                        <h3>
-                            Notifications
-                        </h3>
+                        <div>
+
+                            <h3>
+
+                                Notifications
+
+                            </h3>
+
+                            {notifications.length > 0 && (
+
+                                <span className="notification-subtitle">
+
+                                    {notifications.length} unread
+
+                                </span>
+
+                            )}
+
+                        </div>
+
 
                         {notifications.length > 0 && (
 
                             <button
+
+                                className="mark-all-button"
+
                                 onClick={
                                     handleMarkAllRead
                                 }
+
                             >
+
                                 Mark all read
+
                             </button>
 
                         )}
@@ -177,21 +296,42 @@ function NotificationBell() {
                     </div>
 
 
+                    {/* =================================================
+                        NO NOTIFICATIONS
+                    ================================================= */}
+
                     {notifications.length === 0 ? (
 
                         <div className="no-notifications">
 
-                            <span>
+                            <div className="no-notification-icon">
+
                                 🔔
-                            </span>
+
+                            </div>
+
+
+                            <h4>
+
+                                No new notifications
+
+                            </h4>
+
 
                             <p>
-                                No new notifications
+
+                                You're all caught up!
+
                             </p>
 
                         </div>
 
                     ) : (
+
+
+                        /* =================================================
+                           NOTIFICATION LIST
+                        ================================================= */
 
                         <div className="notification-list">
 
@@ -199,45 +339,87 @@ function NotificationBell() {
                                 notification => (
 
                                     <div
+
                                         key={
                                             notification.id
                                         }
+
                                         className="notification-item"
+
                                     >
 
-                                        <div>
+                                        <div className="notification-content">
+
+
+                                            {/* =================================================
+                                                TITLE
+                                            ================================================= */}
 
                                             <strong>
+
                                                 {
-                                                    notification.title
+                                                    notification.title ||
+                                                    "Notification"
                                                 }
+
                                             </strong>
 
+
+                                            {/* =================================================
+                                                MESSAGE
+                                            ================================================= */}
+
                                             <p>
+
                                                 {
-                                                    notification.message
+                                                    notification.message ||
+                                                    ""
                                                 }
+
                                             </p>
 
-                                            <small>
-                                                {
-                                                    new Date(
+
+                                            {/* =================================================
+                                                CREATED TIME
+                                            ================================================= */}
+
+                                            {notification.created_at && (
+
+                                                <small>
+
+                                                    {new Date(
                                                         notification.created_at
-                                                    ).toLocaleString()
-                                                }
-                                            </small>
+                                                    ).toLocaleString()}
+
+                                                </small>
+
+                                            )}
 
                                         </div>
 
 
+                                        {/* =================================================
+                                            MARK READ
+                                        ================================================= */}
+
                                         <button
+
+                                            className="notification-read-button"
+
                                             onClick={() =>
                                                 handleRead(
                                                     notification.id
                                                 )
                                             }
+
+                                            aria-label="Mark notification as read"
+
+                                            title="Mark as read"
+
                                         >
+
                                             ✓
+
                                         </button>
 
                                     </div>
@@ -254,7 +436,9 @@ function NotificationBell() {
             )}
 
         </div>
+
     );
+
 }
 
 

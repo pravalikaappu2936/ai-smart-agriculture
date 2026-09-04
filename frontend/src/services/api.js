@@ -15,6 +15,7 @@ const API_BASE_URL =
 // =========================================================
 
 const API = axios.create({
+
     baseURL: API_BASE_URL,
 
     headers: {
@@ -22,6 +23,7 @@ const API = axios.create({
     },
 
     timeout: 30000,
+
 });
 
 
@@ -30,6 +32,7 @@ const API = axios.create({
 // =========================================================
 
 const ASSISTANT_API = axios.create({
+
     baseURL: API_BASE_URL,
 
     headers: {
@@ -37,6 +40,7 @@ const ASSISTANT_API = axios.create({
     },
 
     timeout: 60000,
+
 });
 
 
@@ -45,7 +49,9 @@ const ASSISTANT_API = axios.create({
 // =========================================================
 
 const getToken = () => {
+
     return localStorage.getItem("token");
+
 };
 
 
@@ -54,24 +60,31 @@ const getToken = () => {
 // =========================================================
 
 API.interceptors.request.use(
+
     (config) => {
 
         const token = getToken();
 
         if (token) {
 
-            config.headers = config.headers || {};
+            config.headers =
+                config.headers || {};
 
             config.headers.Authorization =
                 `Bearer ${token}`;
+
         }
 
         return config;
+
     },
 
     (error) => {
+
         return Promise.reject(error);
+
     }
+
 );
 
 
@@ -80,24 +93,31 @@ API.interceptors.request.use(
 // =========================================================
 
 ASSISTANT_API.interceptors.request.use(
+
     (config) => {
 
         const token = getToken();
 
         if (token) {
 
-            config.headers = config.headers || {};
+            config.headers =
+                config.headers || {};
 
             config.headers.Authorization =
                 `Bearer ${token}`;
+
         }
 
         return config;
+
     },
 
     (error) => {
+
         return Promise.reject(error);
+
     }
+
 );
 
 
@@ -108,7 +128,9 @@ ASSISTANT_API.interceptors.request.use(
 API.interceptors.response.use(
 
     (response) => {
+
         return response;
+
     },
 
     (error) => {
@@ -121,23 +143,30 @@ API.interceptors.response.use(
                 error.response.data
             );
 
-        } else if (error.request) {
+        }
+
+        else if (error.request) {
 
             console.error(
                 "API Server did not respond:",
                 error.message
             );
 
-        } else {
+        }
+
+        else {
 
             console.error(
                 "API Request Error:",
                 error.message
             );
+
         }
 
         return Promise.reject(error);
+
     }
+
 );
 
 
@@ -148,19 +177,26 @@ API.interceptors.response.use(
 ASSISTANT_API.interceptors.response.use(
 
     (response) => {
+
         return response;
+
     },
 
     (error) => {
 
-        if (error.code === "ECONNABORTED") {
+        if (
+            error.code ===
+            "ECONNABORTED"
+        ) {
 
             console.error(
                 "AI Assistant timeout:",
                 error.message
             );
 
-        } else if (error.response) {
+        }
+
+        else if (error.response) {
 
             console.error(
                 "AI Assistant API Error:",
@@ -168,23 +204,30 @@ ASSISTANT_API.interceptors.response.use(
                 error.response.data
             );
 
-        } else if (error.request) {
+        }
+
+        else if (error.request) {
 
             console.error(
                 "AI Assistant server did not respond:",
                 error.message
             );
 
-        } else {
+        }
+
+        else {
 
             console.error(
                 "AI Assistant request error:",
                 error.message
             );
+
         }
 
         return Promise.reject(error);
+
     }
+
 );
 
 
@@ -193,18 +236,25 @@ ASSISTANT_API.interceptors.response.use(
 // =========================================================
 
 export const apiRequest = async (
+
     method,
     endpoint,
     data = null
+
 ) => {
 
     const response = await API({
+
         method,
+
         url: endpoint,
+
         data,
+
     });
 
     return response.data;
+
 };
 
 
@@ -215,9 +265,12 @@ export const apiRequest = async (
 export const getLatestSensorData = async () => {
 
     const response =
-        await API.get("/iot/latest");
+        await API.get(
+            "/iot/latest"
+        );
 
     return response.data;
+
 };
 
 
@@ -225,7 +278,9 @@ export const getLatestSensorData = async () => {
 // CROP
 // =========================================================
 
-export const getCropRecommendation = async (data) => {
+export const getCropRecommendation = async (
+    data
+) => {
 
     const response =
         await API.post(
@@ -234,6 +289,7 @@ export const getCropRecommendation = async (data) => {
         );
 
     return response.data;
+
 };
 
 
@@ -241,7 +297,9 @@ export const getCropRecommendation = async (data) => {
 // SOIL
 // =========================================================
 
-export const getSoilAnalysis = async (data) => {
+export const getSoilAnalysis = async (
+    data
+) => {
 
     const response =
         await API.post(
@@ -250,22 +308,143 @@ export const getSoilAnalysis = async (data) => {
         );
 
     return response.data;
+
 };
 
 
 // =========================================================
 // FERTILIZER
 // =========================================================
+//
+// Current fertilizer model uses:
+//
+// 1. Nitrogen
+// 2. Phosphorus
+// 3. Potassium
+// 4. pH
+// 5. Moisture
+// 6. Temperature
+//
+// Backend endpoint:
+// POST /fertilizer/recommend
+//
+// Expected response:
+//
+// {
+//     status: "success",
+//     recommended_fertilizer: "...",
+//     accuracy: 91.86,
+//     advice: "..."
+// }
+//
+// =========================================================
 
-export const getFertilizerRecommendation = async (data) => {
+export const getFertilizerRecommendation = async (
+    data
+) => {
+
+    // -----------------------------------------------------
+    // Validate input before sending
+    // -----------------------------------------------------
+
+    if (!data) {
+
+        throw new Error(
+            "Fertilizer input data is required."
+        );
+
+    }
+
+    const fertilizerData = {
+
+        nitrogen:
+            Number(data.nitrogen),
+
+        phosphorus:
+            Number(data.phosphorus),
+
+        potassium:
+            Number(data.potassium),
+
+        ph:
+            Number(data.ph),
+
+        moisture:
+            Number(data.moisture),
+
+        temperature:
+            Number(data.temperature),
+
+    };
+
+
+    // -----------------------------------------------------
+    // Validate numeric values
+    // -----------------------------------------------------
+
+    const invalidFields =
+        Object.entries(
+            fertilizerData
+        )
+
+            .filter(
+                ([, value]) =>
+                    !Number.isFinite(value)
+            )
+
+            .map(
+                ([key]) =>
+                    key
+            );
+
+
+    if (
+        invalidFields.length > 0
+    ) {
+
+        throw new Error(
+            `Invalid fertilizer sensor values: ${invalidFields.join(", ")}`
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Console debugging
+    // -----------------------------------------------------
+
+    console.log(
+        "Fertilizer API request:",
+        fertilizerData
+    );
+
+
+    // -----------------------------------------------------
+    // API REQUEST
+    // -----------------------------------------------------
 
     const response =
         await API.post(
+
             "/fertilizer/recommend",
-            data
+
+            fertilizerData
+
         );
 
+
+    // -----------------------------------------------------
+    // Console response
+    // -----------------------------------------------------
+
+    console.log(
+        "Fertilizer API response:",
+        response.data
+    );
+
+
     return response.data;
+
 };
 
 
@@ -273,7 +452,9 @@ export const getFertilizerRecommendation = async (data) => {
 // IRRIGATION
 // =========================================================
 
-export const getIrrigationPrediction = async (data) => {
+export const getIrrigationPrediction = async (
+    data
+) => {
 
     const response =
         await API.post(
@@ -282,6 +463,7 @@ export const getIrrigationPrediction = async (data) => {
         );
 
     return response.data;
+
 };
 
 
@@ -289,24 +471,37 @@ export const getIrrigationPrediction = async (data) => {
 // WEATHER - CURRENT
 // =========================================================
 
-export const getCurrentWeather = async (location) => {
+export const getCurrentWeather = async (
+    location
+) => {
 
-    if (!location || !location.trim()) {
+    if (
+        !location ||
+        !location.trim()
+    ) {
 
         throw new Error(
             "Location is required."
         );
+
     }
+
 
     const response =
         await API.post(
+
             "/weather/current",
+
             {
-                location: location.trim(),
+                location:
+                    location.trim(),
             }
+
         );
 
+
     return response.data;
+
 };
 
 
@@ -315,32 +510,48 @@ export const getCurrentWeather = async (location) => {
 // =========================================================
 
 export const getWeatherByCoordinates = async (
+
     latitude,
     longitude
+
 ) => {
 
     if (
+
         latitude === null ||
         latitude === undefined ||
         longitude === null ||
         longitude === undefined
+
     ) {
 
         throw new Error(
             "Latitude and longitude are required."
         );
+
     }
+
 
     const response =
         await API.post(
+
             "/weather/current-by-coordinates",
+
             {
-                latitude: Number(latitude),
-                longitude: Number(longitude),
+
+                latitude:
+                    Number(latitude),
+
+                longitude:
+                    Number(longitude),
+
             }
+
         );
 
+
     return response.data;
+
 };
 
 
@@ -349,31 +560,52 @@ export const getWeatherByCoordinates = async (
 // =========================================================
 
 export const searchWeatherLocations = async (
+
     village,
     district = "",
     state = ""
+
 ) => {
 
-    if (!village || !village.trim()) {
+    if (
+        !village ||
+        !village.trim()
+    ) {
 
         throw new Error(
             "Village/location is required."
         );
+
     }
+
 
     const response =
         await API.get(
+
             "/weather/search",
+
             {
+
                 params: {
-                    village: village.trim(),
-                    district: district.trim(),
-                    state: state.trim(),
+
+                    village:
+                        village.trim(),
+
+                    district:
+                        district.trim(),
+
+                    state:
+                        state.trim(),
+
                 },
+
             }
+
         );
 
+
     return response.data;
+
 };
 
 
@@ -384,9 +616,12 @@ export const searchWeatherLocations = async (
 export const getWeatherStatus = async () => {
 
     const response =
-        await API.get("/weather/");
+        await API.get(
+            "/weather/"
+        );
 
     return response.data;
+
 };
 
 
@@ -394,24 +629,39 @@ export const getWeatherStatus = async () => {
 // WEATHER FORECAST
 // =========================================================
 
-export const getWeatherForecast = async (location) => {
+export const getWeatherForecast = async (
+    location
+) => {
 
-    if (!location || !location.trim()) {
+    if (
+        !location ||
+        !location.trim()
+    ) {
 
         throw new Error(
             "Location is required."
         );
+
     }
+
 
     const response =
         await API.post(
+
             "/weather/forecast",
+
             {
-                location: location.trim(),
+
+                location:
+                    location.trim(),
+
             }
+
         );
 
+
     return response.data;
+
 };
 
 
@@ -427,6 +677,7 @@ export const getNotifications = async () => {
         );
 
     return response.data;
+
 };
 
 
@@ -442,6 +693,7 @@ export const getUnreadNotifications = async () => {
         );
 
     return response.data;
+
 };
 
 
@@ -453,12 +705,30 @@ export const markNotificationAsRead = async (
     notificationId
 ) => {
 
-    const response =
-        await API.put(
-            `/notifications/${notificationId}/read`
+    if (
+        notificationId ===
+        null ||
+        notificationId ===
+        undefined
+    ) {
+
+        throw new Error(
+            "Notification ID is required."
         );
 
+    }
+
+
+    const response =
+        await API.put(
+
+            `/notifications/${notificationId}/read`
+
+        );
+
+
     return response.data;
+
 };
 
 
@@ -466,15 +736,17 @@ export const markNotificationAsRead = async (
 // MARK ALL NOTIFICATIONS READ
 // =========================================================
 
-export const markAllNotificationsAsRead = async () => {
+export const markAllNotificationsAsRead =
+    async () => {
 
-    const response =
-        await API.put(
-            "/notifications/read-all"
-        );
+        const response =
+            await API.put(
+                "/notifications/read-all"
+            );
 
-    return response.data;
-};
+        return response.data;
+
+    };
 
 
 // =========================================================
@@ -482,8 +754,10 @@ export const markAllNotificationsAsRead = async () => {
 // =========================================================
 
 export const sendAssistantMessage = async (
+
     message,
     language = "English"
+
 ) => {
 
     if (
@@ -494,44 +768,67 @@ export const sendAssistantMessage = async (
         throw new Error(
             "Assistant message cannot be empty."
         );
+
     }
+
 
     const cleanMessage =
         message.trim();
 
+
     console.log(
         "AI Assistant request:",
         {
-            message: cleanMessage,
+
+            message:
+                cleanMessage,
+
             language,
+
             endpoint:
                 `${API_BASE_URL}/assistant/chat`,
+
         }
     );
+
 
     try {
 
         const response =
             await ASSISTANT_API.post(
+
                 "/assistant/chat",
+
                 {
-                    message: cleanMessage,
+
+                    message:
+                        cleanMessage,
+
                     language,
+
                 }
+
             );
+
 
         console.log(
             "AI Assistant response:",
             response.data
         );
 
+
         return response.data;
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         console.error(
+
             "AI Assistant request failed:",
+
             {
+
                 status:
                     error?.response?.status,
 
@@ -543,11 +840,16 @@ export const sendAssistantMessage = async (
 
                 code:
                     error?.code,
+
             }
+
         );
 
+
         throw error;
+
     }
+
 };
 
 
@@ -556,8 +858,10 @@ export const sendAssistantMessage = async (
 // =========================================================
 
 export const generateAssistantSpeech = async (
+
     text,
     language = "English"
+
 ) => {
 
     if (
@@ -568,53 +872,92 @@ export const generateAssistantSpeech = async (
         throw new Error(
             "Text for speech cannot be empty."
         );
+
     }
+
 
     const cleanText =
         text.trim();
 
+
     console.log(
         "AI Assistant TTS request:",
         {
-            text: cleanText,
+
+            text:
+                cleanText,
+
             language,
+
             endpoint:
                 `${API_BASE_URL}/tts/speak`,
+
         }
     );
+
 
     try {
 
         const response =
             await ASSISTANT_API.post(
+
                 "/tts/speak",
+
                 {
-                    text: cleanText,
+
+                    text:
+                        cleanText,
+
                     language,
+
                 },
+
                 {
-                    responseType: "blob",
+
+                    responseType:
+                        "blob",
+
                     headers: {
-                        Accept: "audio/mpeg",
+
+                        Accept:
+                            "audio/mpeg",
+
                     },
+
                 }
+
             );
 
+
         console.log(
+
             "AI Assistant TTS audio received:",
+
             {
-                type: response.data?.type,
-                size: response.data?.size,
+
+                type:
+                    response.data?.type,
+
+                size:
+                    response.data?.size,
+
             }
+
         );
+
 
         return response.data;
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         console.error(
+
             "AI Assistant TTS request failed:",
+
             {
+
                 status:
                     error?.response?.status,
 
@@ -626,11 +969,16 @@ export const generateAssistantSpeech = async (
 
                 code:
                     error?.code,
+
             }
+
         );
 
+
         throw error;
+
     }
+
 };
 
 

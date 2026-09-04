@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import api from "../services/api";
 import "./IoT.css";
 
 function IoT() {
@@ -12,235 +13,567 @@ function IoT() {
         ph: ""
     });
 
-    const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [lastUpdated, setLastUpdated] = useState(null);
 
-    const handleChange = (event) => {
-        const { name, value } = event.target;
+    // =====================================================
+    // FETCH LATEST SENSOR DATA
+    // =====================================================
 
-        setSensorData({
-            ...sensorData,
-            [name]: value
-        });
+    const fetchSensorData = useCallback(async () => {
+        try {
+            const response = await api.get("/iot/latest");
 
-        setSubmitted(false);
+            console.log("IoT response:", response.data);
+
+            const data = response.data;
+
+            // -------------------------------------------------
+            // Support possible backend response structures
+            // -------------------------------------------------
+
+            const sensor =
+                data?.data ||
+                data?.sensor_data ||
+                data?.sensor ||
+                data;
+
+            if (!sensor || typeof sensor !== "object") {
+                throw new Error("Invalid sensor response");
+            }
+
+            setSensorData({
+                soil_moisture:
+                    sensor.soil_moisture ??
+                    sensor.moisture ??
+                    "",
+
+                temperature:
+                    sensor.temperature ??
+                    "",
+
+                humidity:
+                    sensor.humidity ??
+                    "",
+
+                nitrogen:
+                    sensor.nitrogen ??
+                    "",
+
+                phosphorus:
+                    sensor.phosphorus ??
+                    "",
+
+                potassium:
+                    sensor.potassium ??
+                    "",
+
+                ph:
+                    sensor.ph ??
+                    sensor.pH ??
+                    ""
+            });
+
+            setLastUpdated(new Date());
+            setError("");
+
+        } catch (err) {
+            console.error(
+                "Failed to fetch IoT sensor data:",
+                err
+            );
+
+            if (err.response) {
+
+                if (err.response.status === 401) {
+                    setError(
+                        "Authentication expired. Please login again."
+                    );
+
+                } else if (err.response.status === 429) {
+                    setError(
+                        "Too many sensor requests. Please wait a moment."
+                    );
+
+                } else if (err.response.status === 503) {
+                    setError(
+                        "Agriculture backend is temporarily unavailable."
+                    );
+
+                } else {
+                    setError(
+                        err.response.data?.detail ||
+                        "Unable to fetch live IoT sensor data."
+                    );
+                }
+
+            } else {
+                setError(
+                    "Unable to connect to the agriculture backend."
+                );
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // =====================================================
+    // INITIAL FETCH + SAFE POLLING
+    // =====================================================
+
+    useEffect(() => {
+
+        let active = true;
+        let interval = null;
+
+        const loadData = async () => {
+
+            if (!active) {
+                return;
+            }
+
+            await fetchSensorData();
+        };
+
+        // Fetch immediately
+        loadData();
+
+        // Poll only every 30 seconds
+        interval = setInterval(() => {
+            loadData();
+        }, 30000);
+
+        return () => {
+
+            active = false;
+
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
+
+    }, [fetchSensorData]);
+
+    // =====================================================
+    // MANUAL REFRESH
+    // =====================================================
+
+    const handleRefresh = async () => {
+
+        setLoading(true);
+
+        await fetchSensorData();
     };
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        setSubmitted(true);
+    // =====================================================
+    // FORMAT LAST UPDATED
+    // =====================================================
+
+    const formatLastUpdated = () => {
+
+        if (!lastUpdated) {
+            return "Waiting for sensor data...";
+        }
+
+        return lastUpdated.toLocaleTimeString();
     };
+
+    // =====================================================
+    // CHECK SENSOR AVAILABILITY
+    // =====================================================
+
+    const hasSensorData =
+        Object.values(sensorData).some(
+            value =>
+                value !== "" &&
+                value !== null &&
+                value !== undefined
+        );
+
+    // =====================================================
+    // UI
+    // =====================================================
 
     return (
         <div className="iot-page">
 
             <div className="iot-header">
-                <h1>IoT Sensor Monitoring</h1>
+
+                <h1>
+                    IoT Sensor Monitoring
+                </h1>
+
                 <p>
-                    Monitor soil and environmental sensor values
-                    for smart agriculture.
+                    Monitor soil and environmental sensor
+                    values for smart agriculture.
                 </p>
+
             </div>
+
 
             <div className="iot-container">
 
-                <form
-                    className="iot-form"
-                    onSubmit={handleSubmit}
-                >
+                {/* =================================================
+                    SENSOR FORM / DATA
+                ================================================= */}
 
-                    <h2>Sensor Data</h2>
+                <div className="iot-form">
+
+                    <h2>
+                        Live Sensor Data
+                    </h2>
 
                     <div className="iot-grid">
 
+                        {/* SOIL MOISTURE */}
+
                         <div className="iot-field">
-                            <label>Soil Moisture (%)</label>
+
+                            <label>
+                                Soil Moisture (%)
+                            </label>
 
                             <input
-                                type="number"
-                                name="soil_moisture"
-                                value={sensorData.soil_moisture}
-                                onChange={handleChange}
-                                min="0"
-                                required
+                                type="text"
+                                value={
+                                    sensorData.soil_moisture !== ""
+                                        ? sensorData.soil_moisture
+                                        : "--"
+                                }
+                                readOnly
                             />
+
                         </div>
 
 
+                        {/* TEMPERATURE */}
+
                         <div className="iot-field">
-                            <label>Temperature (°C)</label>
+
+                            <label>
+                                Temperature (°C)
+                            </label>
 
                             <input
-                                type="number"
-                                name="temperature"
-                                value={sensorData.temperature}
-                                onChange={handleChange}
-                                required
+                                type="text"
+                                value={
+                                    sensorData.temperature !== ""
+                                        ? sensorData.temperature
+                                        : "--"
+                                }
+                                readOnly
                             />
+
                         </div>
 
 
+                        {/* HUMIDITY */}
+
                         <div className="iot-field">
-                            <label>Humidity (%)</label>
+
+                            <label>
+                                Humidity (%)
+                            </label>
 
                             <input
-                                type="number"
-                                name="humidity"
-                                value={sensorData.humidity}
-                                onChange={handleChange}
-                                min="0"
-                                max="100"
-                                required
+                                type="text"
+                                value={
+                                    sensorData.humidity !== ""
+                                        ? sensorData.humidity
+                                        : "--"
+                                }
+                                readOnly
                             />
+
                         </div>
 
 
+                        {/* NITROGEN */}
+
                         <div className="iot-field">
-                            <label>Nitrogen (N)</label>
+
+                            <label>
+                                Nitrogen (N)
+                            </label>
 
                             <input
-                                type="number"
-                                name="nitrogen"
-                                value={sensorData.nitrogen}
-                                onChange={handleChange}
-                                min="0"
-                                required
+                                type="text"
+                                value={
+                                    sensorData.nitrogen !== ""
+                                        ? sensorData.nitrogen
+                                        : "--"
+                                }
+                                readOnly
                             />
+
                         </div>
 
 
+                        {/* PHOSPHORUS */}
+
                         <div className="iot-field">
-                            <label>Phosphorus (P)</label>
+
+                            <label>
+                                Phosphorus (P)
+                            </label>
 
                             <input
-                                type="number"
-                                name="phosphorus"
-                                value={sensorData.phosphorus}
-                                onChange={handleChange}
-                                min="0"
-                                required
+                                type="text"
+                                value={
+                                    sensorData.phosphorus !== ""
+                                        ? sensorData.phosphorus
+                                        : "--"
+                                }
+                                readOnly
                             />
+
                         </div>
 
 
+                        {/* POTASSIUM */}
+
                         <div className="iot-field">
-                            <label>Potassium (K)</label>
+
+                            <label>
+                                Potassium (K)
+                            </label>
 
                             <input
-                                type="number"
-                                name="potassium"
-                                value={sensorData.potassium}
-                                onChange={handleChange}
-                                min="0"
-                                required
+                                type="text"
+                                value={
+                                    sensorData.potassium !== ""
+                                        ? sensorData.potassium
+                                        : "--"
+                                }
+                                readOnly
                             />
+
                         </div>
 
 
+                        {/* PH */}
+
                         <div className="iot-field">
-                            <label>Soil pH</label>
+
+                            <label>
+                                Soil pH
+                            </label>
 
                             <input
-                                type="number"
-                                name="ph"
-                                value={sensorData.ph}
-                                onChange={handleChange}
-                                min="0"
-                                max="14"
-                                step="0.1"
-                                required
+                                type="text"
+                                value={
+                                    sensorData.ph !== ""
+                                        ? sensorData.ph
+                                        : "--"
+                                }
+                                readOnly
                             />
+
                         </div>
 
                     </div>
 
 
+                    {/* =================================================
+                        REFRESH BUTTON
+                    ================================================= */}
+
                     <button
-                        type="submit"
+                        type="button"
                         className="iot-button"
+                        onClick={handleRefresh}
+                        disabled={loading}
                     >
-                        Update Sensor Data
+
+                        {loading
+                            ? "Loading Sensors..."
+                            : "Refresh Sensor Data"
+                        }
+
                     </button>
 
-                </form>
+                </div>
 
+
+                {/* =================================================
+                    STATUS
+                ================================================= */}
 
                 <div className="iot-status">
 
-                    <h2>Live Sensor Status</h2>
+                    <h2>
+                        Live Sensor Status
+                    </h2>
+
 
                     <div className="status-indicator">
-                        <span className="status-dot"></span>
+
+                        <span
+                            className={
+                                hasSensorData
+                                    ? "status-dot active"
+                                    : "status-dot"
+                            }
+                        />
 
                         <span>
-                            Sensor System Active
+                            {hasSensorData
+                                ? "Sensor System Active"
+                                : "Waiting for Sensors"
+                            }
                         </span>
+
                     </div>
 
+
+                    {/* =================================================
+                        SENSOR CARDS
+                    ================================================= */}
 
                     <div className="sensor-cards">
 
                         <div className="sensor-card">
-                            <span>Soil Moisture</span>
+
+                            <span>
+                                Soil Moisture
+                            </span>
+
                             <strong>
-                                {sensorData.soil_moisture || "--"} %
+                                {sensorData.soil_moisture !== ""
+                                    ? `${sensorData.soil_moisture} %`
+                                    : "--"
+                                }
                             </strong>
+
                         </div>
 
 
                         <div className="sensor-card">
-                            <span>Temperature</span>
+
+                            <span>
+                                Temperature
+                            </span>
+
                             <strong>
-                                {sensorData.temperature || "--"} °C
+                                {sensorData.temperature !== ""
+                                    ? `${sensorData.temperature} °C`
+                                    : "--"
+                                }
                             </strong>
+
                         </div>
 
 
                         <div className="sensor-card">
-                            <span>Humidity</span>
+
+                            <span>
+                                Humidity
+                            </span>
+
                             <strong>
-                                {sensorData.humidity || "--"} %
+                                {sensorData.humidity !== ""
+                                    ? `${sensorData.humidity} %`
+                                    : "--"
+                                }
                             </strong>
+
                         </div>
 
 
                         <div className="sensor-card">
-                            <span>Nitrogen</span>
+
+                            <span>
+                                Nitrogen
+                            </span>
+
                             <strong>
-                                {sensorData.nitrogen || "--"}
+                                {sensorData.nitrogen !== ""
+                                    ? sensorData.nitrogen
+                                    : "--"
+                                }
                             </strong>
+
                         </div>
 
 
                         <div className="sensor-card">
-                            <span>Phosphorus</span>
+
+                            <span>
+                                Phosphorus
+                            </span>
+
                             <strong>
-                                {sensorData.phosphorus || "--"}
+                                {sensorData.phosphorus !== ""
+                                    ? sensorData.phosphorus
+                                    : "--"
+                                }
                             </strong>
+
                         </div>
 
 
                         <div className="sensor-card">
-                            <span>Potassium</span>
+
+                            <span>
+                                Potassium
+                            </span>
+
                             <strong>
-                                {sensorData.potassium || "--"}
+                                {sensorData.potassium !== ""
+                                    ? sensorData.potassium
+                                    : "--"
+                                }
                             </strong>
+
                         </div>
 
 
                         <div className="sensor-card">
-                            <span>Soil pH</span>
+
+                            <span>
+                                Soil pH
+                            </span>
+
                             <strong>
-                                {sensorData.ph || "--"}
+                                {sensorData.ph !== ""
+                                    ? sensorData.ph
+                                    : "--"
+                                }
                             </strong>
+
                         </div>
 
                     </div>
 
 
-                    {submitted && (
-                        <div className="iot-success">
-                            Sensor data updated successfully.
+                    {/* =================================================
+                        LAST UPDATED
+                    ================================================= */}
+
+                    <div className="last-updated">
+
+                        Last updated:{" "}
+
+                        <strong>
+                            {formatLastUpdated()}
+                        </strong>
+
+                    </div>
+
+
+                    {/* =================================================
+                        ERROR
+                    ================================================= */}
+
+                    {error && (
+
+                        <div className="iot-error">
+
+                            {error}
+
                         </div>
+
                     )}
 
                 </div>

@@ -39,6 +39,79 @@ function Fertilizer() {
 
 
     // =====================================================
+    // CROP
+    // =====================================================
+
+    const [selectedCrop, setSelectedCrop] =
+        useState(
+            localStorage.getItem("selectedCrop") || ""
+        );
+
+
+    const crops = [
+        {
+            value: "rice",
+            english: "Rice",
+            kannada: "ಭತ್ತ"
+        },
+        {
+            value: "maize",
+            english: "Maize",
+            kannada: "ಮೆಕ್ಕೆಜೋಳ"
+        },
+        {
+            value: "chickpea",
+            english: "Chickpea",
+            kannada: "ಕಡಲೆ"
+        },
+        {
+            value: "cotton",
+            english: "Cotton",
+            kannada: "ಹತ್ತಿ"
+        },
+        {
+            value: "wheat",
+            english: "Wheat",
+            kannada: "ಗೋಧಿ"
+        },
+        {
+            value: "groundnut",
+            english: "Groundnut",
+            kannada: "ಕಡಲೆಕಾಯಿ"
+        },
+        {
+            value: "banana",
+            english: "Banana",
+            kannada: "ಬಾಳೆ"
+        }
+    ];
+
+
+    const handleCropChange = (event) => {
+
+        const crop =
+            event.target.value;
+
+        setSelectedCrop(crop);
+
+        localStorage.setItem(
+            "selectedCrop",
+            crop
+        );
+
+        /*
+         * Clear old recommendation when
+         * crop is changed.
+         */
+
+        setRecommendation(null);
+
+        setError("");
+
+    };
+
+
+    // =====================================================
     // LANGUAGE
     // =====================================================
 
@@ -77,6 +150,7 @@ function Fertilizer() {
 
             const response =
                 await getLatestSensorData();
+
 
             console.log(
                 "Fertilizer IoT response:",
@@ -117,7 +191,9 @@ function Fertilizer() {
                 err.response?.data?.detail;
 
 
-            if (typeof detail === "string") {
+            if (
+                typeof detail === "string"
+            ) {
 
                 setError(detail);
 
@@ -158,11 +234,10 @@ function Fertilizer() {
 
 
         const interval =
-            setInterval(() => {
-
-                loadSensorData();
-
-            }, 5000);
+            setInterval(
+                loadSensorData,
+                5000
+            );
 
 
         return () => {
@@ -179,6 +254,31 @@ function Fertilizer() {
     // =====================================================
 
     const handleRecommendation = async () => {
+
+        // =================================================
+        // CHECK CROP
+        // =================================================
+
+        if (!selectedCrop) {
+
+            setError(
+
+                isKannada
+
+                    ? "ದಯವಿಟ್ಟು ಬೆಳೆ ಆಯ್ಕೆಮಾಡಿ."
+
+                    : "Please select a crop."
+
+            );
+
+            return;
+
+        }
+
+
+        // =================================================
+        // CHECK SENSOR DATA
+        // =================================================
 
         if (!sensorData) {
 
@@ -240,7 +340,14 @@ function Fertilizer() {
                 temperature:
                     Number(
                         sensorData.temperature
-                    )
+                    ),
+
+                /*
+                 * Selected crop.
+                 */
+
+                crop_type:
+                    selectedCrop
 
             };
 
@@ -255,8 +362,31 @@ function Fertilizer() {
             // VALIDATE SENSOR VALUES
             // =============================================
 
+            const sensorInput = {
+
+                nitrogen:
+                    inputData.nitrogen,
+
+                phosphorus:
+                    inputData.phosphorus,
+
+                potassium:
+                    inputData.potassium,
+
+                ph:
+                    inputData.ph,
+
+                moisture:
+                    inputData.moisture,
+
+                temperature:
+                    inputData.temperature
+
+            };
+
+
             const invalidFields =
-                Object.entries(inputData)
+                Object.entries(sensorInput)
 
                     .filter(
                         ([, value]) =>
@@ -307,7 +437,6 @@ function Fertilizer() {
             setRecommendation(result);
 
         }
-
 
         catch (err) {
 
@@ -386,6 +515,17 @@ function Fertilizer() {
 
 
     // =====================================================
+    // GET SELECTED CROP DISPLAY NAME
+    // =====================================================
+
+    const selectedCropData =
+        crops.find(
+            crop =>
+                crop.value === selectedCrop
+        );
+
+
+    // =====================================================
     // PAGE
     // =====================================================
 
@@ -414,6 +554,7 @@ function Fertilizer() {
                 <div className="fertilizer-language-bar">
 
                     <button
+
                         className={
                             language === "en"
                                 ? "language-button active"
@@ -423,12 +564,16 @@ function Fertilizer() {
                         onClick={() =>
                             changeLanguage("en")
                         }
+
                     >
+
                         English
+
                     </button>
 
 
                     <button
+
                         className={
                             language === "kn"
                                 ? "language-button active"
@@ -438,8 +583,11 @@ function Fertilizer() {
                         onClick={() =>
                             changeLanguage("kn")
                         }
+
                     >
+
                         ಕನ್ನಡ
+
                     </button>
 
                 </div>
@@ -479,9 +627,9 @@ function Fertilizer() {
 
                                 {isKannada
 
-                                    ? "ಲೈವ್ ಕೃಷಿ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಬಳಸಿಕೊಂಡು AI ಆಧಾರಿತ ರಸಗೊಬ್ಬರ ಆಯ್ಕೆ."
+                                    ? "ಆಯ್ಕೆ ಮಾಡಿದ ಬೆಳೆ ಮತ್ತು ಲೈವ್ ಕೃಷಿ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಬಳಸಿಕೊಂಡು AI ಆಧಾರಿತ ರಸಗೊಬ್ಬರ ಆಯ್ಕೆ."
 
-                                    : "AI-powered fertilizer selection using live farm conditions"}
+                                    : "AI-powered fertilizer selection using your selected crop and live farm conditions"}
 
                             </p>
 
@@ -500,13 +648,163 @@ function Fertilizer() {
                         <span className="ai-status-dot"></span>
 
                         {isKannada
+
                             ? "AI ಮಾದರಿ ಸಕ್ರಿಯವಾಗಿದೆ"
+
                             : "AI Model Active"}
 
                     </div>
 
 
                 </div>
+
+
+                {/* =================================================
+                    CROP SELECTION
+                ================================================= */}
+
+                <section className="fertilizer-crop-section">
+
+                    <div className="fertilizer-section-header">
+
+                        <div>
+
+                            <h2>
+
+                                🌾{" "}
+
+                                {isKannada
+
+                                    ? "ಬೆಳೆ ಆಯ್ಕೆ"
+
+                                    : "Select Crop"}
+
+                            </h2>
+
+
+                            <p>
+
+                                {isKannada
+
+                                    ? "ರಸಗೊಬ್ಬರ ಶಿಫಾರಸಿಗಾಗಿ ನಿಮ್ಮ ಬೆಳೆ ಆಯ್ಕೆಮಾಡಿ"
+
+                                    : "Select the crop for which fertilizer is required"}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div className="crop-selection-wrapper">
+
+                        <label htmlFor="crop-select">
+
+                            {isKannada
+
+                                ? "ಬೆಳೆ"
+
+                                : "Crop"}
+
+                        </label>
+
+
+                        <select
+
+                            id="crop-select"
+
+                            value={selectedCrop}
+
+                            onChange={
+                                handleCropChange
+                            }
+
+                            className="crop-select"
+
+                        >
+
+                            <option value="">
+
+                                {isKannada
+
+                                    ? "ಬೆಳೆ ಆಯ್ಕೆಮಾಡಿ"
+
+                                    : "Select a crop"}
+
+                            </option>
+
+
+                            {crops.map(
+                                crop => (
+
+                                    <option
+
+                                        key={
+                                            crop.value
+                                        }
+
+                                        value={
+                                            crop.value
+                                        }
+
+                                    >
+
+                                        {isKannada
+                                            ? crop.kannada
+                                            : crop.english}
+
+                                    </option>
+
+                                )
+                            )}
+
+                        </select>
+
+
+                        {selectedCropData && (
+
+                            <div className="selected-crop-display">
+
+                                <span>
+
+                                    🌱
+
+                                </span>
+
+
+                                <div>
+
+                                    <strong>
+
+                                        {isKannada
+
+                                            ? selectedCropData.kannada
+
+                                            : selectedCropData.english}
+
+                                    </strong>
+
+
+                                    <small>
+
+                                        {isKannada
+
+                                            ? "ಆಯ್ಕೆ ಮಾಡಿದ ಬೆಳೆ"
+
+                                            : "Selected crop"}
+
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+                        )}
+
+                    </div>
+
+                </section>
 
 
                 {/* =================================================
@@ -639,9 +937,7 @@ function Fertilizer() {
                             <div className="fertilizer-sensor-grid">
 
 
-                                {/* ===============================
-                                    NITROGEN
-                                =============================== */}
+                                {/* NITROGEN */}
 
                                 <div className="fertilizer-sensor-card">
 
@@ -678,9 +974,7 @@ function Fertilizer() {
                                 </div>
 
 
-                                {/* ===============================
-                                    PHOSPHORUS
-                                =============================== */}
+                                {/* PHOSPHORUS */}
 
                                 <div className="fertilizer-sensor-card">
 
@@ -717,9 +1011,7 @@ function Fertilizer() {
                                 </div>
 
 
-                                {/* ===============================
-                                    POTASSIUM
-                                =============================== */}
+                                {/* POTASSIUM */}
 
                                 <div className="fertilizer-sensor-card">
 
@@ -756,9 +1048,7 @@ function Fertilizer() {
                                 </div>
 
 
-                                {/* ===============================
-                                    TEMPERATURE
-                                =============================== */}
+                                {/* TEMPERATURE */}
 
                                 <div className="fertilizer-sensor-card">
 
@@ -803,9 +1093,7 @@ function Fertilizer() {
                                 </div>
 
 
-                                {/* ===============================
-                                    HUMIDITY
-                                =============================== */}
+                                {/* HUMIDITY */}
 
                                 <div className="fertilizer-sensor-card">
 
@@ -850,9 +1138,7 @@ function Fertilizer() {
                                 </div>
 
 
-                                {/* ===============================
-                                    SOIL PH
-                                =============================== */}
+                                {/* SOIL PH */}
 
                                 <div className="fertilizer-sensor-card">
 
@@ -893,9 +1179,7 @@ function Fertilizer() {
                                 </div>
 
 
-                                {/* ===============================
-                                    RAINFALL
-                                =============================== */}
+                                {/* RAINFALL */}
 
                                 <div className="fertilizer-sensor-card">
 
@@ -940,9 +1224,7 @@ function Fertilizer() {
                                 </div>
 
 
-                                {/* ===============================
-                                    SOIL MOISTURE
-                                =============================== */}
+                                {/* SOIL MOISTURE */}
 
                                 <div className="fertilizer-sensor-card moisture-card">
 
@@ -1065,8 +1347,13 @@ function Fertilizer() {
 
 
                             <button
+
                                 className="retry-button"
-                                onClick={loadSensorData}
+
+                                onClick={
+                                    loadSensorData
+                                }
+
                             >
 
                                 {isKannada
@@ -1108,9 +1395,9 @@ function Fertilizer() {
 
                                     {isKannada
 
-                                        ? "ನಿಮ್ಮ ಲೈವ್ ಮಣ್ಣು ಮತ್ತು ಪರಿಸರ ಪರಿಸ್ಥಿತಿಗಳಿಂದ ಶಿಫಾರಸು ರಚಿಸಲಾಗಿದೆ."
+                                        ? "ನಿಮ್ಮ ಆಯ್ಕೆ ಮಾಡಿದ ಬೆಳೆ ಮತ್ತು ಲೈವ್ ಮಣ್ಣು ಮತ್ತು ಪರಿಸರ ಪರಿಸ್ಥಿತಿಗಳ ಆಧಾರದ ಮೇಲೆ ಶಿಫಾರಸು ರಚಿಸಲಾಗುತ್ತದೆ."
 
-                                        : "Recommendation is generated from your live soil and environmental conditions."}
+                                        : "Recommendation is generated using your selected crop and live soil and environmental conditions."}
 
                                 </p>
 
@@ -1120,7 +1407,7 @@ function Fertilizer() {
                             <div className="model-stat">
 
                                 <strong>
-                                    2,200
+                                    50,001
                                 </strong>
 
                                 <span>
@@ -1133,7 +1420,7 @@ function Fertilizer() {
                             <div className="model-stat">
 
                                 <strong>
-                                    22
+                                    6
                                 </strong>
 
                                 <span>
@@ -1165,7 +1452,8 @@ function Fertilizer() {
 
                             disabled={
                                 predicting ||
-                                !sensorData
+                                !sensorData ||
+                                !selectedCrop
                             }
 
                         >
@@ -1238,13 +1526,45 @@ function Fertilizer() {
 
                                     {isKannada
 
-                                        ? "ಪ್ರಸ್ತುತ ಮಣ್ಣಿನ ಪೋಷಕಾಂಶಗಳ ಸ್ಥಿತಿಯನ್ನು ಆಧರಿಸಿದೆ"
+                                        ? "ಆಯ್ಕೆ ಮಾಡಿದ ಬೆಳೆ ಮತ್ತು ಪ್ರಸ್ತುತ ಮಣ್ಣಿನ ಪೋಷಕಾಂಶಗಳ ಸ್ಥಿತಿಯನ್ನು ಆಧರಿಸಿದೆ"
 
-                                        : "Based on the current soil nutrient conditions"}
+                                        : "Based on the selected crop and current soil nutrient conditions"}
 
                                 </p>
 
                             </div>
+
+                        </div>
+
+
+                        {/* =================================================
+                            SELECTED CROP
+                        ================================================= */}
+
+                        <div className="fertilizer-product">
+
+                            <span>
+
+                                {isKannada
+                                    ? "ಆಯ್ಕೆ ಮಾಡಿದ ಬೆಳೆ"
+                                    : "Selected Crop"}
+
+                            </span>
+
+
+                            <strong>
+
+                                {selectedCropData
+
+                                    ? (
+                                        isKannada
+                                            ? selectedCropData.kannada
+                                            : selectedCropData.english
+                                    )
+
+                                    : selectedCrop}
+
+                            </strong>
 
                         </div>
 
@@ -1258,8 +1578,8 @@ function Fertilizer() {
                             <span>
 
                                 {isKannada
-                                    ? "ಶಿಫಾರಸು ಮಾಡಿದ ಉತ್ಪನ್ನ"
-                                    : "Recommended Product"}
+                                    ? "ಶಿಫಾರಸು ಮಾಡಿದ ರಸಗೊಬ್ಬರ"
+                                    : "Recommended Fertilizer"}
 
                             </span>
 
@@ -1385,15 +1705,58 @@ function Fertilizer() {
 
                                 {isKannada
 
-                                    ? "ಈ ಶಿಫಾರಸನ್ನು ಕೆಳಗಿನ ಮಣ್ಣು ಮತ್ತು ಪರಿಸರದ ಮೌಲ್ಯಗಳನ್ನು ಬಳಸಿ ರಚಿಸಲಾಗಿದೆ."
+                                    ? "ಈ ಶಿಫಾರಸನ್ನು ಆಯ್ಕೆ ಮಾಡಿದ ಬೆಳೆ ಮತ್ತು ಕೆಳಗಿನ ಮಣ್ಣು ಮತ್ತು ಪರಿಸರದ ಮೌಲ್ಯಗಳನ್ನು ಬಳಸಿ ರಚಿಸಲಾಗಿದೆ."
 
-                                    : "This recommendation was generated using the following soil and environmental values."}
+                                    : "This recommendation was generated using the selected crop and the following soil and environmental values."}
 
                             </p>
 
 
                             <div className="summary-grid">
 
+
+                                {/* CROP */}
+
+                                <div>
+
+                                    <span>
+
+                                        🌾{" "}
+
+                                        {isKannada
+                                            ? "ಬೆಳೆ"
+                                            : "Crop"}
+
+                                    </span>
+
+
+                                    <strong>
+
+                                        {selectedCropData
+
+                                            ? (
+                                                isKannada
+                                                    ? selectedCropData.kannada
+                                                    : selectedCropData.english
+                                            )
+
+                                            : "--"}
+
+                                    </strong>
+
+
+                                    <small>
+
+                                        {isKannada
+                                            ? "ಆಯ್ಕೆ ಮಾಡಿದ ಬೆಳೆ"
+                                            : "Selected crop"}
+
+                                    </small>
+
+                                </div>
+
+
+                                {/* N */}
 
                                 <div>
 
@@ -1410,6 +1773,8 @@ function Fertilizer() {
                                 </div>
 
 
+                                {/* P */}
+
                                 <div>
 
                                     <span>P</span>
@@ -1424,6 +1789,8 @@ function Fertilizer() {
 
                                 </div>
 
+
+                                {/* K */}
 
                                 <div>
 
@@ -1440,6 +1807,8 @@ function Fertilizer() {
                                 </div>
 
 
+                                {/* PH */}
+
                                 <div>
 
                                     <span>pH</span>
@@ -1455,6 +1824,8 @@ function Fertilizer() {
                                 </div>
 
 
+                                {/* MOISTURE */}
+
                                 <div>
 
                                     <span>
@@ -1465,6 +1836,7 @@ function Fertilizer() {
 
                                     </span>
 
+
                                     <strong>
 
                                         {sensorData?.soil_moisture ??
@@ -1473,6 +1845,7 @@ function Fertilizer() {
                                         %
 
                                     </strong>
+
 
                                     <small>
 
@@ -1485,6 +1858,8 @@ function Fertilizer() {
                                 </div>
 
 
+                                {/* TEMPERATURE */}
+
                                 <div>
 
                                     <span>
@@ -1495,6 +1870,7 @@ function Fertilizer() {
 
                                     </span>
 
+
                                     <strong>
 
                                         {sensorData?.temperature ??
@@ -1503,6 +1879,7 @@ function Fertilizer() {
                                         °C
 
                                     </strong>
+
 
                                     <small>
 
@@ -1514,7 +1891,9 @@ function Fertilizer() {
 
                                 </div>
 
+
                             </div>
+
 
                         </div>
 
