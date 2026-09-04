@@ -29,7 +29,7 @@ TARGET_COLUMN = "crop"
 
 
 # =========================================================
-# MODEL FILE
+# MODEL PATH
 # =========================================================
 
 MODEL_DIR = (
@@ -49,13 +49,22 @@ MODEL_PATH = (
 
 
 # =========================================================
+# CACHED MODEL
+# =========================================================
+
+_CROP_MODEL = None
+
+
+# =========================================================
 # TRAIN MODEL
 # =========================================================
 
 def train_crop_model():
     """
-    Train the Random Forest crop recommendation model
-    using the complete crop dataset.
+    Train the Random Forest crop recommendation model.
+
+    Training should be performed locally.
+    The trained model is then deployed to Render.
     """
 
     dataset = load_crop_data()
@@ -66,7 +75,7 @@ def train_crop_model():
         )
 
     # -----------------------------------------------------
-    # Check columns
+    # Check required columns
     # -----------------------------------------------------
 
     required_columns = (
@@ -145,25 +154,44 @@ def train_crop_model():
     # -----------------------------------------------------
 
     X_train, X_test, y_train, y_test = train_test_split(
+
         X,
+
         y,
+
         test_size=0.20,
+
         random_state=42,
+
         stratify=y
+
     )
 
     # -----------------------------------------------------
     # Random Forest
+    #
+    # Reduced from 100 trees to 75 trees.
+    #
+    # This reduces RAM and model size while still
+    # providing good classification performance.
     # -----------------------------------------------------
 
     model = RandomForestClassifier(
-        n_estimators=100,
+
+        n_estimators=75,
+
         max_depth=None,
+
         min_samples_split=2,
+
         min_samples_leaf=1,
+
         random_state=42,
+
         n_jobs=-1,
+
         class_weight="balanced"
+
     )
 
     # -----------------------------------------------------
@@ -189,38 +217,59 @@ def train_crop_model():
     )
 
     # -----------------------------------------------------
-    # Save model
+    # Model information
     # -----------------------------------------------------
 
     model_data = {
-        "model": model,
-        "features": FEATURE_COLUMNS,
-        "accuracy": float(accuracy),
-        "dataset_records": int(len(dataset)),
-        "crop_classes": sorted(
-            y.unique().tolist()
-        )
+
+        "model":
+            model,
+
+        "features":
+            FEATURE_COLUMNS,
+
+        "accuracy":
+            float(accuracy),
+
+        "dataset_records":
+            int(len(dataset)),
+
+        "crop_classes":
+            sorted(
+                y.unique().tolist()
+            )
+
     }
 
+    # -----------------------------------------------------
+    # Save compressed model
+    # -----------------------------------------------------
+
     joblib.dump(
+
         model_data,
-        MODEL_PATH
+
+        MODEL_PATH,
+
+        compress=3
+
     )
 
-    print(
-        "=========================================="
-    )
+    # -----------------------------------------------------
+    # Console output
+    # -----------------------------------------------------
 
-    print(
-        "CROP MODEL TRAINED"
-    )
-
-    print(
-        "=========================================="
-    )
+    print()
+    print("=" * 50)
+    print("CROP MODEL TRAINED")
+    print("=" * 50)
 
     print(
         f"Dataset records : {len(dataset)}"
+    )
+
+    print(
+        f"Features        : {len(FEATURE_COLUMNS)}"
     )
 
     print(
@@ -235,9 +284,7 @@ def train_crop_model():
         f"Model saved     : {MODEL_PATH}"
     )
 
-    print(
-        "=========================================="
-    )
+    print("=" * 50)
 
     return model_data
 
@@ -248,30 +295,54 @@ def train_crop_model():
 
 def load_crop_model():
     """
-    Load the trained crop model.
+    Load the trained crop model once and reuse it.
 
-    If the model does not exist, automatically train it.
+    The model is NOT retrained automatically.
+    This prevents large memory usage on Render.
     """
+
+    global _CROP_MODEL
+
+    # -----------------------------------------------------
+    # Return cached model
+    # -----------------------------------------------------
+
+    if _CROP_MODEL is not None:
+        return _CROP_MODEL
+
+    # -----------------------------------------------------
+    # Model must already exist
+    # -----------------------------------------------------
 
     if not MODEL_PATH.exists():
 
-        print(
-            "Crop model not found."
+        raise FileNotFoundError(
+
+            f"Crop model not found: {MODEL_PATH}. "
+
+            "Train the model locally before deployment."
+
         )
 
-        print(
-            "Training new Random Forest model..."
-        )
-
-        return train_crop_model()
+    # -----------------------------------------------------
+    # Load model
+    # -----------------------------------------------------
 
     try:
 
-        model_data = joblib.load(
+        print(
+            "Loading crop model..."
+        )
+
+        _CROP_MODEL = joblib.load(
             MODEL_PATH
         )
 
-        return model_data
+        print(
+            "Crop model loaded successfully."
+        )
+
+        return _CROP_MODEL
 
     except Exception as error:
 
@@ -283,11 +354,11 @@ def load_crop_model():
             f"Reason: {error}"
         )
 
-        print(
-            "Retraining crop model..."
-        )
+        raise RuntimeError(
 
-        return train_crop_model()
+            "Crop model could not be loaded."
+
+        ) from error
 
 
 # =========================================================
@@ -298,9 +369,15 @@ def predict_crop(features):
     """
     Predict the most suitable crop.
 
-    Returns:
+    Expected features:
 
-        recommended crop
+    nitrogen
+    phosphorus
+    potassium
+    temperature
+    humidity
+    ph
+    rainfall
     """
 
     # -----------------------------------------------------
@@ -309,11 +386,11 @@ def predict_crop(features):
 
     features = np.asarray(
         features,
-        dtype=float
+        dtype=np.float32
     )
 
     # -----------------------------------------------------
-    # Handle (1, 7)
+    # Handle 2D input
     # -----------------------------------------------------
 
     if features.ndim == 2:
@@ -321,23 +398,35 @@ def predict_crop(features):
         if features.shape[0] != 1:
 
             raise ValueError(
-                "Crop prediction expects one input record."
+                "Crop prediction expects "
+                "one input record."
             )
 
         features = features[0]
 
     # -----------------------------------------------------
-    # Validate number of features
+    # Validate dimensions
     # -----------------------------------------------------
+
+    if features.ndim != 1:
+
+        raise ValueError(
+            "Crop prediction input must "
+            "be a one-dimensional feature list."
+        )
 
     if len(features) != len(
         FEATURE_COLUMNS
     ):
 
         raise ValueError(
-            "Crop prediction requires exactly 7 features: "
+
+            "Crop prediction requires exactly "
+            "7 features: "
+
             "nitrogen, phosphorus, potassium, "
             "temperature, humidity, ph, rainfall"
+
         )
 
     # -----------------------------------------------------
@@ -349,11 +438,12 @@ def predict_crop(features):
     ):
 
         raise ValueError(
-            "Crop prediction contains invalid numeric values."
+            "Crop prediction contains "
+            "invalid numeric values."
         )
 
     # -----------------------------------------------------
-    # Load model
+    # Load cached model
     # -----------------------------------------------------
 
     model_data = load_crop_model()
@@ -365,8 +455,11 @@ def predict_crop(features):
     # -----------------------------------------------------
 
     input_data = pd.DataFrame(
+
         [features],
+
         columns=FEATURE_COLUMNS
+
     )
 
     # -----------------------------------------------------
@@ -385,8 +478,6 @@ def predict_crop(features):
         input_data
     )[0]
 
-    classes = model.classes_
-
     best_index = int(
         np.argmax(probabilities)
     )
@@ -400,31 +491,39 @@ def predict_crop(features):
     # -----------------------------------------------------
 
     return {
-        "recommended_crop": str(
-            prediction
-        ).strip().lower(),
 
-        "confidence": round(
-            confidence * 100,
-            2
-        ),
+        "recommended_crop":
+            str(
+                prediction
+            ).strip().lower(),
 
-        "model": "Random Forest",
+        "confidence":
+            round(
+                confidence * 100,
+                2
+            ),
 
-        "dataset_records": model_data.get(
-            "dataset_records",
-            0
-        ),
+        "model":
+            "Random Forest",
 
-        "crop_classes": len(
-            classes
-        ),
-
-        "accuracy": round(
+        "dataset_records":
             model_data.get(
-                "accuracy",
+                "dataset_records",
                 0
-            ) * 100,
-            2
-        )
+            ),
+
+        "crop_classes":
+            len(
+                model.classes_
+            ),
+
+        "accuracy":
+            round(
+                model_data.get(
+                    "accuracy",
+                    0
+                ) * 100,
+                2
+            )
+
     }

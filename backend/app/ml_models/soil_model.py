@@ -1,16 +1,17 @@
 import os
 import joblib
+import numpy as np
 import pandas as pd
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score
 
 from app.services.dataset_service import load_soil_data
 
 
 # =========================================================
-# PATH
+# PATHS
 # =========================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +24,11 @@ MODEL_DIR = os.path.join(
 MODEL_PATH = os.path.join(
     MODEL_DIR,
     "soil_random_forest.pkl"
+)
+
+ACCURACY_PATH = os.path.join(
+    MODEL_DIR,
+    "soil_model_accuracy.txt"
 )
 
 
@@ -43,6 +49,13 @@ TARGET = "soil_health"
 
 
 # =========================================================
+# CACHED MODEL
+# =========================================================
+
+_SOIL_MODEL = None
+
+
+# =========================================================
 # TRAIN SOIL MODEL
 # =========================================================
 
@@ -59,6 +72,11 @@ def train_soil_model():
 
     df = load_soil_data()
 
+    if df is None or df.empty:
+        raise ValueError(
+            "Soil dataset is empty."
+        )
+
     # -----------------------------------------------------
     # Validate columns
     # -----------------------------------------------------
@@ -72,27 +90,78 @@ def train_soil_model():
     ]
 
     if missing_columns:
-
         raise ValueError(
             f"Soil dataset is missing columns: "
             f"{missing_columns}"
         )
 
     # -----------------------------------------------------
-    # Remove missing values
+    # Keep required columns only
     # -----------------------------------------------------
 
     df = df[
         required_columns
-    ].dropna()
+    ].copy()
 
     # -----------------------------------------------------
-    # Features / target
+    # Convert numerical columns
     # -----------------------------------------------------
 
-    X = df[FEATURES]
+    for column in FEATURES:
 
-    y = df[TARGET]
+        df[column] = pd.to_numeric(
+            df[column],
+            errors="coerce"
+        )
+
+    # -----------------------------------------------------
+    # Clean target
+    # -----------------------------------------------------
+
+    df[TARGET] = (
+        df[TARGET]
+        .astype(str)
+        .str.strip()
+    )
+
+    # -----------------------------------------------------
+    # Remove invalid rows
+    # -----------------------------------------------------
+
+    df = df.dropna(
+        subset=FEATURES + [TARGET]
+    )
+
+    df = df[
+        df[TARGET] != ""
+    ]
+
+    if df.empty:
+        raise ValueError(
+            "No valid soil records available."
+        )
+
+    # -----------------------------------------------------
+    # X and y
+    # -----------------------------------------------------
+
+    X = df[
+        FEATURES
+    ].astype(float)
+
+    y = df[
+        TARGET
+    ]
+
+    # -----------------------------------------------------
+    # Check classes
+    # -----------------------------------------------------
+
+    if y.nunique() < 2:
+        raise ValueError(
+            "Soil dataset must contain "
+            "at least two classes."
+        )
 
     # -----------------------------------------------------
     # Train/test split
@@ -111,16 +180,20 @@ def train_soil_model():
     )
 
     # -----------------------------------------------------
-    # Random Forest
+    # OPTIMIZED RANDOM FOREST
     # -----------------------------------------------------
 
     model = RandomForestClassifier(
 
-        n_estimators=300,
+        # Reduced from 300
+        n_estimators=100,
 
         random_state=42,
 
         class_weight="balanced",
+
+        # Helps reduce unnecessary tree growth
+        min_samples_leaf=1,
 
         n_jobs=-1
     )
@@ -129,22 +202,39 @@ def train_soil_model():
     # Train
     # -----------------------------------------------------
 
+    print()
+    print("=" * 50)
+    print("TRAINING SOIL MODEL")
+    print("=" * 50)
+
+    print(
+        f"Dataset records : {len(df)}"
+    )
+
+    print(
+        f"Features        : {len(FEATURES)}"
+    )
+
+    print(
+        f"Classes         : {sorted(y.unique().tolist())}"
+    )
+
+    print(
+        "Random Forest trees : 100"
+    )
+
     model.fit(
         X_train,
         y_train
     )
 
     # -----------------------------------------------------
-    # Prediction
+    # Evaluate
     # -----------------------------------------------------
 
     y_pred = model.predict(
         X_test
     )
-
-    # -----------------------------------------------------
-    # Accuracy
-    # -----------------------------------------------------
 
     accuracy = accuracy_score(
         y_test,
@@ -152,25 +242,39 @@ def train_soil_model():
     )
 
     # -----------------------------------------------------
-    # Classification report
-    # -----------------------------------------------------
-
-    report = classification_report(
-        y_test,
-        y_pred
-    )
-
-    # -----------------------------------------------------
-    # Save model
+    # Save model with compression
     # -----------------------------------------------------
 
     joblib.dump(
         model,
-        MODEL_PATH
+        MODEL_PATH,
+        compress=3
     )
 
     # -----------------------------------------------------
-    # Console output
+    # Save accuracy separately
+    # -----------------------------------------------------
+
+    with open(
+        ACCURACY_PATH,
+        "w",
+        encoding="utf-8"
+    ) as file:
+
+        file.write(
+            str(float(accuracy))
+        )
+
+    # -----------------------------------------------------
+    # Clear cached model
+    # -----------------------------------------------------
+
+    global _SOIL_MODEL
+
+    _SOIL_MODEL = model
+
+    # -----------------------------------------------------
+    # Output
     # -----------------------------------------------------
 
     print()
@@ -194,11 +298,14 @@ def train_soil_model():
         f"Accuracy        : {accuracy * 100:.2f}%"
     )
 
-    print()
-    print("CLASSIFICATION REPORT")
-    print("-" * 50)
+    print(
+        f"Model saved     : {MODEL_PATH}"
+    )
 
-    print(report)
+    print(
+        f"Model size      : "
+        f"{os.path.getsize(MODEL_PATH) / (1024 * 1024):.2f} MB"
+    )
 
     print("=" * 50)
 
@@ -211,17 +318,87 @@ def train_soil_model():
 
 def load_soil_model():
 
+    global _SOIL_MODEL
+
+    # -----------------------------------------------------
+    # Reuse model already loaded in memory
+    # -----------------------------------------------------
+
+    if _SOIL_MODEL is not None:
+        return _SOIL_MODEL
+
+    # -----------------------------------------------------
+    # Model must already exist
+    # -----------------------------------------------------
+
+    if not os.path.exists(MODEL_PATH):
+
+        raise FileNotFoundError(
+            f"Soil model not found: {MODEL_PATH}"
+        )
+
+    # -----------------------------------------------------
+    # Load model
+    # -----------------------------------------------------
+
+    try:
+
+        print(
+            "Loading soil model..."
+        )
+
+        _SOIL_MODEL = joblib.load(
+            MODEL_PATH
+        )
+
+        print(
+            "Soil model loaded successfully."
+        )
+
+        return _SOIL_MODEL
+
+    except Exception as error:
+
+        print(
+            "Unable to load soil model."
+        )
+
+        print(
+            f"Reason: {error}"
+        )
+
+        raise RuntimeError(
+            "Soil model could not be loaded."
+        ) from error
+
+
+# =========================================================
+# LOAD SAVED ACCURACY
+# =========================================================
+
+def load_soil_accuracy():
+
     if not os.path.exists(
-        MODEL_PATH
+        ACCURACY_PATH
     ):
 
-        model, _ = train_soil_model()
+        return 0.0
 
-        return model
+    try:
 
-    return joblib.load(
-        MODEL_PATH
-    )
+        with open(
+            ACCURACY_PATH,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            return float(
+                file.read().strip()
+            )
+
+    except Exception:
+
+        return 0.0
 
 
 # =========================================================
@@ -231,33 +408,82 @@ def load_soil_model():
 def predict_soil(features):
 
     # -----------------------------------------------------
-    # Load model
-    # -----------------------------------------------------
-
-    model = load_soil_model()
-
-    # -----------------------------------------------------
     # Validate input
     # -----------------------------------------------------
 
-    if not features:
+    if features is None:
 
         raise ValueError(
             "Soil feature data cannot be empty."
         )
 
-    if len(features[0]) != len(FEATURES):
+    # -----------------------------------------------------
+    # Convert to NumPy
+    # -----------------------------------------------------
+
+    features = np.asarray(
+        features,
+        dtype=float
+    )
+
+    # -----------------------------------------------------
+    # Make sure input is 2D
+    # -----------------------------------------------------
+
+    if features.ndim == 1:
+
+        features = features.reshape(
+            1,
+            -1
+        )
+
+    if features.ndim != 2:
 
         raise ValueError(
-            f"Expected {len(FEATURES)} features, "
-            f"received {len(features[0])}."
+            "Soil input must be a 2D feature array."
         )
 
     # -----------------------------------------------------
-    # IMPORTANT:
-    # Use DataFrame with the same feature names used
-    # during model training.
-    # This removes sklearn feature-name warnings.
+    # Only one record expected
+    # -----------------------------------------------------
+
+    if features.shape[0] != 1:
+
+        raise ValueError(
+            "Soil prediction expects one input record."
+        )
+
+    # -----------------------------------------------------
+    # Validate feature count
+    # -----------------------------------------------------
+
+    if features.shape[1] != len(FEATURES):
+
+        raise ValueError(
+            f"Expected {len(FEATURES)} features, "
+            f"received {features.shape[1]}."
+        )
+
+    # -----------------------------------------------------
+    # Validate numeric values
+    # -----------------------------------------------------
+
+    if not np.all(
+        np.isfinite(features)
+    ):
+
+        raise ValueError(
+            "Soil input contains invalid numeric values."
+        )
+
+    # -----------------------------------------------------
+    # Load cached model
+    # -----------------------------------------------------
+
+    model = load_soil_model()
+
+    # -----------------------------------------------------
+    # DataFrame with feature names
     # -----------------------------------------------------
 
     input_data = pd.DataFrame(
@@ -281,11 +507,9 @@ def predict_soil(features):
     # Probabilities
     # -----------------------------------------------------
 
-    probabilities_array = (
-        model.predict_proba(
-            input_data
-        )[0]
-    )
+    probabilities_array = model.predict_proba(
+        input_data
+    )[0]
 
     probabilities = {}
 
@@ -305,46 +529,22 @@ def predict_soil(features):
     # Confidence
     # -----------------------------------------------------
 
-    confidence = max(
-        probabilities_array
-    ) * 100
-
-    # -----------------------------------------------------
-    # Accuracy
-    # -----------------------------------------------------
-
-    # Calculate accuracy from dataset/model
-    # without retraining unnecessarily.
-
-    df = load_soil_data()
-
-    X = df[FEATURES]
-
-    y = df[TARGET]
-
-    _, X_test, _, y_test = train_test_split(
-
-        X,
-        y,
-
-        test_size=0.20,
-
-        random_state=42,
-
-        stratify=y
-    )
-
-    test_predictions = model.predict(
-        X_test
-    )
-
-    accuracy = accuracy_score(
-        y_test,
-        test_predictions
+    confidence = (
+        float(
+            np.max(
+                probabilities_array
+            )
+        ) * 100
     )
 
     # -----------------------------------------------------
-    # Return complete result
+    # Load saved accuracy
+    # -----------------------------------------------------
+
+    accuracy = load_soil_accuracy()
+
+    # -----------------------------------------------------
+    # Return
     # -----------------------------------------------------
 
     return {
@@ -354,20 +554,20 @@ def predict_soil(features):
 
         "accuracy":
             round(
-                float(accuracy),
+                accuracy,
                 4
             ),
 
         "confidence":
             round(
-                float(confidence),
+                confidence,
                 2
             ),
 
         "probabilities":
             probabilities,
 
-        # Needed by SHAP
+        # Required by SHAP
         "model":
             model
     }

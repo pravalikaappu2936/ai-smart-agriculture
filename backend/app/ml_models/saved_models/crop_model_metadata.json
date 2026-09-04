@@ -1,0 +1,37 @@
+{
+    "features": [
+        "nitrogen",
+        "phosphorus",
+        "potassium",
+        "temperature",
+        "humidity",
+        "ph",
+        "rainfall"
+    ],
+    "accuracy": 0.9233,
+    "dataset_records": 50000,
+    "crop_classes": [
+        "apple",
+        "banana",
+        "blackgram",
+        "chickpea",
+        "coconut",
+        "coffee",
+        "cotton",
+        "grapes",
+        "jute",
+        "kidneybeans",
+        "lentil",
+        "maize",
+        "mango",
+        "mothbeans",
+        "mungbean",
+        "muskmelon",
+        "orange",
+        "papaya",
+        "pigeonpeas",
+        "pomegranate",
+        "rice",
+        "watermelon"
+    ]
+}
