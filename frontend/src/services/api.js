@@ -325,17 +325,12 @@ export const getSoilAnalysis = async (
 // 5. Moisture
 // 6. Temperature
 //
+// Backend additionally requires:
+//
+// 7. crop_type
+//
 // Backend endpoint:
 // POST /fertilizer/recommend
-//
-// Expected response:
-//
-// {
-//     status: "success",
-//     recommended_fertilizer: "...",
-//     accuracy: 91.86,
-//     advice: "..."
-// }
 //
 // =========================================================
 
@@ -344,7 +339,7 @@ export const getFertilizerRecommendation = async (
 ) => {
 
     // -----------------------------------------------------
-    // Validate input before sending
+    // Validate input
     // -----------------------------------------------------
 
     if (!data) {
@@ -354,6 +349,11 @@ export const getFertilizerRecommendation = async (
         );
 
     }
+
+
+    // -----------------------------------------------------
+    // Prepare fertilizer request
+    // -----------------------------------------------------
 
     const fertilizerData = {
 
@@ -375,6 +375,15 @@ export const getFertilizerRecommendation = async (
         temperature:
             Number(data.temperature),
 
+        // IMPORTANT:
+        // Backend requires crop_type
+        crop_type:
+            String(
+                data.crop_type || ""
+            )
+                .trim()
+                .toLowerCase(),
+
     };
 
 
@@ -382,9 +391,32 @@ export const getFertilizerRecommendation = async (
     // Validate numeric values
     // -----------------------------------------------------
 
+    const numericFields = {
+
+        nitrogen:
+            fertilizerData.nitrogen,
+
+        phosphorus:
+            fertilizerData.phosphorus,
+
+        potassium:
+            fertilizerData.potassium,
+
+        ph:
+            fertilizerData.ph,
+
+        moisture:
+            fertilizerData.moisture,
+
+        temperature:
+            fertilizerData.temperature,
+
+    };
+
+
     const invalidFields =
         Object.entries(
-            fertilizerData
+            numericFields
         )
 
             .filter(
@@ -404,6 +436,21 @@ export const getFertilizerRecommendation = async (
 
         throw new Error(
             `Invalid fertilizer sensor values: ${invalidFields.join(", ")}`
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate crop type
+    // -----------------------------------------------------
+
+    if (
+        !fertilizerData.crop_type
+    ) {
+
+        throw new Error(
+            "Crop type is required for fertilizer recommendation."
         );
 
     }
