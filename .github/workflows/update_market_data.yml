@@ -2,8 +2,16 @@ name: Update Karnataka Government Market Prices
 
 on:
   schedule:
+    # Run automatically every hour
     - cron: "0 * * * *"
+
+  # Allows manual execution from GitHub Actions
   workflow_dispatch:
+
+# Prevent two market-data updates from running at the same time
+concurrency:
+  group: market-data-update
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -13,10 +21,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ---------------------------------------------------------
+      # 1. Checkout latest repository
+      # ---------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Fetch Karnataka market prices
+      # ---------------------------------------------------------
+      # 2. Fetch Karnataka market prices
+      # ---------------------------------------------------------
+      - name: Fetch official Data.gov.in market data
         env:
           DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
         run: |
@@ -29,18 +45,34 @@ jobs:
           from urllib.parse import urlencode
           from urllib.request import Request, urlopen
 
+          # -----------------------------------------------------
+          # Data.gov.in resource
+          # -----------------------------------------------------
           RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070"
-          API_URL = f"https://api.data.gov.in/resource/{RESOURCE_ID}"
 
+          API_URL = (
+              f"https://api.data.gov.in/resource/{RESOURCE_ID}"
+          )
+
+          # -----------------------------------------------------
+          # Target state
+          # -----------------------------------------------------
           STATE = "Karnataka"
 
-          # Increased from 1,000 to 10,000 records per request
-          PAGE_SIZE = 1000
+          # -----------------------------------------------------
+          # Records per API request
+          # Increased from 1,000 to 10,000
+          # -----------------------------------------------------
+          PAGE_SIZE = 10000
 
-          # Safety limit: allows multiple pages if Karnataka has
-          # more than 10,000 records.
+          # -----------------------------------------------------
+          # Maximum total records we will fetch
+          # -----------------------------------------------------
           MAX_RECORDS = 50000
 
+          # -----------------------------------------------------
+          # API key
+          # -----------------------------------------------------
           api_key = os.environ.get("DATA_GOV_API_KEY")
 
           if not api_key:
@@ -55,6 +87,9 @@ jobs:
                   "DATA_GOV_API_KEY GitHub Secret is empty."
               )
 
+          # -----------------------------------------------------
+          # Fetch records using pagination
+          # -----------------------------------------------------
           all_records = []
           offset = 0
 
@@ -63,30 +98,40 @@ jobs:
               params = {
                   "api-key": api_key,
                   "format": "json",
+
+                  # Increased request size
                   "limit": PAGE_SIZE,
+
+                  # Pagination
                   "offset": offset,
 
-                  # IMPORTANT:
-                  # Fetch only Karnataka records.
-                  "filters[state]": STATE,
+                  # Karnataka filter
+                  "filters[state.keyword]": STATE,
               }
 
               url = API_URL + "?" + urlencode(params)
 
+              print("=" * 70)
               print(
-                  f"Fetching Karnataka records: "
-                  f"offset={offset}, limit={PAGE_SIZE}"
+                  f"Fetching Karnataka market data "
+                  f"(offset={offset}, limit={PAGE_SIZE})"
               )
+              print("=" * 70)
 
               request = Request(
                   url,
                   headers={
-                      "User-Agent": "AI-Smart-Agriculture/1.0"
+                      "User-Agent":
+                          "AI-Smart-Agriculture/1.0"
                   },
               )
 
               try:
-                  with urlopen(request, timeout=120) as response:
+                  with urlopen(
+                      request,
+                      timeout=120
+                  ) as response:
+
                       raw_data = response.read()
 
                   data = json.loads(
@@ -95,10 +140,13 @@ jobs:
 
               except Exception as error:
                   raise RuntimeError(
-                      f"Data.gov.in request failed at offset "
-                      f"{offset}: {error}"
+                      "Data.gov.in request failed "
+                      f"at offset {offset}: {error}"
                   ) from error
 
+              # -------------------------------------------------
+              # Validate response
+              # -------------------------------------------------
               records = data.get("records", [])
 
               if not isinstance(records, list):
@@ -107,18 +155,26 @@ jobs:
                   )
 
               print(
-                  f"Received {len(records)} records."
+                  f"Records received in this request: "
+                  f"{len(records)}"
               )
 
+              # No more records
               if not records:
+                  print(
+                      "No more records available."
+                  )
                   break
 
+              # -------------------------------------------------
+              # Normalize records
+              # -------------------------------------------------
               for record in records:
 
                   if not isinstance(record, dict):
                       continue
 
-                  all_records.append({
+                  normalized_record = {
                       "state": record.get("state"),
                       "district": record.get("district"),
                       "market": record.get("market"),
@@ -129,19 +185,35 @@ jobs:
                       "min_price": record.get("min_price"),
                       "max_price": record.get("max_price"),
                       "modal_price": record.get("modal_price"),
-                  })
+                  }
+
+                  all_records.append(
+                      normalized_record
+                  )
 
               offset += len(records)
 
-              # If fewer than PAGE_SIZE were returned,
-              # we reached the final page.
+              print(
+                  f"Total records fetched so far: "
+                  f"{len(all_records)}"
+              )
+
+              # -------------------------------------------------
+              # If fewer records than PAGE_SIZE were returned,
+              # this was the final page.
+              # -------------------------------------------------
               if len(records) < PAGE_SIZE:
+                  print(
+                      "Final page reached."
+                  )
                   break
 
-              # Small delay between requests.
+              # Small delay between API requests
               time.sleep(1)
 
-          # Remove duplicate records.
+          # -----------------------------------------------------
+          # Remove duplicate records
+          # -----------------------------------------------------
           unique_records = []
           seen = set()
 
@@ -166,28 +238,133 @@ jobs:
               seen.add(key)
               unique_records.append(record)
 
+          # -----------------------------------------------------
+          # Validate state
+          # -----------------------------------------------------
+          invalid_states = []
+
+          for record in unique_records:
+
+              state = record.get("state")
+
+              if (
+                  state
+                  and state.strip().lower()
+                  != STATE.lower()
+              ):
+                  invalid_states.append(state)
+
+          if invalid_states:
+              print(
+                  "WARNING: Some records were not Karnataka."
+              )
+
+              print(
+                  "Unexpected states:",
+                  sorted(
+                      set(invalid_states)
+                  )
+              )
+
+          # -----------------------------------------------------
+          # Basic statistics
+          # -----------------------------------------------------
+          districts = sorted(
+              {
+                  record.get("district")
+                  for record in unique_records
+                  if record.get("district")
+              }
+          )
+
+          markets = sorted(
+              {
+                  record.get("market")
+                  for record in unique_records
+                  if record.get("market")
+              }
+          )
+
+          commodities = sorted(
+              {
+                  record.get("commodity")
+                  for record in unique_records
+                  if record.get("commodity")
+              }
+          )
+
+          print("=" * 70)
+          print("KARNATAKA MARKET DATA SUMMARY")
+          print("=" * 70)
+
           print(
-              f"Total Karnataka records fetched: "
+              f"Total records fetched: "
+              f"{len(all_records)}"
+          )
+
+          print(
+              f"Unique records stored: "
               f"{len(unique_records)}"
           )
 
+          print(
+              f"Districts found: "
+              f"{len(districts)}"
+          )
+
+          print(
+              f"Markets found: "
+              f"{len(markets)}"
+          )
+
+          print(
+              f"Commodities found: "
+              f"{len(commodities)}"
+          )
+
+          print(
+              "District list:"
+          )
+
+          for district in districts:
+              print(
+                  f"  - {district}"
+              )
+
+          print("=" * 70)
+
+          # -----------------------------------------------------
+          # Do not replace a working cache with empty data
+          # -----------------------------------------------------
           if not unique_records:
               raise RuntimeError(
                   "No Karnataka market records were returned."
               )
 
+          # -----------------------------------------------------
+          # Create cache
+          # -----------------------------------------------------
           cache = {
               "success": True,
+
               "updated_at": datetime.now(
                   timezone.utc
               ).isoformat(),
+
               "source": "Data.gov.in",
+
               "resource_id": RESOURCE_ID,
+
               "state": STATE,
+
               "total": len(unique_records),
+
               "records": unique_records,
           }
 
+          # -----------------------------------------------------
+          # Save cache
+          # -----------------------------------------------------
           cache_path = Path(
               "backend/data/market_cache.json"
           )
@@ -206,29 +383,67 @@ jobs:
               encoding="utf-8"
           )
 
+          print("=" * 70)
           print(
               "Karnataka market cache updated successfully."
           )
-
           print(
-              f"Records stored: {len(unique_records)}"
+              f"Records stored: "
+              f"{len(unique_records)}"
           )
-
           print(
-              f"Cache file: {cache_path}"
+              f"Districts: "
+              f"{len(districts)}"
           )
+          print(
+              f"Markets: "
+              f"{len(markets)}"
+          )
+          print(
+              f"Cache file: "
+              f"{cache_path}"
+          )
+          print("=" * 70)
+
           PY
 
-      - name: Commit updated market cache
+      # ---------------------------------------------------------
+      # 3. Synchronize with latest GitHub main branch
+      # ---------------------------------------------------------
+      - name: Sync with latest main branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          echo "Fetching latest remote changes..."
+
+          git fetch origin main
+
+          echo "Rebasing local branch on latest origin/main..."
+
+          git rebase origin/main
+
+      # ---------------------------------------------------------
+      # 4. Commit updated cache
+      # ---------------------------------------------------------
+      - name: Commit updated market cache
+        run: |
           git add backend/data/market_cache.json
 
           if git diff --cached --quiet; then
             echo "No market data changes."
-          else
-            git commit -m "Update Karnataka government market prices"
-            git push
+            exit 0
           fi
+
+          git commit -m "Update Karnataka government market prices"
+
+      # ---------------------------------------------------------
+      # 5. Push updated cache
+      # ---------------------------------------------------------
+      - name: Push updated market cache
+        run: |
+          echo "Pushing market cache to GitHub..."
+
+          git push origin HEAD:main
+
+          echo "Market cache pushed successfully."
