@@ -125,7 +125,6 @@ def prepare_fertilizer_data():
         raise ValueError(
 
             "Fertilizer dataset is missing columns: "
-
             + ", ".join(missing_columns)
 
         )
@@ -287,11 +286,8 @@ def train_fertilizer_model():
 
     class_counts = y.value_counts()
 
-
     use_stratify = (
-
         class_counts.min() >= 2
-
     )
 
 
@@ -334,14 +330,16 @@ def train_fertilizer_model():
 
 
     # -----------------------------------------------------
-    # TRAIN
+    # TRAINING INFORMATION
     # -----------------------------------------------------
 
     print()
 
     print("=" * 60)
 
-    print("TRAINING FERTILIZER RANDOM FOREST MODEL")
+    print(
+        "TRAINING FERTILIZER RANDOM FOREST MODEL"
+    )
 
     print("=" * 60)
 
@@ -363,6 +361,10 @@ def train_fertilizer_model():
 
     print()
 
+
+    # -----------------------------------------------------
+    # TRAIN
+    # -----------------------------------------------------
 
     model.fit(
 
@@ -431,9 +433,11 @@ def train_fertilizer_model():
 
     metadata = {
 
-        "model": "Random Forest Classifier",
+        "model":
+            "Random Forest Classifier",
 
-        "accuracy": float(accuracy),
+        "accuracy":
+            float(accuracy),
 
         "accuracy_percent":
             round(
@@ -509,7 +513,9 @@ def train_fertilizer_model():
 
     print("=" * 60)
 
-    print("FERTILIZER MODEL TRAINED")
+    print(
+        "FERTILIZER MODEL TRAINED"
+    )
 
     print("=" * 60)
 
@@ -580,9 +586,7 @@ def load_fertilizer_model():
         raise FileNotFoundError(
 
             "Saved fertilizer model not found: "
-
             f"{MODEL_PATH}. "
-
             "Train the fertilizer model locally "
             "before starting the application."
 
@@ -628,9 +632,7 @@ def load_fertilizer_model():
 
 
         print(
-
             "Fertilizer model loaded successfully."
-
         )
 
 
@@ -708,7 +710,6 @@ def load_fertilizer_accuracy():
 
         )
 
-
         return 0.0
 
 
@@ -781,7 +782,6 @@ def predict_fertilizer(features):
 
     )
 
-
     received_features = features.shape[1]
 
 
@@ -790,15 +790,10 @@ def predict_fertilizer(features):
         raise ValueError(
 
             f"Expected "
-
             f"{expected_features} "
-
             f"fertilizer features "
-
             f"({', '.join(FEATURE_NAMES)}), "
-
             f"but received "
-
             f"{received_features}."
 
         )
@@ -860,7 +855,6 @@ def predict_fertilizer(features):
         print(
 
             "Fertilizer model prediction error:",
-
             error
 
         )

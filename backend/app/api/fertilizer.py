@@ -33,7 +33,16 @@ def fertilizer_recommendation(
     try:
 
         # -------------------------------------------------
-        # PREPARE INPUT
+        # PREPARE NUMERIC MODEL INPUT
+        # -------------------------------------------------
+        #
+        # IMPORTANT:
+        # The fertilizer model was trained using ONLY
+        # these 6 numeric features.
+        #
+        # crop_type is NOT passed to the ML model.
+        # It is used later for crop-specific advice.
+        #
         # -------------------------------------------------
 
         features = [
@@ -48,11 +57,56 @@ def fertilizer_recommendation(
 
             float(data.moisture),
 
-            float(data.temperature),
-
-            str(data.crop_type)
+            float(data.temperature)
 
         ]
+
+
+        # -------------------------------------------------
+        # VALIDATE NUMERIC VALUES
+        # -------------------------------------------------
+
+        for value in features:
+
+            if not isinstance(value, (int, float)):
+
+                raise ValueError(
+                    "Fertilizer input must contain numeric values."
+                )
+
+
+        # -------------------------------------------------
+        # VALIDATE CROP TYPE
+        # -------------------------------------------------
+
+        crop_type = str(
+            data.crop_type
+        ).strip().lower()
+
+
+        if not crop_type:
+
+            raise ValueError(
+                "Crop type is required for fertilizer recommendation."
+            )
+
+
+        # -------------------------------------------------
+        # DEBUG LOG
+        # -------------------------------------------------
+
+        print(
+            "Fertilizer model input:",
+            {
+                "nitrogen": features[0],
+                "phosphorus": features[1],
+                "potassium": features[2],
+                "ph": features[3],
+                "moisture": features[4],
+                "temperature": features[5],
+                "crop_type": crop_type
+            }
+        )
 
 
         # -------------------------------------------------
@@ -92,9 +146,11 @@ def fertilizer_recommendation(
 
         advice = ""
 
+
         try:
 
             dataset = load_fertilizer_data()
+
 
             if (
                 "recommended_fertilizer"
@@ -103,6 +159,10 @@ def fertilizer_recommendation(
                 "advice"
                 in dataset.columns
             ):
+
+                # -----------------------------------------
+                # FIND FERTILIZER MATCHES
+                # -----------------------------------------
 
                 matching_rows = dataset[
                     dataset[
@@ -118,9 +178,9 @@ def fertilizer_recommendation(
                 ]
 
 
-                # -------------------------------------------------
+                # -----------------------------------------
                 # PREFER CROP-SPECIFIC ADVICE
-                # -------------------------------------------------
+                # -----------------------------------------
 
                 if (
                     "crop_type"
@@ -135,15 +195,18 @@ def fertilizer_recommendation(
                         .str.strip()
                         .str.lower()
                         ==
-                        str(data.crop_type)
-                        .strip()
-                        .lower()
+                        crop_type
                     ]
+
 
                     if not crop_rows.empty:
 
                         matching_rows = crop_rows
 
+
+                # -----------------------------------------
+                # GET FIRST AVAILABLE ADVICE
+                # -----------------------------------------
 
                 if not matching_rows.empty:
 
@@ -181,7 +244,7 @@ def fertilizer_recommendation(
 
             advice = (
                 f"Use {fertilizer} according to "
-                f"the requirements of {data.crop_type} "
+                f"the requirements of {crop_type} "
                 "and the current soil condition. "
                 "Avoid excessive fertilizer application."
             )
@@ -205,7 +268,7 @@ def fertilizer_recommendation(
                 ),
 
             "crop_type":
-                str(data.crop_type),
+                crop_type,
 
             "advice":
                 advice
@@ -218,6 +281,11 @@ def fertilizer_recommendation(
     # =====================================================
 
     except ValueError as error:
+
+        print(
+            "Fertilizer validation/model error:",
+            error
+        )
 
         raise HTTPException(
 
