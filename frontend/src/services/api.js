@@ -275,7 +275,7 @@ export const getLatestSensorData = async () => {
 
 
 // =========================================================
-// CROP
+// CROP RECOMMENDATION
 // =========================================================
 
 export const getCropRecommendation = async (
@@ -294,7 +294,7 @@ export const getCropRecommendation = async (
 
 
 // =========================================================
-// SOIL
+// SOIL ANALYSIS
 // =========================================================
 
 export const getSoilAnalysis = async (
@@ -313,7 +313,7 @@ export const getSoilAnalysis = async (
 
 
 // =========================================================
-// FERTILIZER
+// FERTILIZER RECOMMENDATION
 // =========================================================
 //
 // Current fertilizer model uses:
@@ -330,6 +330,7 @@ export const getSoilAnalysis = async (
 // 7. crop_type
 //
 // Backend endpoint:
+//
 // POST /fertilizer/recommend
 //
 // =========================================================
@@ -375,8 +376,6 @@ export const getFertilizerRecommendation = async (
         temperature:
             Number(data.temperature),
 
-        // IMPORTANT:
-        // Backend requires crop_type
         crop_type:
             String(
                 data.crop_type || ""
@@ -496,7 +495,7 @@ export const getFertilizerRecommendation = async (
 
 
 // =========================================================
-// IRRIGATION
+// IRRIGATION PREDICTION
 // =========================================================
 
 export const getIrrigationPrediction = async (
@@ -508,6 +507,291 @@ export const getIrrigationPrediction = async (
             "/irrigation/predict",
             data
         );
+
+    return response.data;
+
+};
+
+
+// =========================================================
+// CROP YIELD PREDICTION
+// =========================================================
+//
+// Backend endpoint:
+//
+// POST /yield/predict
+//
+// Model features:
+//
+// 1. year
+// 2. state
+// 3. crop
+// 4. season
+// 5. area
+// 6. annual_rainfall
+// 7. fertilizer
+// 8. pesticide
+//
+// Target:
+//
+// yield (tonnes/hectare)
+//
+// =========================================================
+
+export const predictCropYield = async (
+    data
+) => {
+
+    // -----------------------------------------------------
+    // Validate input object
+    // -----------------------------------------------------
+
+    if (!data) {
+
+        throw new Error(
+            "Crop yield input data is required."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Prepare request data
+    // -----------------------------------------------------
+
+    const yieldData = {
+
+        year:
+            Number(data.year),
+
+        state:
+            String(
+                data.state || ""
+            )
+                .trim(),
+
+        crop:
+            String(
+                data.crop || ""
+            )
+                .trim(),
+
+        season:
+            String(
+                data.season || ""
+            )
+                .trim(),
+
+        area:
+            Number(data.area),
+
+        annual_rainfall:
+            Number(
+                data.annual_rainfall
+            ),
+
+        fertilizer:
+            Number(
+                data.fertilizer
+            ),
+
+        pesticide:
+            Number(
+                data.pesticide
+            ),
+
+    };
+
+
+    // -----------------------------------------------------
+    // Validate numeric fields
+    // -----------------------------------------------------
+
+    const numericFields = {
+
+        year:
+            yieldData.year,
+
+        area:
+            yieldData.area,
+
+        annual_rainfall:
+            yieldData.annual_rainfall,
+
+        fertilizer:
+            yieldData.fertilizer,
+
+        pesticide:
+            yieldData.pesticide,
+
+    };
+
+
+    const invalidFields =
+        Object.entries(
+            numericFields
+        )
+
+            .filter(
+                ([, value]) =>
+                    !Number.isFinite(value)
+            )
+
+            .map(
+                ([key]) =>
+                    key
+            );
+
+
+    if (
+        invalidFields.length > 0
+    ) {
+
+        throw new Error(
+            `Invalid crop yield values: ${invalidFields.join(", ")}`
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate state
+    // -----------------------------------------------------
+
+    if (
+        !yieldData.state
+    ) {
+
+        throw new Error(
+            "State is required for crop yield prediction."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate crop
+    // -----------------------------------------------------
+
+    if (
+        !yieldData.crop
+    ) {
+
+        throw new Error(
+            "Crop is required for crop yield prediction."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate season
+    // -----------------------------------------------------
+
+    if (
+        !yieldData.season
+    ) {
+
+        throw new Error(
+            "Season is required for crop yield prediction."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate area
+    // -----------------------------------------------------
+
+    if (
+        yieldData.area <= 0
+    ) {
+
+        throw new Error(
+            "Area must be greater than zero."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate rainfall
+    // -----------------------------------------------------
+
+    if (
+        yieldData.annual_rainfall < 0
+    ) {
+
+        throw new Error(
+            "Annual rainfall cannot be negative."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate fertilizer
+    // -----------------------------------------------------
+
+    if (
+        yieldData.fertilizer < 0
+    ) {
+
+        throw new Error(
+            "Fertilizer value cannot be negative."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate pesticide
+    // -----------------------------------------------------
+
+    if (
+        yieldData.pesticide < 0
+    ) {
+
+        throw new Error(
+            "Pesticide value cannot be negative."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Console debugging
+    // -----------------------------------------------------
+
+    console.log(
+        "Crop Yield API request:",
+        yieldData
+    );
+
+
+    // -----------------------------------------------------
+    // API REQUEST
+    // -----------------------------------------------------
+
+    const response =
+        await API.post(
+
+            "/yield/predict",
+
+            yieldData
+
+        );
+
+
+    // -----------------------------------------------------
+    // Console response
+    // -----------------------------------------------------
+
+    console.log(
+        "Crop Yield API response:",
+        response.data
+    );
+
 
     return response.data;
 
