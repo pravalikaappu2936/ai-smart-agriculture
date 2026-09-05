@@ -799,6 +799,156 @@ export const predictCropYield = async (
 
 
 // =========================================================
+// MARKET PRICE ANALYSIS
+// =========================================================
+//
+// Backend endpoint:
+//
+// GET /market/prices
+//
+// Query parameters:
+//
+// 1. commodity
+// 2. state
+// 3. district
+// 4. market
+// 5. limit
+//
+// Data source:
+//
+// Government of India mandi market data
+//
+// =========================================================
+
+export const getMarketPrices = async ({
+
+    commodity = "",
+
+    state = "",
+
+    district = "",
+
+    market = "",
+
+    limit = 100,
+
+} = {}) => {
+
+
+    // -----------------------------------------------------
+    // Prepare query parameters
+    // -----------------------------------------------------
+
+    const params = {
+
+        limit:
+            Number(limit) || 100,
+
+    };
+
+
+    // -----------------------------------------------------
+    // Commodity filter
+    // -----------------------------------------------------
+
+    if (
+        commodity &&
+        commodity.trim()
+    ) {
+
+        params.commodity =
+            commodity.trim();
+
+    }
+
+
+    // -----------------------------------------------------
+    // State filter
+    // -----------------------------------------------------
+
+    if (
+        state &&
+        state.trim()
+    ) {
+
+        params.state =
+            state.trim();
+
+    }
+
+
+    // -----------------------------------------------------
+    // District filter
+    // -----------------------------------------------------
+
+    if (
+        district &&
+        district.trim()
+    ) {
+
+        params.district =
+            district.trim();
+
+    }
+
+
+    // -----------------------------------------------------
+    // Market filter
+    // -----------------------------------------------------
+
+    if (
+        market &&
+        market.trim()
+    ) {
+
+        params.market =
+            market.trim();
+
+    }
+
+
+    // -----------------------------------------------------
+    // Console debugging
+    // -----------------------------------------------------
+
+    console.log(
+        "Market Price API request:",
+        params
+    );
+
+
+    // -----------------------------------------------------
+    // API REQUEST
+    // -----------------------------------------------------
+
+    const response =
+        await API.get(
+
+            "/market/prices",
+
+            {
+                params,
+            }
+
+        );
+
+
+    // -----------------------------------------------------
+    // Console response
+    // -----------------------------------------------------
+
+    console.log(
+        "Market Price API response:",
+        response.data
+    );
+
+
+    return response.data;
+
+};
+
+
+// =========================================================
 // WEATHER - CURRENT
 // =========================================================
 
@@ -843,6 +993,7 @@ export const getCurrentWeather = async (
 export const getWeatherByCoordinates = async (
 
     latitude,
+
     longitude
 
 ) => {
@@ -851,6 +1002,7 @@ export const getWeatherByCoordinates = async (
 
         latitude === null ||
         latitude === undefined ||
+
         longitude === null ||
         longitude === undefined
 
@@ -893,7 +1045,9 @@ export const getWeatherByCoordinates = async (
 export const searchWeatherLocations = async (
 
     village,
+
     district = "",
+
     state = ""
 
 ) => {
@@ -1087,6 +1241,7 @@ export const markAllNotificationsAsRead =
 export const sendAssistantMessage = async (
 
     message,
+
     language = "English"
 
 ) => {
@@ -1191,6 +1346,7 @@ export const sendAssistantMessage = async (
 export const generateAssistantSpeech = async (
 
     text,
+
     language = "English"
 
 ) => {
