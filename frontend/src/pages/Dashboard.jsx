@@ -420,6 +420,25 @@ function Dashboard() {
         },
 
 
+        // ========================================
+        // NEW CROP YIELD MODULE
+        // ========================================
+
+        {
+            title: isKannada
+                ? "ಬೆಳೆ ಇಳುವರಿ ಮುನ್ಸೂಚನೆ"
+                : "Crop Yield Prediction",
+
+            icon: "🌾",
+
+            description: isKannada
+                ? "ಬೆಳೆ, ಪ್ರದೇಶ, ಮಳೆ ಮತ್ತು ಕೃಷಿ ಇನ್‌ಪುಟ್‌ಗಳ ಆಧಾರದ ಮೇಲೆ ಇಳುವರಿಯನ್ನು ಊಹಿಸಿ."
+                : "Predict crop yield using crop, area, rainfall and agricultural inputs.",
+
+            path: "/yield",
+        },
+
+
         {
             title: isKannada
                 ? "ಹವಾಮಾನ"
@@ -447,21 +466,6 @@ function Dashboard() {
                 : "Ask AI questions about crops, soil, fertilizer, irrigation and farming.",
 
             path: "/assistant",
-        },
-
-
-        {
-            title: isKannada
-                ? "ಪ್ರೊಫೈಲ್"
-                : "Profile",
-
-            icon: "👤",
-
-            description: isKannada
-                ? "ನಿಮ್ಮ Smart Agriculture ಖಾತೆಯನ್ನು ವೀಕ್ಷಿಸಿ."
-                : "View your Smart Agriculture account.",
-
-            path: "/profile",
         },
 
     ];
@@ -570,6 +574,30 @@ function Dashboard() {
                         }
                     >
                         🤖
+                    </button>
+
+
+                    {/* ========================================
+                        PROFILE
+                    ======================================== */}
+
+                    <button
+                        className="dashboard-profile-button"
+                        onClick={() =>
+                            navigate("/profile")
+                        }
+                        title={
+                            isKannada
+                                ? "ಪ್ರೊಫೈಲ್"
+                                : "Profile"
+                        }
+                        aria-label={
+                            isKannada
+                                ? "ಪ್ರೊಫೈಲ್"
+                                : "Profile"
+                        }
+                    >
+                        👤
                     </button>
 
 

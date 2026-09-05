@@ -17,6 +17,7 @@ import Weather from "./pages/Weather";
 import IoT from "./pages/IoT";
 import Profile from "./pages/Profile";
 import Assistant from "./pages/Assistant";
+import YieldPrediction from "./pages/YieldPrediction";
 
 import "./App.css";
 
@@ -85,6 +86,15 @@ function App() {
                 <Route
                     path="/irrigation"
                     element={<Irrigation />}
+                />
+
+                {/* =================================================
+                    CROP YIELD PREDICTION
+                ================================================= */}
+
+                <Route
+                    path="/yield"
+                    element={<YieldPrediction />}
                 />
 
                 <Route

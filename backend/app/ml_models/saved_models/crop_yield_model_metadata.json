@@ -1,0 +1,39 @@
+{
+    "model": "RandomForestRegressor",
+    "dataset_records": 17400,
+    "training_records": 13920,
+    "testing_records": 3480,
+    "features": [
+        "year",
+        "state",
+        "crop",
+        "season",
+        "area",
+        "annual_rainfall",
+        "fertilizer",
+        "pesticide"
+    ],
+    "categorical_features": [
+        "state",
+        "crop",
+        "season"
+    ],
+    "numeric_features": [
+        "year",
+        "area",
+        "annual_rainfall",
+        "fertilizer",
+        "pesticide"
+    ],
+    "target": "yield",
+    "r2": 0.9709987640380859,
+    "mae": 14.002555847167969,
+    "rmse": 173.68833213186775,
+    "model_parameters": {
+        "n_estimators": 40,
+        "max_depth": 12,
+        "min_samples_leaf": 2,
+        "max_features": 0.7,
+        "random_state": 42
+    }
+}
