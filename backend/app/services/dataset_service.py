@@ -15,12 +15,16 @@ DATASET_DIR = BASE_DIR / "dataset"
 # DATASET PATHS
 # =========================================================
 
-CROP_DATASET = DATASET_DIR / "crop_data.csv"
+# Updated crop dataset
+CROP_DATASET = DATASET_DIR / "crop_data_50000.csv"
 
+# 50,000-record soil dataset
 SOIL_DATASET = DATASET_DIR / "soil_data_50000.csv"
 
+# Fertilizer dataset
 FERTILIZER_DATASET = DATASET_DIR / "fertilizer_data.csv"
 
+# Irrigation dataset
 IRRIGATION_DATASET = DATASET_DIR / "irrigation_data.csv"
 
 
@@ -44,13 +48,21 @@ def _load_csv(path: Path) -> pd.DataFrame:
 
 def load_crop_data():
 
+    # Load the updated 50,000-record crop dataset
     data = _load_csv(CROP_DATASET)
 
-    # Your crop dataset uses:
+    # -----------------------------------------------------
+    # Crop dataset column conversion
+    #
+    # Dataset columns:
     #
     # N, P, K, temperature, humidity, ph, rainfall, label
     #
-    # Convert it to the names expected by the ML model.
+    # ML model expects:
+    #
+    # nitrogen, phosphorus, potassium,
+    # temperature, humidity, ph, rainfall, crop
+    # -----------------------------------------------------
 
     rename_map = {
         "N": "nitrogen",
@@ -62,6 +74,10 @@ def load_crop_data():
     data = data.rename(
         columns=rename_map
     )
+
+    # -----------------------------------------------------
+    # Required columns
+    # -----------------------------------------------------
 
     required_columns = [
         "nitrogen",
@@ -81,11 +97,63 @@ def load_crop_data():
     ]
 
     if missing:
-
         raise ValueError(
             "Crop dataset is missing columns: "
             + ", ".join(missing)
         )
+
+    # -----------------------------------------------------
+    # Convert numerical columns safely
+    # -----------------------------------------------------
+
+    numeric_columns = [
+        "nitrogen",
+        "phosphorus",
+        "potassium",
+        "temperature",
+        "humidity",
+        "ph",
+        "rainfall"
+    ]
+
+    for column in numeric_columns:
+
+        data[column] = pd.to_numeric(
+            data[column],
+            errors="coerce"
+        )
+
+    # -----------------------------------------------------
+    # Clean crop labels
+    # -----------------------------------------------------
+
+    data["crop"] = (
+        data["crop"]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+    )
+
+    # -----------------------------------------------------
+    # Remove invalid rows
+    # -----------------------------------------------------
+
+    data = data.dropna(
+        subset=required_columns
+    )
+
+    # Remove empty crop labels
+    data = data[
+        data["crop"].str.len() > 0
+    ]
+
+    # -----------------------------------------------------
+    # Reset index
+    # -----------------------------------------------------
+
+    data = data.reset_index(
+        drop=True
+    )
 
     return data
 
@@ -96,7 +164,13 @@ def load_crop_data():
 
 def load_soil_data():
 
-    data = _load_csv(SOIL_DATASET)
+    data = _load_csv(
+        SOIL_DATASET
+    )
+
+    # -----------------------------------------------------
+    # Required columns
+    # -----------------------------------------------------
 
     required_columns = [
         "nitrogen",
@@ -115,13 +189,14 @@ def load_soil_data():
     ]
 
     if missing:
-
         raise ValueError(
             "Soil dataset is missing columns: "
             + ", ".join(missing)
         )
 
+    # -----------------------------------------------------
     # Convert numerical columns safely
+    # -----------------------------------------------------
 
     numeric_columns = [
         "nitrogen",
@@ -139,6 +214,10 @@ def load_soil_data():
             errors="coerce"
         )
 
+    # -----------------------------------------------------
+    # Clean soil health labels
+    # -----------------------------------------------------
+
     data["soil_health"] = (
         data["soil_health"]
         .astype(str)
@@ -146,10 +225,20 @@ def load_soil_data():
         .str.title()
     )
 
+    # -----------------------------------------------------
     # Remove invalid rows
+    # -----------------------------------------------------
 
     data = data.dropna(
         subset=required_columns
+    )
+
+    # -----------------------------------------------------
+    # Reset index
+    # -----------------------------------------------------
+
+    data = data.reset_index(
+        drop=True
     )
 
     return data

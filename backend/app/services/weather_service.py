@@ -1,4 +1,7 @@
 import re
+import time
+from typing import Optional, Tuple
+
 import requests
 
 
@@ -16,13 +19,49 @@ WEATHER_URL = (
 
 
 # =========================================================
+# CACHE SETTINGS
+# =========================================================
+
+# Weather does not need to be requested every few seconds.
+# 10 minutes is enough for this application.
+WEATHER_CACHE_TTL = 600
+
+# Location results can also be cached.
+LOCATION_CACHE_TTL = 3600
+
+# Maximum time to wait when Open-Meteo returns 429.
+MAX_RETRY_WAIT = 20
+
+
+# =========================================================
+# IN-MEMORY CACHE
+# =========================================================
+
+_weather_cache = {}
+
+_location_cache = {}
+
+
+# =========================================================
+# HTTP SESSION
+# =========================================================
+
+session = requests.Session()
+
+session.headers.update(
+    {
+        "User-Agent": "AI-Smart-Agriculture/1.0"
+    }
+)
+
+
+# =========================================================
 # NORMALIZE LOCATION TEXT
 # =========================================================
 
 def normalize_location_text(value: str) -> str:
     """
-    Normalize location input so that capitalization does not
-    affect the search.
+    Normalize location text.
 
     Examples:
 
@@ -31,9 +70,7 @@ def normalize_location_text(value: str) -> str:
         KARNATAKA
         KaRnAtAkA
 
-    All are normalized to the same search value.
-
-    Extra spaces are also removed.
+    All become the same normalized value.
     """
 
     if value is None:
@@ -50,7 +87,9 @@ def normalize_location_text(value: str) -> str:
 # PARSE COORDINATES
 # =========================================================
 
-def parse_coordinates(location: str):
+def parse_coordinates(
+    location: str
+) -> Optional[Tuple[float, float]]:
     """
     Detect coordinate strings such as:
 
@@ -59,6 +98,7 @@ def parse_coordinates(location: str):
         -14.2380, 76.3933
 
     Returns:
+
         (latitude, longitude)
 
     or:
@@ -72,8 +112,7 @@ def parse_coordinates(location: str):
     location = str(location).strip()
 
     # -----------------------------------------------------
-    # Match:
-    # latitude, longitude
+    # CORRECT COORDINATE REGEX
     # -----------------------------------------------------
 
     pattern = (
@@ -93,6 +132,7 @@ def parse_coordinates(location: str):
         return None
 
     try:
+
         latitude = float(
             match.group(1)
         )
@@ -102,23 +142,156 @@ def parse_coordinates(location: str):
         )
 
     except ValueError:
+
         return None
 
     # -----------------------------------------------------
-    # Validate latitude
+    # VALIDATE LATITUDE
     # -----------------------------------------------------
 
     if latitude < -90 or latitude > 90:
         return None
 
     # -----------------------------------------------------
-    # Validate longitude
+    # VALIDATE LONGITUDE
     # -----------------------------------------------------
 
     if longitude < -180 or longitude > 180:
         return None
 
     return latitude, longitude
+
+
+# =========================================================
+# CACHE HELPER
+# =========================================================
+
+def _get_cache(
+    cache: dict,
+    key,
+    ttl: int
+):
+
+    item = cache.get(key)
+
+    if not item:
+        return None
+
+    timestamp, value = item
+
+    if time.time() - timestamp > ttl:
+
+        cache.pop(
+            key,
+            None
+        )
+
+        return None
+
+    return value
+
+
+def _set_cache(
+    cache: dict,
+    key,
+    value
+):
+
+    cache[key] = (
+        time.time(),
+        value
+    )
+
+
+# =========================================================
+# WEATHER CACHE KEY
+# =========================================================
+
+def _weather_cache_key(
+    latitude: float,
+    longitude: float
+):
+
+    return (
+        round(float(latitude), 3),
+        round(float(longitude), 3)
+    )
+
+
+# =========================================================
+# REQUEST OPEN-METEO WITH 429 HANDLING
+# =========================================================
+
+def _request_open_meteo(
+    url: str,
+    params: dict,
+    timeout: int = 15
+):
+
+    try:
+
+        response = session.get(
+            url,
+            params=params,
+            timeout=timeout
+        )
+
+        # -------------------------------------------------
+        # RATE LIMIT
+        # -------------------------------------------------
+
+        if response.status_code == 429:
+
+            retry_after = response.headers.get(
+                "Retry-After"
+            )
+
+            try:
+
+                wait_seconds = int(
+                    retry_after
+                )
+
+            except (
+                TypeError,
+                ValueError
+            ):
+
+                wait_seconds = 5
+
+            wait_seconds = min(
+                wait_seconds,
+                MAX_RETRY_WAIT
+            )
+
+            raise requests.HTTPError(
+                f"429 Too Many Requests. "
+                f"Retry after approximately "
+                f"{wait_seconds} seconds."
+            )
+
+        response.raise_for_status()
+
+        return response.json()
+
+    except requests.Timeout:
+
+        raise Exception(
+            "Weather service timed out. "
+            "Please try again."
+        )
+
+    except requests.HTTPError as exc:
+
+        raise Exception(
+            f"Unable to connect to weather service: {exc}"
+        )
+
+    except requests.RequestException as exc:
+
+        raise Exception(
+            f"Unable to connect to weather service: {exc}"
+        )
 
 
 # =========================================================
@@ -133,17 +306,8 @@ def search_locations(
     """
     Search locations using village, district and state.
 
-    The search is CASE-INSENSITIVE.
-
-    Examples:
-
-        Karnataka
-        karnataka
-        KARNATAKA
-
-    are treated identically.
-
-    Existing coordinate search functionality is preserved.
+    Search is case-insensitive.
+    Coordinate input is supported.
     """
 
     # =====================================================
@@ -170,7 +334,7 @@ def search_locations(
         return []
 
     # =====================================================
-    # IF USER ENTERED COORDINATES
+    # CHECK COORDINATES
     # =====================================================
 
     coordinates = parse_coordinates(
@@ -184,33 +348,42 @@ def search_locations(
         return [
             {
                 "name": "Selected Location",
-
                 "latitude": latitude,
-
                 "longitude": longitude,
-
                 "country": "India",
-
                 "state": "",
-
                 "district": "",
-
                 "timezone": "",
-
                 "display_name":
                     f"{latitude}, {longitude}",
             }
         ]
 
     # =====================================================
-    # NORMAL LOCATION SEARCH
+    # CACHE KEY
+    # =====================================================
+
+    cache_key = (
+        village,
+        district,
+        state
+    )
+
+    cached = _get_cache(
+        _location_cache,
+        cache_key,
+        LOCATION_CACHE_TTL
+    )
+
+    if cached is not None:
+
+        return cached
+
+    # =====================================================
+    # SEARCH QUERIES
     # =====================================================
 
     search_queries = []
-
-    # -----------------------------------------------------
-    # Village + District + State
-    # -----------------------------------------------------
 
     if district and state:
 
@@ -218,19 +391,11 @@ def search_locations(
             f"{village}, {district}, {state}, India"
         )
 
-    # -----------------------------------------------------
-    # Village + State
-    # -----------------------------------------------------
-
     if state:
 
         search_queries.append(
             f"{village}, {state}, India"
         )
-
-    # -----------------------------------------------------
-    # Village + India
-    # -----------------------------------------------------
 
     search_queries.append(
         f"{village}, India"
@@ -239,33 +404,23 @@ def search_locations(
     all_results = []
 
     # =====================================================
-    # CALL OPEN-METEO
+    # CALL GEOCODING API
     # =====================================================
 
     try:
 
         for query in search_queries:
 
-            response = requests.get(
-
+            data = _request_open_meteo(
                 GEOCODING_URL,
-
-                params={
+                {
                     "name": query,
-
                     "count": 10,
-
                     "language": "en",
-
                     "format": "json",
                 },
-
-                timeout=8,
+                timeout=8
             )
-
-            response.raise_for_status()
-
-            data = response.json()
 
             results = data.get(
                 "results",
@@ -277,50 +432,35 @@ def search_locations(
             )
 
             # -------------------------------------------------
-            # Check Indian results
+            # CHECK INDIAN RESULTS
             # -------------------------------------------------
 
             indian_results = [
-
                 item
-
                 for item in all_results
-
                 if item.get(
                     "country_code"
                 ) == "IN"
-
             ]
 
             if len(indian_results) >= 5:
+
                 break
 
-    except requests.Timeout:
+    except Exception:
 
-        raise Exception(
-            "Location service timed out. Please try again."
-        )
-
-    except requests.RequestException as exc:
-
-        raise Exception(
-            f"Unable to connect to location service: {exc}"
-        )
+        raise
 
     # =====================================================
     # KEEP INDIAN RESULTS
     # =====================================================
 
     india_results = [
-
         item
-
         for item in all_results
-
         if item.get(
             "country_code"
         ) == "IN"
-
     ]
 
     if not india_results:
@@ -328,7 +468,7 @@ def search_locations(
         india_results = all_results
 
     # =====================================================
-    # REMOVE DUPLICATE COORDINATES
+    # REMOVE DUPLICATES
     # =====================================================
 
     unique_results = []
@@ -407,100 +547,57 @@ def search_locations(
         # -------------------------------------------------
 
         display_parts = [
-
             name,
-
             result_district,
-
             result_state,
-
             country
-
         ]
 
         display_name = ", ".join(
-
             str(part)
-
             for part in display_parts
-
             if part
-
         )
 
-        # -------------------------------------------------
-        # ADD RESULT
-        # -------------------------------------------------
-
-        unique_results.append({
-
-            "name":
-                name,
-
-            "latitude":
-                latitude,
-
-            "longitude":
-                longitude,
-
-            "country":
-                country,
-
-            "state":
-                result_state,
-
-            "district":
-                result_district,
-
-            "timezone":
-                item.get(
-                    "timezone",
-                    ""
-                ),
-
-            "display_name":
-                display_name,
-        })
+        unique_results.append(
+            {
+                "name": name,
+                "latitude": latitude,
+                "longitude": longitude,
+                "country": country,
+                "state": result_state,
+                "district": result_district,
+                "timezone":
+                    item.get(
+                        "timezone",
+                        ""
+                    ),
+                "display_name":
+                    display_name,
+            }
+        )
 
     # =====================================================
-    # LOCATION RANKING
+    # RANK RESULTS
     # =====================================================
 
     def result_score(item):
 
         score = 0
 
-        # -------------------------------------------------
-        # Result state
-        # -------------------------------------------------
-
         item_state = normalize_location_text(
-
             item.get(
                 "state",
                 ""
-            )
-            or ""
-
+            ) or ""
         )
 
-        # -------------------------------------------------
-        # Result district
-        # -------------------------------------------------
-
         item_district = normalize_location_text(
-
             item.get(
                 "district",
                 ""
-            )
-            or ""
-
+            ) or ""
         )
-
-        # -------------------------------------------------
-        # Requested values
-        # -------------------------------------------------
 
         requested_state = normalize_location_text(
             state
@@ -510,19 +607,11 @@ def search_locations(
             district
         )
 
-        # -------------------------------------------------
-        # State match
-        # -------------------------------------------------
-
         if requested_state:
 
             if requested_state in item_state:
 
                 score += 20
-
-        # -------------------------------------------------
-        # District match
-        # -------------------------------------------------
 
         if requested_district:
 
@@ -533,22 +622,31 @@ def search_locations(
         return score
 
     # =====================================================
-    # SORT RESULTS
+    # SORT
     # =====================================================
 
     unique_results.sort(
-
         key=result_score,
-
         reverse=True
-
     )
 
     # =====================================================
-    # RETURN MAX 8 RESULTS
+    # LIMIT RESULTS
     # =====================================================
 
-    return unique_results[:8]
+    final_results = unique_results[:8]
+
+    # =====================================================
+    # CACHE
+    # =====================================================
+
+    _set_cache(
+        _location_cache,
+        cache_key,
+        final_results
+    )
+
+    return final_results
 
 
 # =========================================================
@@ -559,9 +657,7 @@ def get_location_coordinates(
     location: str
 ):
     """
-    Convert a location name into latitude and longitude.
-
-    Location search is case-insensitive.
+    Convert a location name into coordinates.
     """
 
     if (
@@ -590,7 +686,6 @@ def get_location_coordinates(
         latitude, longitude = coordinates
 
         return {
-
             "name":
                 "Selected Location",
 
@@ -617,7 +712,7 @@ def get_location_coordinates(
         }
 
     # =====================================================
-    # NORMALIZE LOCATION NAME
+    # NORMALIZE
     # =====================================================
 
     normalized_location = normalize_location_text(
@@ -625,17 +720,33 @@ def get_location_coordinates(
     )
 
     # =====================================================
-    # NORMAL LOCATION NAME
+    # CACHE
+    # =====================================================
+
+    cache_key = (
+        "coordinates",
+        normalized_location
+    )
+
+    cached = _get_cache(
+        _location_cache,
+        cache_key,
+        LOCATION_CACHE_TTL
+    )
+
+    if cached is not None:
+
+        return cached
+
+    # =====================================================
+    # CALL GEOCODING API
     # =====================================================
 
     try:
 
-        response = requests.get(
-
+        data = _request_open_meteo(
             GEOCODING_URL,
-
-            params={
-
+            {
                 "name":
                     normalized_location,
 
@@ -648,24 +759,13 @@ def get_location_coordinates(
                 "format":
                     "json",
             },
-
-            timeout=10,
+            timeout=10
         )
 
-        response.raise_for_status()
-
-        data = response.json()
-
-    except requests.Timeout:
+    except Exception as exc:
 
         raise Exception(
-            "Location service timed out. Please try again."
-        )
-
-    except requests.RequestException as exc:
-
-        raise Exception(
-            f"Unable to connect to location service: {exc}"
+            str(exc)
         )
 
     # =====================================================
@@ -688,29 +788,21 @@ def get_location_coordinates(
     # =====================================================
 
     india_results = [
-
         item
-
         for item in results
-
         if item.get(
             "country_code"
         ) == "IN"
-
     ]
 
     result = (
-
         india_results[0]
-
         if india_results
-
         else results[0]
-
     )
 
     # =====================================================
-    # GET COORDINATES
+    # COORDINATES
     # =====================================================
 
     latitude = result.get(
@@ -727,7 +819,8 @@ def get_location_coordinates(
     ):
 
         raise ValueError(
-            "Coordinates were not available for this location."
+            "Coordinates were not available "
+            "for this location."
         )
 
     try:
@@ -746,23 +839,26 @@ def get_location_coordinates(
     ):
 
         raise ValueError(
-            "Invalid coordinates returned by location service."
+            "Invalid coordinates returned "
+            "by location service."
         )
 
     # =====================================================
-    # VALIDATE COORDINATES
+    # VALIDATE
     # =====================================================
 
     if latitude < -90 or latitude > 90:
 
         raise ValueError(
-            "Invalid latitude returned by location service."
+            "Invalid latitude returned "
+            "by location service."
         )
 
     if longitude < -180 or longitude > 180:
 
         raise ValueError(
-            "Invalid longitude returned by location service."
+            "Invalid longitude returned "
+            "by location service."
         )
 
     # =====================================================
@@ -794,32 +890,23 @@ def get_location_coordinates(
     # =====================================================
 
     display_parts = [
-
         name,
-
         district,
-
         state,
-
         country
-
     ]
 
     display_name = ", ".join(
-
         str(part)
-
         for part in display_parts
-
         if part
-
     )
 
     # =====================================================
-    # RETURN LOCATION
+    # RESULT
     # =====================================================
 
-    return {
+    location_data = {
 
         "name":
             name,
@@ -849,6 +936,18 @@ def get_location_coordinates(
             display_name,
     }
 
+    # =====================================================
+    # CACHE
+    # =====================================================
+
+    _set_cache(
+        _location_cache,
+        cache_key,
+        location_data
+    )
+
+    return location_data
+
 
 # =========================================================
 # CURRENT WEATHER
@@ -860,6 +959,8 @@ def get_current_weather(
 ):
     """
     Get current weather and 7-day forecast.
+
+    Weather data is cached for 10 minutes.
     """
 
     # =====================================================
@@ -886,7 +987,7 @@ def get_current_weather(
         )
 
     # =====================================================
-    # VALIDATE COORDINATES
+    # VALIDATE
     # =====================================================
 
     if latitude < -90 or latitude > 90:
@@ -902,84 +1003,117 @@ def get_current_weather(
         )
 
     # =====================================================
+    # CACHE KEY
+    # =====================================================
+
+    cache_key = _weather_cache_key(
+        latitude,
+        longitude
+    )
+
+    # =====================================================
+    # CHECK CACHE
+    # =====================================================
+
+    cached = _get_cache(
+        _weather_cache,
+        cache_key,
+        WEATHER_CACHE_TTL
+    )
+
+    if cached is not None:
+
+        print(
+            "Weather cache HIT:",
+            cache_key
+        )
+
+        return cached
+
+    print(
+        "Weather cache MISS:",
+        cache_key
+    )
+
+    # =====================================================
+    # WEATHER PARAMETERS
+    # =====================================================
+
+    params = {
+
+        "latitude":
+            latitude,
+
+        "longitude":
+            longitude,
+
+        "current": (
+            "temperature_2m,"
+            "relative_humidity_2m,"
+            "precipitation,"
+            "rain,"
+            "weather_code,"
+            "wind_speed_10m"
+        ),
+
+        "daily": (
+            "temperature_2m_max,"
+            "temperature_2m_min,"
+            "precipitation_probability_max,"
+            "weather_code,"
+            "wind_speed_10m_max"
+        ),
+
+        "timezone":
+            "auto",
+
+        "forecast_days":
+            7,
+    }
+
+    # =====================================================
     # REQUEST WEATHER
     # =====================================================
 
     try:
 
-        response = requests.get(
-
+        data = _request_open_meteo(
             WEATHER_URL,
-
-            params={
-
-                "latitude":
-                    latitude,
-
-                "longitude":
-                    longitude,
-
-                "current": (
-
-                    "temperature_2m,"
-
-                    "relative_humidity_2m,"
-
-                    "precipitation,"
-
-                    "rain,"
-
-                    "weather_code,"
-
-                    "wind_speed_10m"
-
-                ),
-
-                "daily": (
-
-                    "temperature_2m_max,"
-
-                    "temperature_2m_min,"
-
-                    "precipitation_probability_max,"
-
-                    "weather_code,"
-
-                    "wind_speed_10m_max"
-
-                ),
-
-                "timezone":
-                    "auto",
-
-                "forecast_days":
-                    7,
-            },
-
-            timeout=15,
+            params,
+            timeout=15
         )
 
-        response.raise_for_status()
+    except Exception as exc:
 
-        data = response.json()
+        # -------------------------------------------------
+        # IMPORTANT:
+        # If Open-Meteo is rate limited but old cached
+        # data exists, return the old data instead of
+        # breaking irrigation/weather.
+        # -------------------------------------------------
 
-    except requests.Timeout:
-
-        raise Exception(
-            "Weather service timed out. Please try again."
+        old_cached = _weather_cache.get(
+            cache_key
         )
 
-    except requests.RequestException as exc:
+        if old_cached:
+
+            print(
+                "Open-Meteo unavailable. "
+                "Returning stale weather cache."
+            )
+
+            return old_cached[1]
 
         raise Exception(
-            f"Unable to connect to weather service: {exc}"
+            str(exc)
         )
 
     # =====================================================
-    # RETURN NORMALIZED WEATHER RESPONSE
+    # NORMALIZED RESPONSE
     # =====================================================
 
-    return {
+    weather_data = {
 
         "latitude":
             data.get(
@@ -1009,6 +1143,18 @@ def get_current_weather(
             ),
     }
 
+    # =====================================================
+    # SAVE CACHE
+    # =====================================================
+
+    _set_cache(
+        _weather_cache,
+        cache_key,
+        weather_data
+    )
+
+    return weather_data
+
 
 # =========================================================
 # WEATHER BY LOCATION
@@ -1019,8 +1165,6 @@ def get_weather_for_location(
 ):
     """
     Get weather using a location name.
-
-    Location capitalization does not matter.
     """
 
     location_data = (
@@ -1031,15 +1175,12 @@ def get_weather_for_location(
 
     weather_data = (
         get_current_weather(
-
             location_data[
                 "latitude"
             ],
-
             location_data[
                 "longitude"
             ]
-
         )
     )
 
@@ -1063,7 +1204,7 @@ def get_weather_by_coordinates(
     """
 
     # =====================================================
-    # CONVERT TO FLOAT
+    # CONVERT
     # =====================================================
 
     try:
@@ -1086,7 +1227,7 @@ def get_weather_by_coordinates(
         )
 
     # =====================================================
-    # VALIDATE COORDINATES
+    # VALIDATE
     # =====================================================
 
     if latitude < -90 or latitude > 90:
@@ -1102,21 +1243,18 @@ def get_weather_by_coordinates(
         )
 
     # =====================================================
-    # GET WEATHER
+    # WEATHER
     # =====================================================
 
     weather_data = (
         get_current_weather(
-
             latitude,
-
             longitude
-
         )
     )
 
     # =====================================================
-    # ATTACH LOCATION INFORMATION
+    # ATTACH LOCATION
     # =====================================================
 
     weather_data[
