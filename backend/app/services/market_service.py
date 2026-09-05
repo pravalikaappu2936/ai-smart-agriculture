@@ -1,19 +1,21 @@
-import os
+import json
 from pathlib import Path
 from typing import Optional
-
-import httpx
-from dotenv import load_dotenv
 
 
 # ============================================================
 # PATHS
 # ============================================================
 
+# Project structure:
+#
 # backend/
-# └── app/
-#     └── services/
-#         └── market_service.py
+# ├── app/
+# │   └── services/
+# │       └── market_service.py
+# │
+# └── data/
+#     └── market_cache.json
 #
 # parents[0] = services
 # parents[1] = app
@@ -21,38 +23,16 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-ENV_FILE = BASE_DIR / ".env"
+CACHE_FILE = BASE_DIR / "data" / "market_cache.json"
 
 
 # ============================================================
-# LOAD ENVIRONMENT VARIABLES
-# ============================================================
-
-# Local development:
-#     backend/.env
-#
-# Render:
-#     DATA_GOV_API_KEY must be configured in
-#     Render Environment Variables.
-#
-# .env is optional.
-
-if ENV_FILE.exists():
-    load_dotenv(
-        dotenv_path=ENV_FILE,
-        override=False,
-    )
-
-
-# ============================================================
-# GOVERNMENT MARKET API
+# GOVERNMENT MARKET DATA
 # ============================================================
 
 RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070"
 
-OGD_API_URL = (
-    f"https://api.data.gov.in/resource/{RESOURCE_ID}"
-)
+DATA_SOURCE = "Data.gov.in"
 
 
 # ============================================================
@@ -60,61 +40,12 @@ OGD_API_URL = (
 # ============================================================
 
 class MarketAPIError(Exception):
-    """Raised when the government market API cannot be used."""
+    """
+    Raised when cached government market data
+    cannot be used.
+    """
+
     pass
-
-
-# ============================================================
-# API KEY
-# ============================================================
-
-def get_api_key() -> str:
-    """
-    Get the Data.gov.in API key.
-
-    Local:
-        Reads DATA_GOV_API_KEY from backend/.env.
-
-    Render:
-        Reads DATA_GOV_API_KEY from Render environment
-        variables.
-
-    The actual API key is never printed.
-    """
-
-    # Load .env again in case the environment variable
-    # was not loaded during module import.
-    if ENV_FILE.exists():
-        load_dotenv(
-            dotenv_path=ENV_FILE,
-            override=False,
-        )
-
-    # IMPORTANT:
-    # Use the VARIABLE NAME here, not the actual API key.
-    api_key = os.getenv("DATA_GOV_API_KEY")
-
-    if not api_key:
-        raise MarketAPIError(
-            "DATA_GOV_API_KEY environment variable "
-            "is not configured."
-        )
-
-    # Remove accidental spaces or surrounding quotes.
-    api_key = (
-        api_key
-        .strip()
-        .strip('"')
-        .strip("'")
-    )
-
-    if not api_key:
-        raise MarketAPIError(
-            "DATA_GOV_API_KEY environment variable "
-            "is empty."
-        )
-
-    return api_key
 
 
 # ============================================================
@@ -123,7 +54,7 @@ def get_api_key() -> str:
 
 def normalize_market_record(record: dict) -> dict:
     """
-    Convert the Data.gov.in record into the structure
+    Convert a cached Data.gov.in record into the structure
     expected by the frontend.
     """
 
@@ -142,6 +73,97 @@ def normalize_market_record(record: dict) -> dict:
 
 
 # ============================================================
+# LOAD MARKET CACHE
+# ============================================================
+
+def load_market_cache() -> dict:
+    """
+    Load the latest government market-price data from
+    backend/data/market_cache.json.
+
+    The cache is updated automatically by GitHub Actions.
+    """
+
+    if not CACHE_FILE.exists():
+        raise MarketAPIError(
+            "Government market price cache is not available."
+        )
+
+    try:
+        with CACHE_FILE.open(
+            "r",
+            encoding="utf-8",
+        ) as file:
+
+            data = json.load(file)
+
+    except json.JSONDecodeError as error:
+
+        print(
+            "MARKET CACHE INVALID JSON:",
+            str(error),
+        )
+
+        raise MarketAPIError(
+            "Government market price cache is invalid."
+        ) from error
+
+    except OSError as error:
+
+        print(
+            "MARKET CACHE READ ERROR:",
+            str(error),
+        )
+
+        raise MarketAPIError(
+            "Unable to read government market price cache."
+        ) from error
+
+    if not isinstance(data, dict):
+        raise MarketAPIError(
+            "Invalid government market price cache."
+        )
+
+    records = data.get(
+        "records",
+        [],
+    )
+
+    if not isinstance(records, list):
+        raise MarketAPIError(
+            "Invalid market price records in cache."
+        )
+
+    return data
+
+
+# ============================================================
+# SAFE STRING COMPARISON
+# ============================================================
+
+def matches_filter(
+    value,
+    filter_value: Optional[str],
+) -> bool:
+    """
+    Case-insensitive exact comparison.
+
+    Empty filter means no filtering.
+    """
+
+    if not filter_value:
+        return True
+
+    if value is None:
+        return False
+
+    return (
+        str(value).strip().casefold()
+        == filter_value.strip().casefold()
+    )
+
+
+# ============================================================
 # GET MARKET PRICES
 # ============================================================
 
@@ -153,8 +175,15 @@ async def get_market_prices(
     limit: int = 100,
 ) -> dict:
     """
-    Fetch latest mandi market prices from the official
-    Data.gov.in agriculture market-price API.
+    Get the latest government mandi market prices.
+
+    Data source:
+        Data.gov.in
+
+    The backend does NOT directly contact Data.gov.in.
+
+    Instead, it reads the latest market_cache.json file,
+    which is automatically updated by GitHub Actions.
     """
 
     # ========================================================
@@ -168,262 +197,164 @@ async def get_market_prices(
 
 
     # ========================================================
-    # GET API KEY
+    # LOAD CACHE
     # ========================================================
 
-    api_key = get_api_key()
-
-
-    # ========================================================
-    # BUILD REQUEST PARAMETERS
-    # ========================================================
-
-    params = {
-        "api-key": api_key,
-        "format": "json",
-        "limit": limit,
-        "offset": 0,
-    }
+    cache = load_market_cache()
 
 
     # ========================================================
-    # COMMODITY FILTER
+    # CACHE INFORMATION
     # ========================================================
 
-    if commodity and commodity.strip():
-        params["filters[commodity]"] = commodity.strip()
+    updated_at = cache.get(
+        "updated_at"
+    )
 
+    source = cache.get(
+        "source",
+        DATA_SOURCE,
+    )
 
-    # ========================================================
-    # STATE FILTER
-    # ========================================================
+    cached_total = cache.get(
+        "total",
+        0,
+    )
 
-    if state and state.strip():
-        params["filters[state.keyword]"] = state.strip()
-
-
-    # ========================================================
-    # DISTRICT FILTER
-    # ========================================================
-
-    if district and district.strip():
-        params["filters[district]"] = district.strip()
-
-
-    # ========================================================
-    # MARKET FILTER
-    # ========================================================
-
-    if market and market.strip():
-        params["filters[market]"] = market.strip()
+    records = cache.get(
+        "records",
+        [],
+    )
 
 
     # ========================================================
-    # SAFE DEBUG INFORMATION
+    # NORMALIZE RECORDS
     # ========================================================
 
-    # Never print the API key.
+    normalized_records = []
 
-    debug_params = {
-        key: value
-        for key, value in params.items()
-        if key != "api-key"
-    }
+    for record in records:
+
+        if not isinstance(record, dict):
+            continue
+
+        normalized_records.append(
+            normalize_market_record(record)
+        )
+
+
+    # ========================================================
+    # APPLY FILTERS
+    # ========================================================
+
+    filtered_records = []
+
+    for record in normalized_records:
+
+        if not matches_filter(
+            record.get("commodity"),
+            commodity,
+        ):
+            continue
+
+        if not matches_filter(
+            record.get("state"),
+            state,
+        ):
+            continue
+
+        if not matches_filter(
+            record.get("district"),
+            district,
+        ):
+            continue
+
+        if not matches_filter(
+            record.get("market"),
+            market,
+        ):
+            continue
+
+        filtered_records.append(record)
+
+
+    # ========================================================
+    # LIMIT RESULTS
+    # ========================================================
+
+    result_records = filtered_records[:limit]
+
+
+    # ========================================================
+    # TOTAL
+    # ========================================================
+
+    # When filters are used, return the number of records
+    # matching those filters.
+    #
+    # Without filters, use the total supplied by the
+    # government-data cache.
+
+    has_filters = any([
+        commodity and commodity.strip(),
+        state and state.strip(),
+        district and district.strip(),
+        market and market.strip(),
+    ])
+
+    if has_filters:
+        result_total = len(
+            filtered_records
+        )
+
+    else:
+        try:
+            result_total = int(
+                cached_total
+            )
+
+        except (
+            TypeError,
+            ValueError,
+        ):
+            result_total = len(
+                normalized_records
+            )
+
+
+    # ========================================================
+    # DEBUG INFORMATION
+    # ========================================================
 
     print(
-        "MARKET API REQUEST:",
-        debug_params,
+        "MARKET CACHE REQUEST:",
+        {
+            "commodity": commodity,
+            "state": state,
+            "district": district,
+            "market": market,
+            "limit": limit,
+        },
+    )
+
+    print(
+        "MARKET CACHE RESPONSE:",
+        {
+            "count": len(result_records),
+            "total": result_total,
+            "updated_at": updated_at,
+            "source": source,
+        },
     )
 
 
     # ========================================================
-    # HTTP TIMEOUT
+    # FINAL RESPONSE
     # ========================================================
 
-    timeout = httpx.Timeout(
-        connect=20.0,
-        read=60.0,
-        write=20.0,
-        pool=20.0,
-    )
-
-
-    # ========================================================
-    # API REQUEST
-    # ========================================================
-
-    try:
-
-        async with httpx.AsyncClient(
-            follow_redirects=True,
-            verify=True,
-            trust_env=False,
-            timeout=timeout,
-        ) as client:
-
-            response = await client.get(
-                OGD_API_URL,
-                params=params,
-            )
-
-
-        # ====================================================
-        # HTTP STATUS HANDLING
-        # ====================================================
-
-        if response.status_code == 401:
-            raise MarketAPIError(
-                "Data.gov.in API authentication failed. "
-                "Check DATA_GOV_API_KEY."
-            )
-
-
-        if response.status_code == 403:
-            raise MarketAPIError(
-                "Data.gov.in API access was forbidden. "
-                "Check the API key and API permissions."
-            )
-
-
-        if response.status_code == 404:
-            raise MarketAPIError(
-                "Data.gov.in market price resource "
-                "was not found."
-            )
-
-
-        if response.status_code == 429:
-            raise MarketAPIError(
-                "Data.gov.in API rate limit exceeded. "
-                "Please try again later."
-            )
-
-
-        if response.status_code >= 400:
-            raise MarketAPIError(
-                "Data.gov.in API returned HTTP "
-                f"{response.status_code}."
-            )
-
-
-        # ====================================================
-        # PARSE JSON
-        # ====================================================
-
-        try:
-
-            data = response.json()
-
-        except ValueError as error:
-
-            print(
-                "MARKET API INVALID JSON:",
-                response.text[:500],
-            )
-
-            raise MarketAPIError(
-                "Data.gov.in returned an invalid response."
-            ) from error
-
-
-        # ====================================================
-        # EXTRACT RECORDS
-        # ====================================================
-
-        records = data.get(
-            "records",
-            [],
-        )
-
-
-        if not isinstance(records, list):
-            raise MarketAPIError(
-                "Invalid market price data received "
-                "from Data.gov.in."
-            )
-
-
-        # ====================================================
-        # NORMALIZE RECORDS
-        # ====================================================
-
-        normalized_records = [
-            normalize_market_record(record)
-            for record in records
-            if isinstance(record, dict)
-        ]
-
-
-        # ====================================================
-        # TOTAL RECORD COUNT
-        # ====================================================
-
-        total = data.get(
-            "total",
-            len(normalized_records),
-        )
-
-
-        try:
-
-            total = int(total)
-
-        except (TypeError, ValueError):
-
-            total = len(normalized_records)
-
-
-        # ====================================================
-        # FINAL RESPONSE
-        # ====================================================
-
-        result = {
-            "success": True,
-            "count": len(normalized_records),
-            "total": total,
-            "records": normalized_records,
-        }
-
-
-        print(
-            "MARKET API RESPONSE:",
-            {
-                "count": result["count"],
-                "total": result["total"],
-            },
-        )
-
-
-        return result
-
-
-    # ========================================================
-    # TIMEOUT ERROR
-    # ========================================================
-
-    except httpx.TimeoutException as error:
-
-        print(
-            "MARKET API TIMEOUT:",
-            str(error),
-        )
-
-        raise MarketAPIError(
-            "Data.gov.in market API request timed out."
-        ) from error
-
-
-    # ========================================================
-    # CONNECTION ERROR
-    # ========================================================
-
-    except httpx.RequestError as error:
-
-        print(
-            "MARKET API REQUEST ERROR:",
-            str(error),
-        )
-
-        raise MarketAPIError(
-            "Unable to connect to Data.gov.in market API."
-        ) from error
+    return {
+        "success": True,
+        "count": len(result_records),
+        "total": result_total,
+        "records": result_records,
+    }

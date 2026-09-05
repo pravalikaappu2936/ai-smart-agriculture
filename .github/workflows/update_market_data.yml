@@ -1,0 +1,145 @@
+name: Update Government Market Prices
+
+on:
+  schedule:
+    # Every 6 hours
+    - cron: "0 */6 * * *"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-market-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch official Data.gov.in market data
+        env:
+          DATA_GOV_API_KEY: ${{ secrets.DATA_GOV_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070"
+
+          API_URL = (
+              f"https://api.data.gov.in/resource/{RESOURCE_ID}"
+          )
+
+          api_key = os.environ.get("DATA_GOV_API_KEY")
+
+          if not api_key:
+              raise RuntimeError(
+                  "DATA_GOV_API_KEY GitHub Secret is missing."
+              )
+
+          params = {
+              "api-key": api_key,
+              "format": "json",
+              "limit": 1000,
+              "offset": 0,
+          }
+
+          url = API_URL + "?" + urlencode(params)
+
+          print("Fetching official Data.gov.in market data...")
+
+          request = Request(
+              url,
+              headers={
+                  "User-Agent": "AI-Smart-Agriculture/1.0"
+              },
+          )
+
+          with urlopen(request, timeout=60) as response:
+              data = json.loads(response.read().decode("utf-8"))
+
+          records = data.get("records", [])
+
+          if not isinstance(records, list):
+              raise RuntimeError(
+                  "Invalid records returned by Data.gov.in."
+              )
+
+          normalized_records = []
+
+          for record in records:
+              if not isinstance(record, dict):
+                  continue
+
+              normalized_records.append({
+                  "state": record.get("state"),
+                  "district": record.get("district"),
+                  "market": record.get("market"),
+                  "commodity": record.get("commodity"),
+                  "variety": record.get("variety"),
+                  "grade": record.get("grade"),
+                  "arrival_date": record.get("arrival_date"),
+                  "min_price": record.get("min_price"),
+                  "max_price": record.get("max_price"),
+                  "modal_price": record.get("modal_price"),
+              })
+
+          cache = {
+              "success": True,
+              "updated_at": datetime.now(
+                  timezone.utc
+              ).isoformat(),
+              "source": "Data.gov.in",
+              "resource_id": RESOURCE_ID,
+              "total": int(
+                  data.get(
+                      "total",
+                      len(normalized_records),
+                  )
+              ),
+              "records": normalized_records,
+          }
+
+          cache_path = Path(
+              "backend/data/market_cache.json"
+          )
+
+          cache_path.parent.mkdir(
+              parents=True,
+              exist_ok=True,
+          )
+
+          cache_path.write_text(
+              json.dumps(
+                  cache,
+                  indent=2,
+                  ensure_ascii=False,
+              ),
+              encoding="utf-8",
+          )
+
+          print(
+              f"Market cache updated: "
+              f"{len(normalized_records)} records"
+          )
+          PY
+
+      - name: Commit updated market cache
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add backend/data/market_cache.json
+
+          if git diff --cached --quiet; then
+            echo "No market data changes."
+          else
+            git commit -m "Update government market prices"
+            git push
+          fi
