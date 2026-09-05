@@ -5,7 +5,7 @@ import "./MarketPrice.css";
 
 const MarketPrice = () => {
     const [commodity, setCommodity] = useState("");
-    const [state, setState] = useState("");
+    const [state, setState] = useState("Karnataka");
     const [district, setDistrict] = useState("");
     const [market, setMarket] = useState("");
 
@@ -47,6 +47,40 @@ const MarketPrice = () => {
         "Kerala",
     ];
 
+    const karnatakaDistricts = [
+        "Bagalkot",
+        "Ballari",
+        "Belagavi",
+        "Bengaluru Rural",
+        "Bengaluru Urban",
+        "Bidar",
+        "Chamarajanagar",
+        "Chikkaballapur",
+        "Chikkamagaluru",
+        "Chitradurga",
+        "Dakshina Kannada",
+        "Davanagere",
+        "Dharwad",
+        "Gadag",
+        "Hassan",
+        "Haveri",
+        "Kalaburagi",
+        "Kodagu",
+        "Kolar",
+        "Koppal",
+        "Mandya",
+        "Mysuru",
+        "Raichur",
+        "Ramanagara",
+        "Shivamogga",
+        "Tumakuru",
+        "Udupi",
+        "Uttara Kannada",
+        "Vijayapura",
+        "Yadgir",
+        "Vijayanagara",
+    ];
+
     const fetchPrices = async () => {
         setLoading(true);
         setError("");
@@ -65,6 +99,7 @@ const MarketPrice = () => {
                 setLastUpdated(new Date());
             } else {
                 setRecords([]);
+
                 setError(
                     isKannada
                         ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು ಲಭ್ಯವಿಲ್ಲ."
@@ -72,20 +107,17 @@ const MarketPrice = () => {
                 );
             }
         } catch (err) {
-            console.error(
-                "Market price error:",
-                err
-            );
+            console.error("Market price error:", err);
 
             setRecords([]);
 
             setError(
                 err?.response?.data?.detail ||
-                (
-                    isKannada
-                        ? "ಮಾರುಕಟ್ಟೆ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
-                        : "Unable to fetch market information."
-                )
+                    (
+                        isKannada
+                            ? "ಮಾರುಕಟ್ಟೆ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
+                            : "Unable to fetch market information."
+                    )
             );
         } finally {
             setLoading(false);
@@ -96,6 +128,41 @@ const MarketPrice = () => {
         fetchPrices();
     }, []);
 
+    /*
+     * District list
+     */
+    const availableDistricts = useMemo(() => {
+        if (state === "Karnataka") {
+            return karnatakaDistricts;
+        }
+
+        const districts = records
+            .map((record) => record.district)
+            .filter(Boolean)
+            .map((item) => item.trim());
+
+        return [...new Set(districts)].sort((a, b) =>
+            a.localeCompare(b)
+        );
+    }, [records, state]);
+
+    /*
+     * Market list from currently loaded government records.
+     */
+    const availableMarkets = useMemo(() => {
+        const markets = records
+            .map((record) => record.market)
+            .filter(Boolean)
+            .map((item) => item.trim());
+
+        return [...new Set(markets)].sort((a, b) =>
+            a.localeCompare(b)
+        );
+    }, [records]);
+
+    /*
+     * Summary
+     */
     const summary = useMemo(() => {
         if (!records.length) {
             return {
@@ -128,32 +195,77 @@ const MarketPrice = () => {
 
             modal: modalPrices.length
                 ? Math.round(
-                    modalPrices.reduce(
-                        (a, b) => a + b,
-                        0
-                    ) / modalPrices.length
-                )
+                      modalPrices.reduce(
+                          (a, b) => a + b,
+                          0
+                      ) / modalPrices.length
+                  )
                 : 0,
         };
     }, [records]);
 
+    /*
+     * Best market based on highest MODAL PRICE.
+     */
     const bestMarket = useMemo(() => {
         if (!records.length) {
             return null;
         }
 
-        return [...records]
-            .filter(
-                (record) =>
-                    Number.isFinite(
-                        Number(record.modal_price)
-                    )
-            )
-            .sort(
-                (a, b) =>
-                    Number(b.modal_price) -
-                    Number(a.modal_price)
-            )[0];
+        const validRecords = records.filter(
+            (record) =>
+                Number.isFinite(
+                    Number(record.modal_price)
+                )
+        );
+
+        if (!validRecords.length) {
+            return null;
+        }
+
+        return [...validRecords].sort(
+            (a, b) =>
+                Number(b.modal_price) -
+                Number(a.modal_price)
+        )[0];
+    }, [records]);
+
+    /*
+     * Latest arrival date.
+     */
+    const latestArrivalDate = useMemo(() => {
+        if (!records.length) {
+            return null;
+        }
+
+        const validDates = records
+            .map((record) => record.arrival_date)
+            .filter(Boolean);
+
+        if (!validDates.length) {
+            return null;
+        }
+
+        const convertDate = (dateString) => {
+            const parts = String(dateString).split("/");
+
+            if (parts.length === 3) {
+                const [day, month, year] = parts;
+
+                return `${year}-${month.padStart(
+                    2,
+                    "0"
+                )}-${day.padStart(2, "0")}`;
+            }
+
+            return String(dateString);
+        };
+
+        return [...validDates].sort(
+            (a, b) =>
+                new Date(convertDate(b)) -
+                new Date(convertDate(a))
+        )[0];
     }, [records]);
 
     const formatPrice = (price) => {
@@ -176,14 +288,24 @@ const MarketPrice = () => {
 
     const clearFilters = () => {
         setCommodity("");
-        setState("");
+        setState("Karnataka");
         setDistrict("");
+        setMarket("");
+    };
+
+    const handleStateChange = (value) => {
+        setState(value);
+        setDistrict("");
+        setMarket("");
+    };
+
+    const handleDistrictChange = (value) => {
+        setDistrict(value);
         setMarket("");
     };
 
     return (
         <div className="market-page">
-
             <div className="market-container">
 
                 {/* Header */}
@@ -200,6 +322,7 @@ const MarketPrice = () => {
                     </Link>
 
                     <div className="market-language">
+
                         <button
                             className={
                                 !isKannada
@@ -225,18 +348,19 @@ const MarketPrice = () => {
                         >
                             ಕನ್ನಡ
                         </button>
-                    </div>
 
+                    </div>
                 </div>
 
                 {/* Heading */}
                 <div className="market-heading">
 
                     <div className="market-heading-icon">
-                        💰
+                        📈
                     </div>
 
                     <div>
+
                         <h1>
                             {isKannada
                                 ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆ ವಿಶ್ಲೇಷಣೆ"
@@ -246,8 +370,9 @@ const MarketPrice = () => {
                         <p>
                             {isKannada
                                 ? "ಸರ್ಕಾರದ ಮಂಡಿ ಮಾಹಿತಿಯ ಆಧಾರದ ಮೇಲೆ ಇತ್ತೀಚಿನ ಬೆಲೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ."
-                                : "Check latest government mandi prices for agricultural commodities."}
+                                : "Check latest government mandi prices and find the best market for your crop."}
                         </p>
+
                     </div>
 
                 </div>
@@ -256,9 +381,11 @@ const MarketPrice = () => {
                 <section className="market-filter-card">
 
                     <div className="market-section-title">
+
                         <span>🔎</span>
 
                         <div>
+
                             <h2>
                                 {isKannada
                                     ? "ಮಾರುಕಟ್ಟೆ ಹುಡುಕಿ"
@@ -270,12 +397,16 @@ const MarketPrice = () => {
                                     ? "ಬೆಳೆ ಮತ್ತು ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
                                     : "Select crop and location"}
                             </p>
+
                         </div>
+
                     </div>
 
                     <div className="market-filter-grid">
 
+                        {/* Commodity */}
                         <div className="market-field">
+
                             <label>
                                 🌾{" "}
                                 {isKannada
@@ -291,6 +422,7 @@ const MarketPrice = () => {
                                     )
                                 }
                             >
+
                                 <option value="">
                                     {isKannada
                                         ? "ಎಲ್ಲಾ ಬೆಳೆಗಳು"
@@ -307,10 +439,14 @@ const MarketPrice = () => {
                                         </option>
                                     )
                                 )}
+
                             </select>
+
                         </div>
 
+                        {/* State */}
                         <div className="market-field">
+
                             <label>
                                 📍{" "}
                                 {isKannada
@@ -321,11 +457,12 @@ const MarketPrice = () => {
                             <select
                                 value={state}
                                 onChange={(e) =>
-                                    setState(
+                                    handleStateChange(
                                         e.target.value
                                     )
                                 }
                             >
+
                                 <option value="">
                                     {isKannada
                                         ? "ಎಲ್ಲಾ ರಾಜ್ಯಗಳು"
@@ -342,10 +479,14 @@ const MarketPrice = () => {
                                         </option>
                                     )
                                 )}
+
                             </select>
+
                         </div>
 
+                        {/* District */}
                         <div className="market-field">
+
                             <label>
                                 🏘️{" "}
                                 {isKannada
@@ -353,23 +494,39 @@ const MarketPrice = () => {
                                     : "District"}
                             </label>
 
-                            <input
-                                type="text"
-                                placeholder={
-                                    isKannada
-                                        ? "ಜಿಲ್ಲೆ ನಮೂದಿಸಿ"
-                                        : "Enter district"
-                                }
+                            <select
                                 value={district}
                                 onChange={(e) =>
-                                    setDistrict(
+                                    handleDistrictChange(
                                         e.target.value
                                     )
                                 }
-                            />
+                            >
+
+                                <option value="">
+                                    {isKannada
+                                        ? "ಎಲ್ಲಾ ಜಿಲ್ಲೆಗಳು"
+                                        : "All Districts"}
+                                </option>
+
+                                {availableDistricts.map(
+                                    (item) => (
+                                        <option
+                                            key={item}
+                                            value={item}
+                                        >
+                                            {item}
+                                        </option>
+                                    )
+                                )}
+
+                            </select>
+
                         </div>
 
+                        {/* Market */}
                         <div className="market-field">
+
                             <label>
                                 🏪{" "}
                                 {isKannada
@@ -377,20 +534,34 @@ const MarketPrice = () => {
                                     : "Market"}
                             </label>
 
-                            <input
-                                type="text"
-                                placeholder={
-                                    isKannada
-                                        ? "ಮಾರುಕಟ್ಟೆ ನಮೂದಿಸಿ"
-                                        : "Enter market"
-                                }
+                            <select
                                 value={market}
                                 onChange={(e) =>
                                     setMarket(
                                         e.target.value
                                     )
                                 }
-                            />
+                            >
+
+                                <option value="">
+                                    {isKannada
+                                        ? "ಎಲ್ಲಾ ಮಾರುಕಟ್ಟೆಗಳು"
+                                        : "All Markets"}
+                                </option>
+
+                                {availableMarkets.map(
+                                    (item) => (
+                                        <option
+                                            key={item}
+                                            value={item}
+                                        >
+                                            {item}
+                                        </option>
+                                    )
+                                )}
+
+                            </select>
+
                         </div>
 
                     </div>
@@ -405,16 +576,17 @@ const MarketPrice = () => {
                             {loading
                                 ? "⏳ Loading..."
                                 : `🔍 ${
-                                    isKannada
-                                        ? "ಬೆಲೆ ಹುಡುಕಿ"
-                                        : "Search Prices"
-                                }`}
+                                      isKannada
+                                          ? "ಬೆಲೆ ಹುಡುಕಿ"
+                                          : "Search Prices"
+                                  }`}
                         </button>
 
                         <button
                             className="market-clear-button"
                             onClick={() => {
                                 clearFilters();
+
                                 setTimeout(
                                     fetchPrices,
                                     0
@@ -439,17 +611,21 @@ const MarketPrice = () => {
                     </div>
                 )}
 
-                {/* Summary */}
+                {/* Results */}
                 {records.length > 0 && (
                     <>
+
+                        {/* Summary */}
                         <section className="market-summary-grid">
 
                             <div className="market-summary-card">
+
                                 <span className="summary-icon">
                                     📉
                                 </span>
 
                                 <div>
+
                                     <p>
                                         {isKannada
                                             ? "ಕನಿಷ್ಠ ಬೆಲೆ"
@@ -461,15 +637,19 @@ const MarketPrice = () => {
                                             summary.min
                                         )}
                                     </strong>
+
                                 </div>
+
                             </div>
 
                             <div className="market-summary-card">
+
                                 <span className="summary-icon">
                                     💰
                                 </span>
 
                                 <div>
+
                                     <p>
                                         {isKannada
                                             ? "ಸರಾಸರಿ ಮೋಡಲ್ ಬೆಲೆ"
@@ -481,15 +661,19 @@ const MarketPrice = () => {
                                             summary.modal
                                         )}
                                     </strong>
+
                                 </div>
+
                             </div>
 
                             <div className="market-summary-card">
+
                                 <span className="summary-icon">
                                     📈
                                 </span>
 
                                 <div>
+
                                     <p>
                                         {isKannada
                                             ? "ಗರಿಷ್ಠ ಬೆಲೆ"
@@ -501,15 +685,19 @@ const MarketPrice = () => {
                                             summary.max
                                         )}
                                     </strong>
+
                                 </div>
+
                             </div>
 
                             <div className="market-summary-card">
+
                                 <span className="summary-icon">
                                     🏪
                                 </span>
 
                                 <div>
+
                                     <p>
                                         {isKannada
                                             ? "ಮಾರುಕಟ್ಟೆಗಳು"
@@ -519,12 +707,14 @@ const MarketPrice = () => {
                                     <strong>
                                         {records.length}
                                     </strong>
+
                                 </div>
+
                             </div>
 
                         </section>
 
-                        {/* Best market */}
+                        {/* Best Market */}
                         {bestMarket && (
                             <section className="best-market-card">
 
@@ -536,8 +726,8 @@ const MarketPrice = () => {
 
                                     <span>
                                         {isKannada
-                                            ? "ಅತ್ಯುತ್ತಮ ಮೋಡಲ್ ಬೆಲೆ"
-                                            : "Best Modal Price Found"}
+                                            ? "ಬೆಳೆಯಲು ಅತ್ಯುತ್ತಮ ಮಾರುಕಟ್ಟೆ"
+                                            : "Best Market to Sell"}
                                     </span>
 
                                     <h2>
@@ -562,15 +752,31 @@ const MarketPrice = () => {
                                 </div>
 
                                 <div className="best-market-price">
+
                                     {formatPrice(
                                         bestMarket.modal_price
                                     )}
+
                                     <small>
                                         / quintal
                                     </small>
+
                                 </div>
 
                             </section>
+                        )}
+
+                        {/* Latest Mandi Date */}
+                        {latestArrivalDate && (
+                            <div className="market-latest-info">
+                                📅{" "}
+                                <strong>
+                                    {isKannada
+                                        ? "ಇತ್ತೀಚಿನ ಮಂಡಿ ದಿನಾಂಕ:"
+                                        : "Latest Mandi Date:"}
+                                </strong>{" "}
+                                {latestArrivalDate}
+                            </div>
                         )}
 
                         {/* Table */}
@@ -579,6 +785,7 @@ const MarketPrice = () => {
                             <div className="market-results-header">
 
                                 <div>
+
                                     <h2>
                                         {isKannada
                                             ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು"
@@ -590,6 +797,7 @@ const MarketPrice = () => {
                                             ? `${records.length} ದಾಖಲೆಗಳು`
                                             : `${records.length} market records`}
                                     </p>
+
                                 </div>
 
                                 <button
@@ -610,25 +818,75 @@ const MarketPrice = () => {
                                 <table className="market-table">
 
                                     <thead>
+
                                         <tr>
-                                            <th>State</th>
-                                            <th>District</th>
-                                            <th>Market</th>
-                                            <th>Commodity</th>
-                                            <th>Variety</th>
-                                            <th>Arrival Date</th>
-                                            <th>Min</th>
-                                            <th>Max</th>
-                                            <th>Modal</th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ರಾಜ್ಯ"
+                                                    : "State"}
+                                            </th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ಜಿಲ್ಲೆ"
+                                                    : "District"}
+                                            </th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ಮಾರುಕಟ್ಟೆ"
+                                                    : "Market"}
+                                            </th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ಬೆಳೆ"
+                                                    : "Commodity"}
+                                            </th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ವಿಧ"
+                                                    : "Variety"}
+                                            </th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ಆಗಮನ ದಿನಾಂಕ"
+                                                    : "Arrival Date"}
+                                            </th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ಕನಿಷ್ಠ"
+                                                    : "Min"}
+                                            </th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ಗರಿಷ್ಠ"
+                                                    : "Max"}
+                                            </th>
+
+                                            <th>
+                                                {isKannada
+                                                    ? "ಮೋಡಲ್"
+                                                    : "Modal"}
+                                            </th>
+
                                         </tr>
+
                                     </thead>
 
                                     <tbody>
+
                                         {records.map(
                                             (record, index) => (
                                                 <tr
-                                                    key={`${record.market}-${index}`}
+                                                    key={`${record.market}-${record.commodity}-${index}`}
                                                 >
+
                                                     <td>
                                                         {record.state ||
                                                             "—"}
@@ -678,9 +936,11 @@ const MarketPrice = () => {
                                                             record.modal_price
                                                         )}
                                                     </td>
+
                                                 </tr>
                                             )
                                         )}
+
                                     </tbody>
 
                                 </table>
@@ -688,13 +948,16 @@ const MarketPrice = () => {
                             </div>
 
                         </section>
+
                     </>
                 )}
 
+                {/* Empty */}
                 {!loading &&
                     !error &&
                     records.length === 0 && (
                         <div className="market-empty">
+
                             <div>🌾</div>
 
                             <h2>
@@ -708,22 +971,34 @@ const MarketPrice = () => {
                                     ? "ಬೇರೆ ಬೆಳೆ ಅಥವಾ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆಮಾಡಿ."
                                     : "Try another commodity or location."}
                             </p>
+
                         </div>
                     )}
 
-                {/* Footer information */}
+                {/* Footer */}
                 <div className="market-source-info">
 
                     <span>
                         🇮🇳{" "}
                         {isKannada
                             ? "ಸರ್ಕಾರಿ ಮಂಡಿ ಬೆಲೆ ಮಾಹಿತಿ"
-                            : "Government mandi market data"}
+                            : "Latest Government Mandi Prices"}
                     </span>
+
+                    {latestArrivalDate && (
+                        <span>
+                            {isKannada
+                                ? "ಇತ್ತೀಚಿನ ಡೇಟಾ:"
+                                : "Latest data:"}{" "}
+                            {latestArrivalDate}
+                        </span>
+                    )}
 
                     {lastUpdated && (
                         <span>
-                            Last retrieved:{" "}
+                            {isKannada
+                                ? "ಪಡೆದ ಸಮಯ:"
+                                : "Retrieved:"}{" "}
                             {lastUpdated.toLocaleTimeString()}
                         </span>
                     )}
