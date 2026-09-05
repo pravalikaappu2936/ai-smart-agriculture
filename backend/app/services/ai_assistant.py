@@ -34,6 +34,15 @@ LANGUAGE_CODES = {
 
 
 # =========================================================
+# LIMITS
+# =========================================================
+
+MAX_MESSAGE_LENGTH = 2000
+
+MAX_RESPONSE_LENGTH = 12000
+
+
+# =========================================================
 # AGRICULTURE SYSTEM PROMPT
 # =========================================================
 
@@ -242,7 +251,7 @@ DO NOT transliterate Marathi into English letters.
 DO NOT respond in English.
 
 DO NOT mix English sentences into the Marathi response.
-""",
+"""
 }
 
 
@@ -255,12 +264,17 @@ def normalize_language(language: str) -> str:
     if language is None:
         return "English"
 
-    language = str(language).strip()
+    language = str(
+        language
+    ).strip()
 
     if not language:
         return "English"
 
+    # -----------------------------------------------------
     # Exact match
+    # -----------------------------------------------------
+
     for supported_language in SUPPORTED_LANGUAGES:
 
         if (
@@ -269,7 +283,10 @@ def normalize_language(language: str) -> str:
         ):
             return supported_language
 
+    # -----------------------------------------------------
     # Common aliases
+    # -----------------------------------------------------
+
     aliases = {
 
         "en": "English",
@@ -307,7 +324,10 @@ def normalize_language(language: str) -> str:
     if normalized:
         return normalized
 
-    # Unknown language -> English
+    # -----------------------------------------------------
+    # Unknown language
+    # -----------------------------------------------------
+
     return "English"
 
 
@@ -315,7 +335,9 @@ def normalize_language(language: str) -> str:
 # BUILD LANGUAGE PROMPT
 # =========================================================
 
-def build_language_prompt(language: str) -> str:
+def build_language_prompt(
+    language: str
+) -> str:
 
     language_code = LANGUAGE_CODES.get(
         language,
@@ -374,7 +396,7 @@ Use native Unicode characters.
 
 
 # =========================================================
-# GET GROQ CLIENT
+# CREATE GROQ CLIENT
 # =========================================================
 
 def create_groq_client():
@@ -407,6 +429,69 @@ def get_model_name():
 
 
 # =========================================================
+# CLEAN RESPONSE
+# =========================================================
+
+def clean_response(answer: str) -> str:
+
+    if answer is None:
+
+        raise RuntimeError(
+            "Groq returned an empty response."
+        )
+
+    if not isinstance(answer, str):
+
+        answer = str(
+            answer
+        )
+
+    answer = answer.strip()
+
+    if not answer:
+
+        raise RuntimeError(
+            "Groq returned an empty response."
+        )
+
+    # -----------------------------------------------------
+    # Remove unnecessary code fences
+    # -----------------------------------------------------
+
+    if answer.startswith("```"):
+
+        lines = answer.splitlines()
+
+        if len(lines) >= 2:
+
+            lines = lines[1:]
+
+        if (
+            lines
+            and lines[-1].strip()
+            == "```"
+        ):
+
+            lines = lines[:-1]
+
+        answer = "\n".join(
+            lines
+        ).strip()
+
+    # -----------------------------------------------------
+    # Protect application from unexpectedly huge output
+    # -----------------------------------------------------
+
+    if len(answer) > MAX_RESPONSE_LENGTH:
+
+        answer = answer[
+            :MAX_RESPONSE_LENGTH
+        ].rstrip()
+
+    return answer
+
+
+# =========================================================
 # GET AI RESPONSE
 # =========================================================
 
@@ -435,6 +520,19 @@ def get_ai_response(
             "Message cannot be empty."
         )
 
+
+    # =====================================================
+    # MESSAGE LENGTH PROTECTION
+    # =====================================================
+
+    if len(message) > MAX_MESSAGE_LENGTH:
+
+        raise ValueError(
+            f"Message is too long. "
+            f"Maximum length is {MAX_MESSAGE_LENGTH} characters."
+        )
+
+
     # =====================================================
     # NORMALIZE LANGUAGE
     # =====================================================
@@ -442,6 +540,7 @@ def get_ai_response(
     language = normalize_language(
         language
     )
+
 
     # =====================================================
     # BUILD LANGUAGE PROMPT
@@ -451,13 +550,15 @@ def get_ai_response(
         language
     )
 
+
     # =====================================================
-    # CREATE CLIENT
+    # CREATE GROQ CLIENT
     # =====================================================
 
     client = create_groq_client()
 
     model = get_model_name()
+
 
     # =====================================================
     # LOG REQUEST
@@ -482,13 +583,14 @@ def get_ai_response(
     )
 
     print(
-        "Message:",
-        message
+        "Message length:",
+        len(message)
     )
 
     print(
         "=============================================="
     )
+
 
     # =====================================================
     # SEND REQUEST
@@ -524,6 +626,7 @@ def get_ai_response(
             max_completion_tokens=1024
         )
 
+
     except Exception as error:
 
         print(
@@ -535,6 +638,16 @@ def get_ai_response(
             "Unable to connect to the Groq AI service."
         )
 
+
+    finally:
+
+        # -------------------------------------------------
+        # Release the client reference after the request.
+        # -------------------------------------------------
+
+        client = None
+
+
     # =====================================================
     # VALIDATE GROQ RESPONSE
     # =====================================================
@@ -545,11 +658,17 @@ def get_ai_response(
             "Groq returned no response."
         )
 
+
     if not response.choices:
 
         raise RuntimeError(
             "Groq returned no choices."
         )
+
+
+    # =====================================================
+    # EXTRACT ANSWER
+    # =====================================================
 
     answer = (
         response
@@ -558,52 +677,18 @@ def get_ai_response(
         .content
     )
 
-    # =====================================================
-    # VALIDATE ANSWER
-    # =====================================================
-
-    if answer is None:
-
-        raise RuntimeError(
-            "Groq returned an empty response."
-        )
-
-    if not isinstance(answer, str):
-
-        answer = str(
-            answer
-        )
-
-    answer = answer.strip()
-
-    if not answer:
-
-        raise RuntimeError(
-            "Groq returned an empty response."
-        )
 
     # =====================================================
-    # REMOVE UNNECESSARY CODE FENCES
+    # CLEAN ANSWER
     # =====================================================
 
-    if answer.startswith("```"):
+    answer = clean_response(
+        answer
+    )
 
-        lines = answer.splitlines()
-
-        if len(lines) >= 2:
-
-            lines = lines[1:]
-
-        if lines and lines[-1].strip() == "```":
-
-            lines = lines[:-1]
-
-        answer = "\n".join(
-            lines
-        ).strip()
 
     # =====================================================
-    # LOG RESPONSE
+    # LOG RESPONSE INFORMATION
     # =====================================================
 
     print(
@@ -616,15 +701,17 @@ def get_ai_response(
     )
 
     print(
-        "GROQ RESPONSE:"
-    )
-
-    print(
-        answer
+        "GROQ RESPONSE LENGTH:",
+        len(answer)
     )
 
     print(
         "=============================================="
     )
+
+
+    # =====================================================
+    # RETURN RESPONSE
+    # =====================================================
 
     return answer

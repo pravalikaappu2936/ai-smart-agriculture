@@ -1,6 +1,6 @@
-import edge_tts
-import tempfile
 import os
+import tempfile
+import edge_tts
 
 
 # ============================================================
@@ -18,34 +18,84 @@ VOICE_MAP = {
 }
 
 
+# ============================================================
+# Generate Speech
+# ============================================================
+
 async def generate_speech(text: str, language: str) -> str:
     """
-    Convert text into speech and return the generated MP3 path.
+    Convert text into speech using Microsoft Edge TTS.
+
+    Returns:
+        str: Path to the generated MP3 file.
     """
 
+    # --------------------------------------------------------
+    # Validate text
+    # --------------------------------------------------------
     if not text or not text.strip():
         raise ValueError("Text cannot be empty")
 
-    voice = VOICE_MAP.get(language)
+    text = text.strip()
 
-    if not voice:
-        # Fallback to Indian English
-        voice = VOICE_MAP["English"]
+    # --------------------------------------------------------
+    # Normalize language
+    # --------------------------------------------------------
+    language = (language or "English").strip()
 
+    # --------------------------------------------------------
+    # Select voice
+    # --------------------------------------------------------
+    voice = VOICE_MAP.get(
+        language,
+        VOICE_MAP["English"]
+    )
+
+    # --------------------------------------------------------
     # Create temporary MP3 file
+    # --------------------------------------------------------
     temp_file = tempfile.NamedTemporaryFile(
-        delete=False,
-        suffix=".mp3"
+        mode="wb",
+        suffix=".mp3",
+        delete=False
     )
 
     output_path = temp_file.name
     temp_file.close()
 
-    communicate = edge_tts.Communicate(
-        text=text,
-        voice=voice
-    )
+    try:
+        # ----------------------------------------------------
+        # Create Edge TTS communication
+        # ----------------------------------------------------
+        communicate = edge_tts.Communicate(
+            text=text,
+            voice=voice
+        )
 
-    await communicate.save(output_path)
+        # ----------------------------------------------------
+        # Generate MP3
+        # ----------------------------------------------------
+        await communicate.save(output_path)
 
-    return output_path
+        # ----------------------------------------------------
+        # Verify file was created
+        # ----------------------------------------------------
+        if not os.path.exists(output_path):
+            raise RuntimeError("TTS audio file was not created")
+
+        if os.path.getsize(output_path) == 0:
+            raise RuntimeError("TTS generated an empty audio file")
+
+        return output_path
+
+    except Exception:
+        # ----------------------------------------------------
+        # Remove incomplete file if TTS fails
+        # ----------------------------------------------------
+        try:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+        except OSError:
+            pass
+
+        raise

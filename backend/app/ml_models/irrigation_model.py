@@ -4,6 +4,7 @@
 # =========================================================
 
 from pathlib import Path
+from functools import lru_cache
 
 import joblib
 import pandas as pd
@@ -31,18 +32,41 @@ SCALER_PATH = (
 
 
 # =========================================================
-# LOAD TRAINED MODEL
+# LAZY LOAD TRAINED MODEL
+# =========================================================
+#
+# IMPORTANT FOR RENDER
+#
+# The old version loaded the irrigation model and scaler
+# immediately when this Python module was imported.
+#
+# That means FastAPI loaded them during application startup,
+# even when nobody was using irrigation.
+#
+# This version loads them ONLY when predict_irrigation()
+# actually needs them.
+#
+# maxsize=1 ensures only one cached copy is retained.
 # =========================================================
 
-model = None
-scaler = None
 
+@lru_cache(maxsize=1)
+def load_irrigation_model():
 
-try:
+    if not MODEL_PATH.exists():
 
-    if MODEL_PATH.exists():
+        raise FileNotFoundError(
+            "Irrigation model not found: "
+            f"{MODEL_PATH}"
+        )
 
-        model = joblib.load(
+    try:
+
+        print(
+            "Loading irrigation model..."
+        )
+
+        loaded_model = joblib.load(
             MODEL_PATH
         )
 
@@ -50,25 +74,38 @@ try:
             "Irrigation model loaded successfully."
         )
 
-    else:
+        return loaded_model
+
+    except Exception as exc:
 
         print(
-            "Warning: irrigation_model.pkl not found."
+            "Warning: irrigation model could not "
+            "be loaded:",
+            exc
         )
 
-except Exception as exc:
-
-    print(
-        "Warning: irrigation model could not be loaded:",
-        exc
-    )
+        raise RuntimeError(
+            "Irrigation model could not be loaded."
+        ) from exc
 
 
-try:
+@lru_cache(maxsize=1)
+def load_irrigation_scaler():
 
-    if SCALER_PATH.exists():
+    if not SCALER_PATH.exists():
 
-        scaler = joblib.load(
+        raise FileNotFoundError(
+            "Irrigation scaler not found: "
+            f"{SCALER_PATH}"
+        )
+
+    try:
+
+        print(
+            "Loading irrigation scaler..."
+        )
+
+        loaded_scaler = joblib.load(
             SCALER_PATH
         )
 
@@ -76,18 +113,19 @@ try:
             "Irrigation scaler loaded successfully."
         )
 
-    else:
+        return loaded_scaler
+
+    except Exception as exc:
 
         print(
-            "Warning: irrigation_scaler.pkl not found."
+            "Warning: irrigation scaler could not "
+            "be loaded:",
+            exc
         )
 
-except Exception as exc:
-
-    print(
-        "Warning: irrigation scaler could not be loaded:",
-        exc
-    )
+        raise RuntimeError(
+            "Irrigation scaler could not be loaded."
+        ) from exc
 
 
 # =========================================================
@@ -129,7 +167,6 @@ CROP_WATER_FACTOR = {
     "okra": 1.00,
     "cabbage": 1.00,
     "carrot": 0.90
-
 }
 
 
@@ -161,7 +198,6 @@ CROP_ALIASES = {
     "soy-bean": "soybean",
 
     "ragi millet": "ragi"
-
 }
 
 
@@ -183,19 +219,25 @@ def normalize_crop(crop_type):
         .lower()
     )
 
+    # -----------------------------------------------------
     # Normalize repeated spaces
+    # -----------------------------------------------------
 
     crop = " ".join(
         crop.split()
     )
 
+    # -----------------------------------------------------
     # Check aliases
+    # -----------------------------------------------------
 
     if crop in CROP_ALIASES:
 
         crop = CROP_ALIASES[crop]
 
+    # -----------------------------------------------------
     # Convert hyphen format
+    # -----------------------------------------------------
 
     normalized = crop.replace(
         "-",
@@ -206,7 +248,9 @@ def normalize_crop(crop_type):
 
         crop = normalized
 
-    # Validate
+    # -----------------------------------------------------
+    # Validate crop
+    # -----------------------------------------------------
 
     if crop not in CROP_WATER_FACTOR:
 
@@ -268,7 +312,6 @@ def preprocess_irrigation(data):
 
         "crop_water_factor":
             float(crop_water_factor)
-
     }
 
     return pd.DataFrame(
@@ -407,7 +450,6 @@ CROP_MOISTURE_LIMITS = {
         "low": 30,
         "good": 50
     }
-
 }
 
 
@@ -416,7 +458,6 @@ CROP_MOISTURE_LIMITS = {
 # =========================================================
 
 def calculate_irrigation_decision(
-
     crop,
     soil_moisture,
     humidity,
@@ -424,27 +465,20 @@ def calculate_irrigation_decision(
     rainfall,
     rain_forecast,
     wind_speed
-
 ):
 
-    limits = (
-        CROP_MOISTURE_LIMITS.get(
-
-            crop,
-
-            {
-                "critical": 25,
-                "low": 35,
-                "good": 55
-            }
-
-        )
+    limits = CROP_MOISTURE_LIMITS.get(
+        crop,
+        {
+            "critical": 25,
+            "low": 35,
+            "good": 55
+        }
     )
 
     critical = limits["critical"]
     low = limits["low"]
     good = limits["good"]
-
 
     # =====================================================
     # HEAVY RAINFALL PROTECTION
@@ -455,23 +489,18 @@ def calculate_irrigation_decision(
         if soil_moisture <= critical:
 
             return (
-
                 "Irrigate soon",
 
                 "Soil moisture is very low despite recent rainfall. "
                 "Monitor the field closely and provide water if moisture "
                 "does not recover."
-
             )
 
         return (
-
             "No irrigation",
 
             "Recent rainfall has reduced the need for irrigation."
-
         )
-
 
     # =====================================================
     # STRONG RAIN FORECAST
@@ -482,22 +511,17 @@ def calculate_irrigation_decision(
         if soil_moisture <= critical:
 
             return (
-
                 "Monitor",
 
                 "Soil moisture is low, but significant rainfall is "
                 "forecast. Recheck the field before irrigating."
-
             )
 
         return (
-
             "No irrigation",
 
             "Rain is expected soon, so irrigation can be avoided."
-
         )
-
 
     # =====================================================
     # CRITICAL MOISTURE
@@ -506,13 +530,10 @@ def calculate_irrigation_decision(
     if soil_moisture <= critical:
 
         return (
-
             "Irrigate now",
 
             "Soil moisture is critically low."
-
         )
-
 
     # =====================================================
     # LOW MOISTURE
@@ -521,77 +542,60 @@ def calculate_irrigation_decision(
     if soil_moisture <= low:
 
         if (
-
             temperature >= 32
             and humidity <= 45
             and rain_forecast < 40
-
         ):
 
             return (
-
                 "Irrigate now",
 
                 "Soil moisture is low and hot, dry weather is "
                 "increasing the crop's water requirement."
-
             )
 
         return (
-
             "Irrigate soon",
 
             "Soil moisture is below the recommended range "
             "for this crop."
-
         )
-
 
     # =====================================================
     # MODERATE MOISTURE + HOT WEATHER
     # =====================================================
 
     if (
-
         soil_moisture < good
         and temperature >= 35
         and humidity < 40
         and rain_forecast < 30
-
     ):
 
         return (
-
             "Irrigate soon",
 
             "The soil still contains moisture, but hot and dry "
             "conditions are increasing water demand."
-
         )
-
 
     # =====================================================
     # HIGH WIND + MODERATE MOISTURE
     # =====================================================
 
     if (
-
         soil_moisture < good
         and wind_speed >= 25
         and humidity < 50
         and rain_forecast < 30
-
     ):
 
         return (
-
             "Irrigate soon",
 
             "Dry and windy conditions may increase water loss "
             "from the soil."
-
         )
-
 
     # =====================================================
     # SUFFICIENT MOISTURE
@@ -600,25 +604,20 @@ def calculate_irrigation_decision(
     if soil_moisture >= good:
 
         return (
-
             "No irrigation",
 
             "Soil moisture is sufficient for the crop."
-
         )
-
 
     # =====================================================
     # DEFAULT
     # =====================================================
 
     return (
-
         "Monitor",
 
         "Soil moisture is currently acceptable. Continue "
         "monitoring the field conditions."
-
     )
 
 
@@ -639,7 +638,6 @@ def predict_irrigation(features):
         raise ValueError(
             "Irrigation feature data is empty."
         )
-
 
     # =====================================================
     # READ VALUES
@@ -673,7 +671,6 @@ def predict_irrigation(features):
         features["crop_water_factor"].iloc[0]
     )
 
-
     # =====================================================
     # IDENTIFY CROP
     # =====================================================
@@ -690,11 +687,9 @@ def predict_irrigation(features):
 
             break
 
-
     if crop is None:
 
         crop = "rice"
-
 
     # =====================================================
     # FINAL AGRICULTURAL DECISION
@@ -715,9 +710,7 @@ def predict_irrigation(features):
         rain_forecast=rain_forecast,
 
         wind_speed=wind_speed
-
     )
-
 
     # =====================================================
     # ML PREDICTION
@@ -727,146 +720,139 @@ def predict_irrigation(features):
 
     prediction_probabilities = {}
 
-
     try:
 
-        if model is not None:
+        # -------------------------------------------------
+        # LAZY LOAD MODEL ONLY WHEN IRRIGATION IS USED
+        # -------------------------------------------------
 
-            model_columns = [
+        model = load_irrigation_model()
 
-                "soil_moisture",
-                "humidity",
-                "temperature",
-                "rainfall",
-                "soil_temperature",
-                "wind_speed",
-                "rain_forecast",
-                "nitrogen",
-                "phosphorus",
-                "potassium",
-                "ph",
-                "crop_water_factor"
+        scaler = load_irrigation_scaler()
 
+        model_columns = [
+
+            "soil_moisture",
+            "humidity",
+            "temperature",
+            "rainfall",
+            "soil_temperature",
+            "wind_speed",
+            "rain_forecast",
+            "nitrogen",
+            "phosphorus",
+            "potassium",
+            "ph",
+            "crop_water_factor"
+
+        ]
+
+        model_features = (
+
+            features[
+                model_columns
             ]
+            .copy()
+            .astype(float)
 
+        )
 
-            model_features = (
+        # -------------------------------------------------
+        # SCALE
+        # -------------------------------------------------
 
-                features[
-                    model_columns
-                ]
-                .copy()
-                .astype(float)
+        values = scaler.transform(
+            model_features
+        )
 
+        # -------------------------------------------------
+        # RANDOM FOREST PREDICTION
+        # -------------------------------------------------
+
+        prediction = model.predict(
+            values
+        )
+
+        if len(prediction) > 0:
+
+            ml_prediction = str(
+                prediction[0]
             )
 
+        print(
+            "ML irrigation prediction:",
+            ml_prediction
+        )
 
-            # -------------------------------------------------
-            # SCALE
-            # -------------------------------------------------
+        # -------------------------------------------------
+        # PREDICTION PROBABILITIES
+        # -------------------------------------------------
 
-            if scaler is not None:
+        if hasattr(
+            model,
+            "predict_proba"
+        ):
 
-                values = scaler.transform(
-                    model_features
+            probabilities = (
+                model.predict_proba(
+                    values
                 )
-
-            else:
-
-                values = model_features
-
-
-            # -------------------------------------------------
-            # RANDOM FOREST PREDICTION
-            # -------------------------------------------------
-
-            prediction = model.predict(
-                values
             )
 
+            classes = model.classes_
 
-            if len(prediction) > 0:
+            if len(probabilities) > 0:
 
-                ml_prediction = str(
-                    prediction[0]
-                )
+                prediction_probabilities = {
 
+                    str(label):
 
-            print(
-                "ML irrigation prediction:",
-                ml_prediction
-            )
-
-
-            # -------------------------------------------------
-            # PREDICTION PROBABILITIES
-            # -------------------------------------------------
-
-            if hasattr(
-                model,
-                "predict_proba"
-            ):
-
-                probabilities = (
-                    model.predict_proba(
-                        values
-                    )
-                )
-
-                classes = model.classes_
-
-                if len(probabilities) > 0:
-
-                    prediction_probabilities = {
-
-                        str(label):
-
-                            round(
-                                float(probability),
-                                4
-                            )
-
-                        for label, probability
-                        in zip(
-
-                            classes,
-
-                            probabilities[0]
-
+                        round(
+                            float(probability),
+                            4
                         )
 
-                    }
-
-                    print(
-                        "Prediction probabilities:",
-                        prediction_probabilities
+                    for label, probability
+                    in zip(
+                        classes,
+                        probabilities[0]
                     )
 
+                }
+
+                print(
+                    "Prediction probabilities:",
+                    prediction_probabilities
+                )
 
     except Exception as exc:
+
+        # -------------------------------------------------
+        # IMPORTANT:
+        #
+        # Keep your original behavior:
+        # if ML prediction fails, the rule-based
+        # agricultural decision still works.
+        # -------------------------------------------------
 
         print(
             "ML prediction skipped:",
             exc
         )
 
-
     # =====================================================
     # IRRIGATION SCORE
     # =====================================================
 
-    limits = (
-        CROP_MOISTURE_LIMITS.get(
+    limits = CROP_MOISTURE_LIMITS.get(
 
-            crop,
+        crop,
 
-            {
-                "critical": 25,
-                "low": 35,
-                "good": 55
-            }
-
-        )
+        {
+            "critical": 25,
+            "low": 35,
+            "good": 55
+        }
     )
 
     critical = float(
@@ -877,59 +863,34 @@ def predict_irrigation(features):
         limits["good"]
     )
 
-
     moisture_stress = max(
-
         0.0,
-
         good - soil_moisture
-
     )
-
 
     temperature_stress = max(
-
         0.0,
-
         temperature - 25.0
-
     ) * 0.50
 
-
     humidity_stress = max(
-
         0.0,
-
         50.0 - humidity
-
     ) * 0.15
 
-
     wind_stress = max(
-
         0.0,
-
         wind_speed - 20.0
-
     ) * 0.10
 
-
     rainfall_relief = min(
-
         rainfall * 1.5,
-
         15.0
-
     )
-
 
     forecast_relief = (
-
-        rain_forecast
-        / 10.0
-
+        rain_forecast / 10.0
     )
-
 
     irrigation_score = (
 
@@ -942,7 +903,6 @@ def predict_irrigation(features):
 
     )
 
-
     # =====================================================
     # CRITICAL MOISTURE OVERRIDE
     # =====================================================
@@ -950,28 +910,17 @@ def predict_irrigation(features):
     if soil_moisture <= critical:
 
         irrigation_score = max(
-
             irrigation_score,
-
             75.0
-
         )
-
 
     irrigation_score = max(
-
         0.0,
-
         min(
-
             100.0,
-
             float(irrigation_score)
-
         )
-
     )
-
 
     # =====================================================
     # WATER NEED
@@ -993,23 +942,16 @@ def predict_irrigation(features):
 
         water_need = "NONE"
 
-
     # =====================================================
     # NOTIFICATION REQUIRED
     # =====================================================
 
     notification_required = (
-
         status in [
-
             "Irrigate now",
-
             "Irrigate soon"
-
         ]
-
     )
-
 
     # =====================================================
     # FINAL RESULT

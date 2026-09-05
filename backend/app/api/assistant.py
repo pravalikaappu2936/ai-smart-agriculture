@@ -24,6 +24,13 @@ router = APIRouter(
 
 
 # =========================================================
+# CONSTANTS
+# =========================================================
+
+MAX_MESSAGE_LENGTH = 2000
+
+
+# =========================================================
 # AI ASSISTANT CHAT
 # =========================================================
 
@@ -59,30 +66,52 @@ def assistant_chat(
         # =====================================================
 
         if request is None:
+
             raise HTTPException(
                 status_code=400,
                 detail="Request is required."
             )
+
 
         # =====================================================
         # VALIDATE MESSAGE
         # =====================================================
 
         if request.message is None:
+
             raise HTTPException(
                 status_code=400,
                 detail="Message is required."
             )
 
+
         message = str(
             request.message
         ).strip()
 
+
         if not message:
+
             raise HTTPException(
                 status_code=400,
                 detail="Message cannot be empty."
             )
+
+
+        # =====================================================
+        # MESSAGE LENGTH PROTECTION
+        # =====================================================
+
+        if len(message) > MAX_MESSAGE_LENGTH:
+
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Message is too long. "
+                    f"Maximum length is {MAX_MESSAGE_LENGTH} characters."
+                )
+            )
+
 
         # =====================================================
         # NORMALIZE LANGUAGE
@@ -106,6 +135,7 @@ def assistant_chat(
                 detail="Unsupported language."
             )
 
+
         # =====================================================
         # LOG REQUEST
         # =====================================================
@@ -128,8 +158,8 @@ def assistant_chat(
         )
 
         print(
-            "Message:",
-            message
+            "Message length:",
+            len(message)
         )
 
         print(
@@ -141,6 +171,7 @@ def assistant_chat(
             "========================================"
         )
 
+
         # =====================================================
         # GET AI RESPONSE
         # =====================================================
@@ -149,6 +180,7 @@ def assistant_chat(
             message=message,
             language=language
         )
+
 
         # =====================================================
         # VALIDATE AI RESPONSE
@@ -160,9 +192,11 @@ def assistant_chat(
                 "AI assistant returned no response."
             )
 
+
         response = str(
             response
         ).strip()
+
 
         if not response:
 
@@ -170,8 +204,9 @@ def assistant_chat(
                 "AI assistant returned an empty response."
             )
 
+
         # =====================================================
-        # LOG RESPONSE
+        # LOG RESPONSE INFORMATION
         # =====================================================
 
         print(
@@ -188,13 +223,14 @@ def assistant_chat(
         )
 
         print(
-            "Response:",
-            response
+            "Response length:",
+            len(response)
         )
 
         print(
             "========================================"
         )
+
 
         # =====================================================
         # RETURN RESPONSE
@@ -206,6 +242,7 @@ def assistant_chat(
             language=language
         )
 
+
     # =========================================================
     # HTTP ERROR
     # =========================================================
@@ -213,6 +250,7 @@ def assistant_chat(
     except HTTPException:
 
         raise
+
 
     # =========================================================
     # RUNTIME ERROR
@@ -230,6 +268,7 @@ def assistant_chat(
             detail=str(error)
         )
 
+
     # =========================================================
     # VALUE ERROR
     # =========================================================
@@ -245,6 +284,7 @@ def assistant_chat(
             status_code=400,
             detail=str(error)
         )
+
 
     # =========================================================
     # UNEXPECTED ERROR
