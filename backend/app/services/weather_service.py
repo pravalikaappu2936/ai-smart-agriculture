@@ -1,5 +1,6 @@
 import re
 import time
+import threading
 from typing import Optional, Tuple
 
 import requests
@@ -22,14 +23,16 @@ WEATHER_URL = (
 # CACHE SETTINGS
 # =========================================================
 
-# Weather does not need to be requested every few seconds.
-# 10 minutes is enough for this application.
+# Fresh weather data is used for 10 minutes.
 WEATHER_CACHE_TTL = 600
 
-# Location results can also be cached.
+# Location/geocoding data is cached for 1 hour.
 LOCATION_CACHE_TTL = 3600
 
-# Maximum time to wait when Open-Meteo returns 429.
+# Maximum number of retries for temporary 429 responses.
+MAX_RETRIES = 2
+
+# Maximum time to wait for a Retry-After response.
 MAX_RETRY_WAIT = 20
 
 
@@ -38,8 +41,27 @@ MAX_RETRY_WAIT = 20
 # =========================================================
 
 _weather_cache = {}
-
 _location_cache = {}
+
+
+# =========================================================
+# CACHE LOCKS
+# =========================================================
+
+# Protect cache access when multiple Render requests
+# arrive at the same time.
+_weather_cache_lock = threading.Lock()
+_location_cache_lock = threading.Lock()
+
+
+# =========================================================
+# WEATHER REQUEST LOCKS
+# =========================================================
+
+# Prevent multiple simultaneous requests for exactly the
+# same coordinates from hitting Open-Meteo.
+_weather_request_locks = {}
+_weather_request_locks_lock = threading.Lock()
 
 
 # =========================================================
@@ -64,7 +86,6 @@ def normalize_location_text(value: str) -> str:
     Normalize location text.
 
     Examples:
-
         Karnataka
         karnataka
         KARNATAKA
@@ -88,7 +109,7 @@ def normalize_location_text(value: str) -> str:
 # =========================================================
 
 def parse_coordinates(
-    location: str
+    location: str,
 ) -> Optional[Tuple[float, float]]:
     """
     Detect coordinate strings such as:
@@ -98,7 +119,6 @@ def parse_coordinates(
         -14.2380, 76.3933
 
     Returns:
-
         (latitude, longitude)
 
     or:
@@ -111,10 +131,6 @@ def parse_coordinates(
 
     location = str(location).strip()
 
-    # -----------------------------------------------------
-    # CORRECT COORDINATE REGEX
-    # -----------------------------------------------------
-
     pattern = (
         r"^\s*"
         r"(-?\d+(?:\.\d+)?)"
@@ -125,14 +141,13 @@ def parse_coordinates(
 
     match = re.match(
         pattern,
-        location
+        location,
     )
 
     if not match:
         return None
 
     try:
-
         latitude = float(
             match.group(1)
         )
@@ -142,7 +157,6 @@ def parse_coordinates(
         )
 
     except ValueError:
-
         return None
 
     # -----------------------------------------------------
@@ -163,16 +177,28 @@ def parse_coordinates(
 
 
 # =========================================================
-# CACHE HELPER
+# CACHE GET
 # =========================================================
 
 def _get_cache(
     cache: dict,
     key,
-    ttl: int
+    ttl: int,
+    lock: Optional[threading.Lock] = None,
 ):
+    """
+    Get fresh cached value.
 
-    item = cache.get(key)
+    Returns None when:
+        - key does not exist
+        - cache entry expired
+    """
+
+    if lock is not None:
+        with lock:
+            item = cache.get(key)
+    else:
+        item = cache.get(key)
 
     if not item:
         return None
@@ -181,26 +207,76 @@ def _get_cache(
 
     if time.time() - timestamp > ttl:
 
-        cache.pop(
-            key,
-            None
-        )
+        if lock is not None:
+            with lock:
+                cache.pop(
+                    key,
+                    None,
+                )
+        else:
+            cache.pop(
+                key,
+                None,
+            )
 
         return None
 
     return value
 
 
+# =========================================================
+# STALE CACHE GET
+# =========================================================
+
+def _get_stale_cache(
+    cache: dict,
+    key,
+    lock: Optional[threading.Lock] = None,
+):
+    """
+    Return cached value even if it is older than the
+    normal TTL.
+
+    Used as a fallback when Open-Meteo is temporarily
+    unavailable or rate-limited.
+    """
+
+    if lock is not None:
+        with lock:
+            item = cache.get(key)
+    else:
+        item = cache.get(key)
+
+    if not item:
+        return None
+
+    return item[1]
+
+
+# =========================================================
+# CACHE SET
+# =========================================================
+
 def _set_cache(
     cache: dict,
     key,
-    value
+    value,
+    lock: Optional[threading.Lock] = None,
 ):
+    """
+    Store value in cache.
+    """
 
-    cache[key] = (
+    item = (
         time.time(),
-        value
+        value,
     )
+
+    if lock is not None:
+        with lock:
+            cache[key] = item
+    else:
+        cache[key] = item
 
 
 # =========================================================
@@ -209,89 +285,229 @@ def _set_cache(
 
 def _weather_cache_key(
     latitude: float,
-    longitude: float
+    longitude: float,
 ):
+    """
+    Round coordinates so tiny GPS differences do not
+    create unnecessary Open-Meteo requests.
+    """
 
     return (
         round(float(latitude), 3),
-        round(float(longitude), 3)
+        round(float(longitude), 3),
     )
 
 
 # =========================================================
-# REQUEST OPEN-METEO WITH 429 HANDLING
+# WEATHER REQUEST LOCK
+# =========================================================
+
+def _get_weather_request_lock(key):
+    """
+    Get a lock for a specific coordinate pair.
+
+    This prevents requests like:
+
+        Weather request 1
+        Weather request 2
+        Irrigation request
+        Dashboard request
+
+    from all hitting Open-Meteo simultaneously for
+    the same location.
+    """
+
+    with _weather_request_locks_lock:
+
+        lock = _weather_request_locks.get(key)
+
+        if lock is None:
+
+            lock = threading.Lock()
+
+            _weather_request_locks[key] = lock
+
+        return lock
+
+
+# =========================================================
+# REQUEST OPEN-METEO
 # =========================================================
 
 def _request_open_meteo(
     url: str,
     params: dict,
-    timeout: int = 15
+    timeout: int = 15,
 ):
+    """
+    Request Open-Meteo with proper timeout and
+    429 retry handling.
 
-    try:
+    Important:
+    A 429 response is actually retried instead of
+    immediately raising an error.
+    """
 
-        response = session.get(
-            url,
-            params=params,
-            timeout=timeout
-        )
+    last_error = None
 
-        # -------------------------------------------------
-        # RATE LIMIT
-        # -------------------------------------------------
+    for attempt in range(
+        MAX_RETRIES + 1
+    ):
 
-        if response.status_code == 429:
+        try:
 
-            retry_after = response.headers.get(
-                "Retry-After"
+            response = session.get(
+                url,
+                params=params,
+                timeout=timeout,
             )
 
-            try:
+            # =================================================
+            # RATE LIMIT
+            # =================================================
 
-                wait_seconds = int(
-                    retry_after
+            if response.status_code == 429:
+
+                retry_after = response.headers.get(
+                    "Retry-After"
                 )
 
-            except (
-                TypeError,
-                ValueError
-            ):
+                try:
 
-                wait_seconds = 5
+                    wait_seconds = float(
+                        retry_after
+                    )
 
-            wait_seconds = min(
-                wait_seconds,
-                MAX_RETRY_WAIT
+                except (
+                    TypeError,
+                    ValueError,
+                ):
+
+                    # Exponential fallback:
+                    # attempt 0 -> 5 seconds
+                    # attempt 1 -> 10 seconds
+                    wait_seconds = (
+                        5 * (2 ** attempt)
+                    )
+
+                wait_seconds = min(
+                    wait_seconds,
+                    MAX_RETRY_WAIT,
+                )
+
+                last_error = (
+                    "429 Too Many Requests. "
+                    f"Retry after approximately "
+                    f"{int(wait_seconds)} seconds."
+                )
+
+                print(
+                    "Open-Meteo rate limit "
+                    f"(attempt {attempt + 1}/"
+                    f"{MAX_RETRIES + 1}). "
+                    f"Waiting {wait_seconds:.0f}s."
+                )
+
+                # Don't sleep after the final attempt.
+                if attempt < MAX_RETRIES:
+
+                    time.sleep(
+                        wait_seconds
+                    )
+
+                    continue
+
+                raise Exception(
+                    last_error
+                )
+
+            # =================================================
+            # OTHER HTTP ERRORS
+            # =================================================
+
+            response.raise_for_status()
+
+            return response.json()
+
+        except requests.Timeout as exc:
+
+            last_error = (
+                "Weather service timed out. "
+                "Please try again."
             )
 
-            raise requests.HTTPError(
-                f"429 Too Many Requests. "
-                f"Retry after approximately "
-                f"{wait_seconds} seconds."
+            print(
+                "Open-Meteo timeout:",
+                exc,
             )
 
-        response.raise_for_status()
+            if attempt < MAX_RETRIES:
 
-        return response.json()
+                time.sleep(
+                    2 ** attempt
+                )
 
-    except requests.Timeout:
+                continue
 
-        raise Exception(
-            "Weather service timed out. "
-            "Please try again."
-        )
+            raise Exception(
+                last_error
+            ) from exc
 
-    except requests.HTTPError as exc:
+        except requests.HTTPError as exc:
 
-        raise Exception(
-            f"Unable to connect to weather service: {exc}"
-        )
+            last_error = (
+                "Unable to connect to weather "
+                f"service: {exc}"
+            )
 
-    except requests.RequestException as exc:
+            print(
+                "Open-Meteo HTTP error:",
+                exc,
+            )
 
-        raise Exception(
-            f"Unable to connect to weather service: {exc}"
-        )
+            # Don't repeatedly retry ordinary HTTP errors.
+            raise Exception(
+                last_error
+            ) from exc
+
+        except requests.RequestException as exc:
+
+            last_error = (
+                "Unable to connect to weather "
+                f"service: {exc}"
+            )
+
+            print(
+                "Open-Meteo request error:",
+                exc,
+            )
+
+            if attempt < MAX_RETRIES:
+
+                time.sleep(
+                    2 ** attempt
+                )
+
+                continue
+
+            raise Exception(
+                last_error
+            ) from exc
+
+        except ValueError as exc:
+
+            raise Exception(
+                "Invalid response received "
+                "from weather service."
+            ) from exc
+
+        except Exception:
+            raise
+
+    raise Exception(
+        last_error
+        or "Unable to connect to weather service."
+    )
 
 
 # =========================================================
@@ -307,6 +523,7 @@ def search_locations(
     Search locations using village, district and state.
 
     Search is case-insensitive.
+
     Coordinate input is supported.
     """
 
@@ -354,8 +571,9 @@ def search_locations(
                 "state": "",
                 "district": "",
                 "timezone": "",
-                "display_name":
-                    f"{latitude}, {longitude}",
+                "display_name": (
+                    f"{latitude}, {longitude}"
+                ),
             }
         ]
 
@@ -366,18 +584,29 @@ def search_locations(
     cache_key = (
         village,
         district,
-        state
+        state,
     )
 
     cached = _get_cache(
         _location_cache,
         cache_key,
-        LOCATION_CACHE_TTL
+        LOCATION_CACHE_TTL,
+        _location_cache_lock,
     )
 
     if cached is not None:
 
+        print(
+            "Location cache HIT:",
+            cache_key,
+        )
+
         return cached
+
+    print(
+        "Location cache MISS:",
+        cache_key,
+    )
 
     # =====================================================
     # SEARCH QUERIES
@@ -419,17 +648,19 @@ def search_locations(
                     "language": "en",
                     "format": "json",
                 },
-                timeout=8
+                timeout=8,
             )
 
             results = data.get(
                 "results",
-                []
+                [],
             )
 
-            all_results.extend(
-                results
-            )
+            if isinstance(results, list):
+
+                all_results.extend(
+                    results
+                )
 
             # -------------------------------------------------
             # CHECK INDIAN RESULTS
@@ -444,11 +675,9 @@ def search_locations(
             ]
 
             if len(indian_results) >= 5:
-
                 break
 
     except Exception:
-
         raise
 
     # =====================================================
@@ -464,7 +693,6 @@ def search_locations(
     ]
 
     if not india_results:
-
         india_results = all_results
 
     # =====================================================
@@ -503,14 +731,13 @@ def search_locations(
 
         except (
             TypeError,
-            ValueError
+            ValueError,
         ):
-
             continue
 
         key = (
             round(latitude, 6),
-            round(longitude, 6)
+            round(longitude, 6),
         )
 
         if key in seen:
@@ -524,22 +751,22 @@ def search_locations(
 
         name = item.get(
             "name",
-            village
+            village,
         )
 
         country = item.get(
             "country",
-            "India"
+            "India",
         )
 
         result_state = item.get(
             "admin1",
-            ""
+            "",
         )
 
         result_district = item.get(
             "admin2",
-            ""
+            "",
         )
 
         # -------------------------------------------------
@@ -550,7 +777,7 @@ def search_locations(
             name,
             result_district,
             result_state,
-            country
+            country,
         ]
 
         display_name = ", ".join(
@@ -567,13 +794,11 @@ def search_locations(
                 "country": country,
                 "state": result_state,
                 "district": result_district,
-                "timezone":
-                    item.get(
-                        "timezone",
-                        ""
-                    ),
-                "display_name":
-                    display_name,
+                "timezone": item.get(
+                    "timezone",
+                    "",
+                ),
+                "display_name": display_name,
             }
         )
 
@@ -588,15 +813,17 @@ def search_locations(
         item_state = normalize_location_text(
             item.get(
                 "state",
-                ""
-            ) or ""
+                "",
+            )
+            or ""
         )
 
         item_district = normalize_location_text(
             item.get(
                 "district",
-                ""
-            ) or ""
+                "",
+            )
+            or ""
         )
 
         requested_state = normalize_location_text(
@@ -627,7 +854,7 @@ def search_locations(
 
     unique_results.sort(
         key=result_score,
-        reverse=True
+        reverse=True,
     )
 
     # =====================================================
@@ -643,7 +870,8 @@ def search_locations(
     _set_cache(
         _location_cache,
         cache_key,
-        final_results
+        final_results,
+        _location_cache_lock,
     )
 
     return final_results
@@ -654,7 +882,7 @@ def search_locations(
 # =========================================================
 
 def get_location_coordinates(
-    location: str
+    location: str,
 ):
     """
     Convert a location name into coordinates.
@@ -686,29 +914,16 @@ def get_location_coordinates(
         latitude, longitude = coordinates
 
         return {
-            "name":
-                "Selected Location",
-
-            "latitude":
-                latitude,
-
-            "longitude":
-                longitude,
-
-            "country":
-                "India",
-
-            "state":
-                "",
-
-            "district":
-                "",
-
-            "timezone":
-                "",
-
-            "display_name":
-                f"{latitude}, {longitude}",
+            "name": "Selected Location",
+            "latitude": latitude,
+            "longitude": longitude,
+            "country": "India",
+            "state": "",
+            "district": "",
+            "timezone": "",
+            "display_name": (
+                f"{latitude}, {longitude}"
+            ),
         }
 
     # =====================================================
@@ -725,18 +940,29 @@ def get_location_coordinates(
 
     cache_key = (
         "coordinates",
-        normalized_location
+        normalized_location,
     )
 
     cached = _get_cache(
         _location_cache,
         cache_key,
-        LOCATION_CACHE_TTL
+        LOCATION_CACHE_TTL,
+        _location_cache_lock,
     )
 
     if cached is not None:
 
+        print(
+            "Location coordinate cache HIT:",
+            normalized_location,
+        )
+
         return cached
+
+    print(
+        "Location coordinate cache MISS:",
+        normalized_location,
+    )
 
     # =====================================================
     # CALL GEOCODING API
@@ -747,26 +973,19 @@ def get_location_coordinates(
         data = _request_open_meteo(
             GEOCODING_URL,
             {
-                "name":
-                    normalized_location,
-
-                "count":
-                    10,
-
-                "language":
-                    "en",
-
-                "format":
-                    "json",
+                "name": normalized_location,
+                "count": 10,
+                "language": "en",
+                "format": "json",
             },
-            timeout=10
+            timeout=10,
         )
 
     except Exception as exc:
 
         raise Exception(
             str(exc)
-        )
+        ) from exc
 
     # =====================================================
     # RESULTS
@@ -774,7 +993,7 @@ def get_location_coordinates(
 
     results = data.get(
         "results",
-        []
+        [],
     )
 
     if not results:
@@ -835,7 +1054,7 @@ def get_location_coordinates(
 
     except (
         TypeError,
-        ValueError
+        ValueError,
     ):
 
         raise ValueError(
@@ -867,22 +1086,22 @@ def get_location_coordinates(
 
     name = result.get(
         "name",
-        location
+        location,
     )
 
     country = result.get(
         "country",
-        ""
+        "",
     )
 
     state = result.get(
         "admin1",
-        ""
+        "",
     )
 
     district = result.get(
         "admin2",
-        ""
+        "",
     )
 
     # =====================================================
@@ -893,7 +1112,7 @@ def get_location_coordinates(
         name,
         district,
         state,
-        country
+        country,
     ]
 
     display_name = ", ".join(
@@ -907,33 +1126,17 @@ def get_location_coordinates(
     # =====================================================
 
     location_data = {
-
-        "name":
-            name,
-
-        "latitude":
-            latitude,
-
-        "longitude":
-            longitude,
-
-        "country":
-            country,
-
-        "state":
-            state,
-
-        "district":
-            district,
-
-        "timezone":
-            result.get(
-                "timezone",
-                ""
-            ),
-
-        "display_name":
-            display_name,
+        "name": name,
+        "latitude": latitude,
+        "longitude": longitude,
+        "country": country,
+        "state": state,
+        "district": district,
+        "timezone": result.get(
+            "timezone",
+            "",
+        ),
+        "display_name": display_name,
     }
 
     # =====================================================
@@ -943,7 +1146,8 @@ def get_location_coordinates(
     _set_cache(
         _location_cache,
         cache_key,
-        location_data
+        location_data,
+        _location_cache_lock,
     )
 
     return location_data
@@ -955,12 +1159,16 @@ def get_location_coordinates(
 
 def get_current_weather(
     latitude: float,
-    longitude: float
+    longitude: float,
 ):
     """
     Get current weather and 7-day forecast.
 
     Weather data is cached for 10 minutes.
+
+    If Open-Meteo temporarily fails after the cache
+    expires, the previous cached result is returned
+    when available.
     """
 
     # =====================================================
@@ -979,7 +1187,7 @@ def get_current_weather(
 
     except (
         TypeError,
-        ValueError
+        ValueError,
     ):
 
         raise ValueError(
@@ -1008,152 +1216,196 @@ def get_current_weather(
 
     cache_key = _weather_cache_key(
         latitude,
-        longitude
+        longitude,
     )
 
     # =====================================================
-    # CHECK CACHE
+    # CHECK FRESH CACHE
     # =====================================================
 
     cached = _get_cache(
         _weather_cache,
         cache_key,
-        WEATHER_CACHE_TTL
+        WEATHER_CACHE_TTL,
+        _weather_cache_lock,
     )
 
     if cached is not None:
 
         print(
             "Weather cache HIT:",
-            cache_key
+            cache_key,
         )
 
         return cached
 
     print(
         "Weather cache MISS:",
+        cache_key,
+    )
+
+    # =====================================================
+    # REQUEST LOCK
+    # =====================================================
+
+    request_lock = _get_weather_request_lock(
         cache_key
     )
 
     # =====================================================
-    # WEATHER PARAMETERS
+    # LOCK SAME-LOCATION REQUESTS
     # =====================================================
 
-    params = {
-
-        "latitude":
-            latitude,
-
-        "longitude":
-            longitude,
-
-        "current": (
-            "temperature_2m,"
-            "relative_humidity_2m,"
-            "precipitation,"
-            "rain,"
-            "weather_code,"
-            "wind_speed_10m"
-        ),
-
-        "daily": (
-            "temperature_2m_max,"
-            "temperature_2m_min,"
-            "precipitation_probability_max,"
-            "weather_code,"
-            "wind_speed_10m_max"
-        ),
-
-        "timezone":
-            "auto",
-
-        "forecast_days":
-            7,
-    }
-
-    # =====================================================
-    # REQUEST WEATHER
-    # =====================================================
-
-    try:
-
-        data = _request_open_meteo(
-            WEATHER_URL,
-            params,
-            timeout=15
-        )
-
-    except Exception as exc:
+    with request_lock:
 
         # -------------------------------------------------
-        # IMPORTANT:
-        # If Open-Meteo is rate limited but old cached
-        # data exists, return the old data instead of
-        # breaking irrigation/weather.
+        # CHECK CACHE AGAIN
+        # -------------------------------------------------
+        #
+        # Another request may have completed while this
+        # request was waiting for the lock.
         # -------------------------------------------------
 
-        old_cached = _weather_cache.get(
-            cache_key
+        cached = _get_cache(
+            _weather_cache,
+            cache_key,
+            WEATHER_CACHE_TTL,
+            _weather_cache_lock,
         )
 
-        if old_cached:
+        if cached is not None:
 
             print(
-                "Open-Meteo unavailable. "
-                "Returning stale weather cache."
+                "Weather cache HIT after "
+                "request lock:",
+                cache_key,
             )
 
-            return old_cached[1]
+            return cached
 
-        raise Exception(
-            str(exc)
-        )
+        # =================================================
+        # WEATHER PARAMETERS
+        # =================================================
 
-    # =====================================================
-    # NORMALIZED RESPONSE
-    # =====================================================
+        params = {
+            "latitude": latitude,
+            "longitude": longitude,
+            "current": (
+                "temperature_2m,"
+                "relative_humidity_2m,"
+                "precipitation,"
+                "rain,"
+                "weather_code,"
+                "wind_speed_10m"
+            ),
+            "daily": (
+                "temperature_2m_max,"
+                "temperature_2m_min,"
+                "precipitation_probability_max,"
+                "weather_code,"
+                "wind_speed_10m_max"
+            ),
+            "timezone": "auto",
+            "forecast_days": 7,
+        }
 
-    weather_data = {
+        # =================================================
+        # REQUEST WEATHER
+        # =================================================
 
-        "latitude":
-            data.get(
+        try:
+
+            data = _request_open_meteo(
+                WEATHER_URL,
+                params,
+                timeout=15,
+            )
+
+        except Exception as exc:
+
+            # -------------------------------------------------
+            # STALE CACHE FALLBACK
+            # -------------------------------------------------
+
+            stale_cached = _get_stale_cache(
+                _weather_cache,
+                cache_key,
+                _weather_cache_lock,
+            )
+
+            if stale_cached is not None:
+
+                print(
+                    "Open-Meteo unavailable. "
+                    "Returning stale weather cache:",
+                    cache_key,
+                )
+
+                return stale_cached
+
+            # -------------------------------------------------
+            # NO CACHE AVAILABLE
+            # -------------------------------------------------
+
+            raise Exception(
+                str(exc)
+            ) from exc
+
+        # =================================================
+        # VALIDATE RESPONSE
+        # =================================================
+
+        if not isinstance(
+            data,
+            dict,
+        ):
+
+            raise Exception(
+                "Invalid weather response "
+                "received from Open-Meteo."
+            )
+
+        # =================================================
+        # NORMALIZED RESPONSE
+        # =================================================
+
+        weather_data = {
+            "latitude": data.get(
                 "latitude"
             ),
-
-        "longitude":
-            data.get(
+            "longitude": data.get(
                 "longitude"
             ),
-
-        "timezone":
-            data.get(
+            "timezone": data.get(
                 "timezone"
             ),
-
-        "current":
-            data.get(
+            "current": data.get(
                 "current",
-                {}
+                {},
             ),
-
-        "forecast":
-            data.get(
+            "forecast": data.get(
                 "daily",
-                {}
+                {},
             ),
-    }
+        }
 
-    # =====================================================
-    # SAVE CACHE
-    # =====================================================
+        # =================================================
+        # SAVE CACHE
+        # =================================================
 
-    _set_cache(
-        _weather_cache,
-        cache_key,
-        weather_data
-    )
+        _set_cache(
+            _weather_cache,
+            cache_key,
+            weather_data,
+            _weather_cache_lock,
+        )
 
-    return weather_data
+        print(
+            "Weather cache UPDATED:",
+            cache_key,
+        )
+
+        return weather_data
 
 
 # =========================================================
@@ -1161,7 +1413,7 @@ def get_current_weather(
 # =========================================================
 
 def get_weather_for_location(
-    location: str
+    location: str,
 ):
     """
     Get weather using a location name.
@@ -1175,20 +1427,22 @@ def get_weather_for_location(
 
     weather_data = (
         get_current_weather(
-            location_data[
-                "latitude"
-            ],
-            location_data[
-                "longitude"
-            ]
+            location_data["latitude"],
+            location_data["longitude"],
         )
     )
 
-    weather_data[
-        "location"
-    ] = location_data
+    # -----------------------------------------------------
+    # Do not modify the cached weather object directly.
+    # -----------------------------------------------------
 
-    return weather_data
+    result = dict(
+        weather_data
+    )
+
+    result["location"] = location_data
+
+    return result
 
 
 # =========================================================
@@ -1197,10 +1451,12 @@ def get_weather_for_location(
 
 def get_weather_by_coordinates(
     latitude: float,
-    longitude: float
+    longitude: float,
 ):
     """
     Get weather directly using coordinates.
+
+    No geocoding request is performed.
     """
 
     # =====================================================
@@ -1219,7 +1475,7 @@ def get_weather_by_coordinates(
 
     except (
         TypeError,
-        ValueError
+        ValueError,
     ):
 
         raise ValueError(
@@ -1249,7 +1505,7 @@ def get_weather_by_coordinates(
     weather_data = (
         get_current_weather(
             latitude,
-            longitude
+            longitude,
         )
     )
 
@@ -1257,21 +1513,15 @@ def get_weather_by_coordinates(
     # ATTACH LOCATION
     # =====================================================
 
-    weather_data[
-        "location"
-    ] = {
+    result = dict(
+        weather_data
+    )
 
-        "name":
-            "Selected Location",
-
-        "latitude":
-            latitude,
-
-        "longitude":
-            longitude,
-
-        "country":
-            "India",
+    result["location"] = {
+        "name": "Selected Location",
+        "latitude": latitude,
+        "longitude": longitude,
+        "country": "India",
     }
 
-    return weather_data
+    return result

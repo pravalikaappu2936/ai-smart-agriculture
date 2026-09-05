@@ -47,7 +47,9 @@ def search_weather_location(
 
         raise HTTPException(
             status_code=400,
-            detail="Village, town or city is required.",
+            detail=(
+                "Village, town or city is required."
+            ),
         )
 
     # -----------------------------------------------------
@@ -71,14 +73,19 @@ def search_weather_location(
         raise HTTPException(
             status_code=400,
             detail=str(exc),
-        )
+        ) from exc
 
     except Exception as exc:
+
+        print(
+            "WEATHER LOCATION SEARCH ERROR:",
+            exc,
+        )
 
         raise HTTPException(
             status_code=503,
             detail=str(exc),
-        )
+        ) from exc
 
 
 # =========================================================
@@ -87,11 +94,17 @@ def search_weather_location(
 
 @router.post("/current")
 def current_weather(
-    payload: dict
+    payload: dict,
 ):
     """
     Get current weather and 7-day forecast
     using a location name.
+
+    Example:
+
+    {
+        "location": "Chitradurga, Karnataka"
+    }
     """
 
     # -----------------------------------------------------
@@ -135,18 +148,19 @@ def current_weather(
         raise HTTPException(
             status_code=404,
             detail=str(exc),
-        )
+        ) from exc
 
     except Exception as exc:
 
-        # -------------------------------------------------
-        # WEATHER SERVICE / RATE LIMIT
-        # -------------------------------------------------
+        print(
+            "WEATHER CURRENT ERROR:",
+            exc,
+        )
 
         raise HTTPException(
             status_code=503,
             detail=str(exc),
-        )
+        ) from exc
 
 
 # =========================================================
@@ -157,7 +171,7 @@ def current_weather(
     "/current-by-coordinates"
 )
 def current_weather_by_coordinates(
-    payload: dict
+    payload: dict,
 ):
     """
     Get current weather and 7-day forecast
@@ -220,7 +234,7 @@ def current_weather_by_coordinates(
 
     except (
         TypeError,
-        ValueError
+        ValueError,
     ):
 
         raise HTTPException(
@@ -268,7 +282,7 @@ def current_weather_by_coordinates(
         weather_data = (
             get_weather_by_coordinates(
                 latitude,
-                longitude
+                longitude,
             )
         )
 
@@ -283,7 +297,7 @@ def current_weather_by_coordinates(
         raise HTTPException(
             status_code=400,
             detail=str(exc),
-        )
+        ) from exc
 
     # =====================================================
     # WEATHER SERVICE ERROR
@@ -291,10 +305,15 @@ def current_weather_by_coordinates(
 
     except Exception as exc:
 
+        print(
+            "WEATHER COORDINATE ERROR:",
+            exc,
+        )
+
         raise HTTPException(
             status_code=503,
             detail=str(exc),
-        )
+        ) from exc
 
 
 # =========================================================
@@ -305,17 +324,10 @@ def current_weather_by_coordinates(
 def weather_home():
 
     return {
-
-        "message":
-            "Weather API is working",
-
+        "message": "Weather API is working",
         "endpoints": [
-
             "/weather/search",
-
             "/weather/current",
-
             "/weather/current-by-coordinates",
-
         ],
     }
