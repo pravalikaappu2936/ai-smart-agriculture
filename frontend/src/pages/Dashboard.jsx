@@ -441,6 +441,21 @@ function Dashboard() {
 
         {
             title: isKannada
+                ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆ ವಿಶ್ಲೇಷಣೆ"
+                : "Market Price Analysis",
+
+            icon: "📈",
+
+            description: isKannada
+                ? "ವಿವಿಧ ಮಂಡಿಗಳ ಇತ್ತೀಚಿನ ಬೆಲೆಗಳನ್ನು ವೀಕ್ಷಿಸಿ ಮತ್ತು ಉತ್ತಮ ಮಾರುಕಟ್ಟೆಯನ್ನು ಕಂಡುಹಿಡಿಯಿರಿ."
+                : "View latest mandi prices and find the best market for your crop.",
+
+            path: "/market",
+        },
+
+
+        {
+            title: isKannada
                 ? "ಹವಾಮಾನ"
                 : "Weather",
 

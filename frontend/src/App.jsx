@@ -18,6 +18,7 @@ import IoT from "./pages/IoT";
 import Profile from "./pages/Profile";
 import Assistant from "./pages/Assistant";
 import YieldPrediction from "./pages/YieldPrediction";
+import MarketPrice from "./pages/MarketPrice";
 
 import "./App.css";
 
@@ -25,6 +26,7 @@ import "./App.css";
 function App() {
 
     return (
+
         <BrowserRouter>
 
             <Routes>
@@ -88,6 +90,7 @@ function App() {
                     element={<Irrigation />}
                 />
 
+
                 {/* =================================================
                     CROP YIELD PREDICTION
                 ================================================= */}
@@ -97,15 +100,40 @@ function App() {
                     element={<YieldPrediction />}
                 />
 
+
+                {/* =================================================
+                    MARKET PRICE ANALYSIS
+                ================================================= */}
+
+                <Route
+                    path="/market"
+                    element={<MarketPrice />}
+                />
+
+
+                {/* =================================================
+                    WEATHER
+                ================================================= */}
+
                 <Route
                     path="/weather"
                     element={<Weather />}
                 />
 
+
+                {/* =================================================
+                    IOT
+                ================================================= */}
+
                 <Route
                     path="/iot"
                     element={<IoT />}
                 />
+
+
+                {/* =================================================
+                    PROFILE
+                ================================================= */}
 
                 <Route
                     path="/profile"
@@ -140,6 +168,7 @@ function App() {
             </Routes>
 
         </BrowserRouter>
+
     );
 }
 
