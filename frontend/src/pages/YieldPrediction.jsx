@@ -263,6 +263,7 @@ const TEXT = {
 
 function YieldPrediction() {
     const [language, setLanguage] = useState("en");
+
     const [formData, setFormData] = useState({
         year: new Date().getFullYear(),
         state: "",
@@ -368,8 +369,8 @@ function YieldPrediction() {
 
             setError(
                 err?.response?.data?.detail ||
-                err?.message ||
-                t.tryAgain
+                    err?.message ||
+                    t.tryAgain
             );
         } finally {
             setLoading(false);
@@ -389,7 +390,10 @@ function YieldPrediction() {
     };
 
     return (
-        <div className="yield-page">
+        <div
+            className="yield-page"
+            lang={language === "kn" ? "kn" : "en"}
+        >
             <header className="yield-header">
                 <div className="yield-header-left">
                     <Link
@@ -443,6 +447,7 @@ function YieldPrediction() {
                     <section className="yield-form-card">
                         <div className="yield-section-title">
                             <span>🌱</span>
+
                             <div>
                                 <h2>{t.cropDetails}</h2>
                                 <p>{t.agriculturalInputs}</p>
@@ -451,7 +456,6 @@ function YieldPrediction() {
 
                         <form onSubmit={handleSubmit}>
                             <div className="yield-form-grid">
-
                                 <div className="yield-field">
                                     <label htmlFor="crop">
                                         {t.crop}
@@ -562,6 +566,7 @@ function YieldPrediction() {
                                             value={formData.area}
                                             onChange={handleChange}
                                         />
+
                                         <span>
                                             {t.areaUnit}
                                         </span>
@@ -586,6 +591,7 @@ function YieldPrediction() {
                                             }
                                             onChange={handleChange}
                                         />
+
                                         <span>
                                             {t.rainfallUnit}
                                         </span>
@@ -608,6 +614,7 @@ function YieldPrediction() {
                                             value={formData.fertilizer}
                                             onChange={handleChange}
                                         />
+
                                         <span>
                                             {t.fertilizerUnit}
                                         </span>
@@ -630,6 +637,7 @@ function YieldPrediction() {
                                             value={formData.pesticide}
                                             onChange={handleChange}
                                         />
+
                                         <span>
                                             {t.pesticideUnit}
                                         </span>
@@ -640,10 +648,12 @@ function YieldPrediction() {
                             {error && (
                                 <div className="yield-error">
                                     <span>⚠️</span>
+
                                     <div>
                                         <strong>
                                             {t.errorTitle}
                                         </strong>
+
                                         <p>{error}</p>
                                     </div>
                                 </div>
@@ -669,7 +679,6 @@ function YieldPrediction() {
                     </section>
 
                     <aside className="yield-side-column">
-
                         <section className="yield-info-card">
                             <div className="yield-info-icon">
                                 🤖
@@ -682,12 +691,16 @@ function YieldPrediction() {
                             <div className="yield-info-stats">
                                 <div>
                                     <strong>{t.records}</strong>
-                                    <span>{t.datasetRecords}</span>
+                                    <span>
+                                        {t.datasetRecords}
+                                    </span>
                                 </div>
 
                                 <div>
                                     <strong>{t.features}</strong>
-                                    <span>{t.agriculturalInputs}</span>
+                                    <span>
+                                        {t.agriculturalInputs}
+                                    </span>
                                 </div>
 
                                 <div>
@@ -700,6 +713,7 @@ function YieldPrediction() {
                         {!result && !loading && (
                             <section className="yield-empty-card">
                                 <div>📊</div>
+
                                 <p>{t.noResult}</p>
                             </section>
                         )}
@@ -728,7 +742,9 @@ function YieldPrediction() {
                         </div>
 
                         <div className="yield-main-result">
-                            <span>{t.predictedYield}</span>
+                            <span>
+                                {t.predictedYield}
+                            </span>
 
                             <strong>
                                 {Number(
@@ -743,7 +759,9 @@ function YieldPrediction() {
                         </div>
 
                         <div className="yield-category">
-                            <span>{t.yieldCategory}</span>
+                            <span>
+                                {t.yieldCategory}
+                            </span>
 
                             <strong
                                 className={
@@ -759,13 +777,16 @@ function YieldPrediction() {
                         </div>
 
                         <div className="yield-details-section">
-                            <h3>{t.predictionDetails}</h3>
+                            <h3>
+                                {t.predictionDetails}
+                            </h3>
 
                             <div className="yield-details-grid">
                                 <div>
                                     <span>
                                         {t.selectedCrop}
                                     </span>
+
                                     <strong>
                                         {formData.crop}
                                     </strong>
@@ -775,6 +796,7 @@ function YieldPrediction() {
                                     <span>
                                         {t.selectedState}
                                     </span>
+
                                     <strong>
                                         {formData.state}
                                     </strong>
@@ -784,6 +806,7 @@ function YieldPrediction() {
                                     <span>
                                         {t.selectedSeason}
                                     </span>
+
                                     <strong>
                                         {formData.season}
                                     </strong>
@@ -792,11 +815,16 @@ function YieldPrediction() {
                         </div>
 
                         <div className="yield-performance">
-                            <h3>{t.modelPerformance}</h3>
+                            <h3>
+                                {t.modelPerformance}
+                            </h3>
 
                             <div className="yield-metrics-grid">
                                 <div>
-                                    <span>{t.r2Score}</span>
+                                    <span>
+                                        {t.r2Score}
+                                    </span>
+
                                     <strong>
                                         {Number(
                                             result.r2 ?? 0
@@ -806,6 +834,7 @@ function YieldPrediction() {
 
                                 <div>
                                     <span>{t.mae}</span>
+
                                     <strong>
                                         {Number(
                                             result.mae ?? 0
@@ -815,6 +844,7 @@ function YieldPrediction() {
 
                                 <div>
                                     <span>{t.rmse}</span>
+
                                     <strong>
                                         {Number(
                                             result.rmse ?? 0
@@ -826,6 +856,7 @@ function YieldPrediction() {
                                     <span>
                                         {t.datasetRecords}
                                     </span>
+
                                     <strong>
                                         {result.dataset_records ||
                                             17400}
@@ -841,4 +872,3 @@ function YieldPrediction() {
 }
 
 export default YieldPrediction;
-

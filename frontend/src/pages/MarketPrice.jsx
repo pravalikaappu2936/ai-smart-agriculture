@@ -16,94 +16,342 @@ const MarketPrice = () => {
     const [isKannada, setIsKannada] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(null);
 
+    /*
+     * Commodity values must remain in the exact
+     * English format expected by the government API.
+     * Kannada names are only for display.
+     */
     const commodities = [
-        "Paddy(Common)",
-        "Maize",
-        "Wheat",
-        "Cotton",
-        "Groundnut",
-        "Tomato",
-        "Onion",
-        "Potato",
-        "Sugarcane",
-        "Soyabean",
-        "Chilli",
+        {
+            value: "Paddy(Common)",
+            en: "Paddy (Common)",
+            kn: "ಭತ್ತ",
+        },
+        {
+            value: "Maize",
+            en: "Maize",
+            kn: "ಮೆಕ್ಕೆಜೋಳ",
+        },
+        {
+            value: "Wheat",
+            en: "Wheat",
+            kn: "ಗೋಧಿ",
+        },
+        {
+            value: "Cotton",
+            en: "Cotton",
+            kn: "ಹತ್ತಿ",
+        },
+        {
+            value: "Groundnut",
+            en: "Groundnut",
+            kn: "ಕಡಲೆಕಾಯಿ",
+        },
+        {
+            value: "Tomato",
+            en: "Tomato",
+            kn: "ಟೊಮ್ಯಾಟೊ",
+        },
+        {
+            value: "Onion",
+            en: "Onion",
+            kn: "ಈರುಳ್ಳಿ",
+        },
+        {
+            value: "Potato",
+            en: "Potato",
+            kn: "ಆಲೂಗಡ್ಡೆ",
+        },
+        {
+            value: "Sugarcane",
+            en: "Sugarcane",
+            kn: "ಕಬ್ಬು",
+        },
+        {
+            value: "Soyabean",
+            en: "Soyabean",
+            kn: "ಸೋಯಾಬೀನ್",
+        },
+        {
+            value: "Chilli",
+            en: "Chilli",
+            kn: "ಮೆಣಸಿನಕಾಯಿ",
+        },
     ];
 
+    /*
+     * State values remain in English for the API.
+     */
     const states = [
-        "Andhra Pradesh",
-        "Karnataka",
-        "Telangana",
-        "Tamil Nadu",
-        "Maharashtra",
-        "Madhya Pradesh",
-        "Gujarat",
-        "Rajasthan",
-        "Uttar Pradesh",
-        "Punjab",
-        "Haryana",
-        "West Bengal",
-        "Odisha",
-        "Kerala",
+        {
+            value: "Andhra Pradesh",
+            en: "Andhra Pradesh",
+            kn: "ಆಂಧ್ರ ಪ್ರದೇಶ",
+        },
+        {
+            value: "Karnataka",
+            en: "Karnataka",
+            kn: "ಕರ್ನಾಟಕ",
+        },
+        {
+            value: "Telangana",
+            en: "Telangana",
+            kn: "ತೆಲಂಗಾಣ",
+        },
+        {
+            value: "Tamil Nadu",
+            en: "Tamil Nadu",
+            kn: "ತಮಿಳುನಾಡು",
+        },
+        {
+            value: "Maharashtra",
+            en: "Maharashtra",
+            kn: "ಮಹಾರಾಷ್ಟ್ರ",
+        },
+        {
+            value: "Madhya Pradesh",
+            en: "Madhya Pradesh",
+            kn: "ಮಧ್ಯ ಪ್ರದೇಶ",
+        },
+        {
+            value: "Gujarat",
+            en: "Gujarat",
+            kn: "ಗುಜರಾತ್",
+        },
+        {
+            value: "Rajasthan",
+            en: "Rajasthan",
+            kn: "ರಾಜಸ್ಥಾನ",
+        },
+        {
+            value: "Uttar Pradesh",
+            en: "Uttar Pradesh",
+            kn: "ಉತ್ತರ ಪ್ರದೇಶ",
+        },
+        {
+            value: "Punjab",
+            en: "Punjab",
+            kn: "ಪಂಜಾಬ್",
+        },
+        {
+            value: "Haryana",
+            en: "Haryana",
+            kn: "ಹರಿಯಾಣ",
+        },
+        {
+            value: "West Bengal",
+            en: "West Bengal",
+            kn: "ಪಶ್ಚಿಮ ಬಂಗಾಳ",
+        },
+        {
+            value: "Odisha",
+            en: "Odisha",
+            kn: "ಒಡಿಶಾ",
+        },
+        {
+            value: "Kerala",
+            en: "Kerala",
+            kn: "ಕೇರಳ",
+        },
     ];
 
+    /*
+     * IMPORTANT:
+     * These are the exact district names currently
+     * available in backend/data/market_cache.json.
+     *
+     * Do not change the English values because they
+     * are used for API filtering.
+     */
     const karnatakaDistricts = [
-        "Bagalkot",
-        "Ballari",
-        "Belagavi",
-        "Bengaluru Rural",
-        "Bengaluru Urban",
-        "Bidar",
-        "Chamarajanagar",
-        "Chikkaballapur",
-        "Chikkamagaluru",
-        "Chitradurga",
-        "Dakshina Kannada",
-        "Davanagere",
-        "Dharwad",
-        "Gadag",
-        "Hassan",
-        "Haveri",
-        "Kalaburagi",
-        "Kodagu",
-        "Kolar",
-        "Koppal",
-        "Mandya",
-        "Mysuru",
-        "Raichur",
-        "Ramanagara",
-        "Shivamogga",
-        "Tumakuru",
-        "Udupi",
-        "Uttara Kannada",
-        "Vijayapura",
-        "Yadgir",
-        "Vijayanagara",
+        {
+            value: "Bagalkot",
+            en: "Bagalkot",
+            kn: "ಬಾಗಲಕೋಟೆ",
+        },
+        {
+            value: "Belagavi",
+            en: "Belagavi",
+            kn: "ಬೆಳಗಾವಿ",
+        },
+        {
+            value: "Bellary",
+            en: "Bellary",
+            kn: "ಬಳ್ಳಾರಿ",
+        },
+        {
+            value: "Bengaluru",
+            en: "Bengaluru",
+            kn: "ಬೆಂಗಳೂರು",
+        },
+        {
+            value: "Bengaluru Rural",
+            en: "Bengaluru Rural",
+            kn: "ಬೆಂಗಳೂರು ಗ್ರಾಮಾಂತರ",
+        },
+        {
+            value: "Bengaluru South",
+            en: "Bengaluru South",
+            kn: "ಬೆಂಗಳೂರು ದಕ್ಷಿಣ",
+        },
+        {
+            value: "Bidar",
+            en: "Bidar",
+            kn: "ಬೀದರ್",
+        },
+        {
+            value: "Chamarajanagar",
+            en: "Chamarajanagar",
+            kn: "ಚಾಮರಾಜನಗರ",
+        },
+        {
+            value: "Chikkaballapur",
+            en: "Chikkaballapur",
+            kn: "ಚಿಕ್ಕಬಳ್ಳಾಪುರ",
+        },
+        {
+            value: "Chikkamagaluru",
+            en: "Chikkamagaluru",
+            kn: "ಚಿಕ್ಕಮಗಳೂರು",
+        },
+        {
+            value: "Chitradurga",
+            en: "Chitradurga",
+            kn: "ಚಿತ್ರದುರ್ಗ",
+        },
+        {
+            value: "Dakshina Kannada",
+            en: "Dakshina Kannada",
+            kn: "ದಕ್ಷಿಣ ಕನ್ನಡ",
+        },
+        {
+            value: "Davangere",
+            en: "Davangere",
+            kn: "ದಾವಣಗೆರೆ",
+        },
+        {
+            value: "Dharwad",
+            en: "Dharwad",
+            kn: "ಧಾರವಾಡ",
+        },
+        {
+            value: "Gadag",
+            en: "Gadag",
+            kn: "ಗದಗ",
+        },
+        {
+            value: "Hassan",
+            en: "Hassan",
+            kn: "ಹಾಸನ",
+        },
+        {
+            value: "Haveri",
+            en: "Haveri",
+            kn: "ಹಾವೇರಿ",
+        },
+        {
+            value: "Kalaburagi",
+            en: "Kalaburagi",
+            kn: "ಕಲಬುರಗಿ",
+        },
+        {
+            value: "Kodagu",
+            en: "Kodagu",
+            kn: "ಕೊಡಗು",
+        },
+        {
+            value: "Kolar",
+            en: "Kolar",
+            kn: "ಕೋಲಾರ",
+        },
+        {
+            value: "Koppal",
+            en: "Koppal",
+            kn: "ಕೊಪ್ಪಳ",
+        },
+        {
+            value: "Mandya",
+            en: "Mandya",
+            kn: "ಮಂಡ್ಯ",
+        },
+        {
+            value: "Mysuru",
+            en: "Mysuru",
+            kn: "ಮೈಸೂರು",
+        },
+        {
+            value: "Raichur",
+            en: "Raichur",
+            kn: "ರಾಯಚೂರು",
+        },
+        {
+            value: "Shivamogga",
+            en: "Shivamogga",
+            kn: "ಶಿವಮೊಗ್ಗ",
+        },
+        {
+            value: "Udupi",
+            en: "Udupi",
+            kn: "ಉಡುಪಿ",
+        },
+        {
+            value: "Uttara Kannada",
+            en: "Uttara Kannada",
+            kn: "ಉತ್ತರ ಕನ್ನಡ",
+        },
+        {
+            value: "Vijayanagara",
+            en: "Vijayanagara",
+            kn: "ವಿಜಯನಗರ",
+        },
+        {
+            value: "Vijayapura",
+            en: "Vijayapura",
+            kn: "ವಿಜಯಪುರ",
+        },
     ];
 
-    const fetchPrices = async () => {
+    /*
+     * Fetch market prices
+     */
+    const fetchPrices = async (filters = null) => {
         setLoading(true);
         setError("");
 
+        const selectedFilters = filters || {
+            commodity,
+            state,
+            district,
+            market,
+        };
+
         try {
             const response = await getMarketPrices({
-                commodity,
-                state,
-                district,
-                market,
+                commodity: selectedFilters.commodity,
+                state: selectedFilters.state,
+                district: selectedFilters.district,
+                market: selectedFilters.market,
                 limit: 100,
             });
 
             if (response?.success) {
                 setRecords(response.records || []);
                 setLastUpdated(new Date());
+
+                if (!response.records?.length) {
+                    setError(
+                        isKannada
+                            ? "ಆಯ್ಕೆ ಮಾಡಿದ ಪ್ರದೇಶ ಅಥವಾ ಬೆಳೆಗೆ ಮಾರುಕಟ್ಟೆ ಬೆಲೆ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ."
+                            : "No market price data is available for the selected location or commodity."
+                    );
+                }
             } else {
                 setRecords([]);
 
                 setError(
                     isKannada
-                        ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳು ಲಭ್ಯವಿಲ್ಲ."
-                        : "Market prices are not available."
+                        ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ."
+                        : "Market price information is not available."
                 );
             }
         } catch (err) {
@@ -113,19 +361,22 @@ const MarketPrice = () => {
 
             setError(
                 err?.response?.data?.detail ||
-                    (
-                        isKannada
-                            ? "ಮಾರುಕಟ್ಟೆ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
-                            : "Unable to fetch market information."
-                    )
+                    (isKannada
+                        ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+                        : "Unable to fetch market price information. Please try again.")
             );
         } finally {
             setLoading(false);
         }
     };
 
+    /*
+     * Initial data
+     */
     useEffect(() => {
         fetchPrices();
+        // Initial load only.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     /*
@@ -141,9 +392,13 @@ const MarketPrice = () => {
             .filter(Boolean)
             .map((item) => item.trim());
 
-        return [...new Set(districts)].sort((a, b) =>
-            a.localeCompare(b)
-        );
+        return [...new Set(districts)]
+            .sort((a, b) => a.localeCompare(b))
+            .map((item) => ({
+                value: item,
+                en: item,
+                kn: item,
+            }));
     }, [records, state]);
 
     /*
@@ -268,6 +523,9 @@ const MarketPrice = () => {
         )[0];
     }, [records]);
 
+    /*
+     * Format price in Indian Rupees.
+     */
     const formatPrice = (price) => {
         if (
             price === null ||
@@ -286,11 +544,27 @@ const MarketPrice = () => {
         return `₹${value.toLocaleString("en-IN")}`;
     };
 
+    /*
+     * Reset filters.
+     */
     const clearFilters = () => {
-        setCommodity("");
-        setState("Karnataka");
-        setDistrict("");
-        setMarket("");
+        const resetFilters = {
+            commodity: "",
+            state: "Karnataka",
+            district: "",
+            market: "",
+        };
+
+        setCommodity(resetFilters.commodity);
+        setState(resetFilters.state);
+        setDistrict(resetFilters.district);
+        setMarket(resetFilters.market);
+
+        /*
+         * Pass reset values directly so the API doesn't
+         * receive the previous React state.
+         */
+        fetchPrices(resetFilters);
     };
 
     const handleStateChange = (value) => {
@@ -369,8 +643,8 @@ const MarketPrice = () => {
 
                         <p>
                             {isKannada
-                                ? "ಸರ್ಕಾರದ ಮಂಡಿ ಮಾಹಿತಿಯ ಆಧಾರದ ಮೇಲೆ ಇತ್ತೀಚಿನ ಬೆಲೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ."
-                                : "Check latest government mandi prices and find the best market for your crop."}
+                                ? "ಸರ್ಕಾರದ ಮಂಡಿ ಮಾಹಿತಿಯ ಆಧಾರದ ಮೇಲೆ ಇತ್ತೀಚಿನ ಬೆಲೆಗಳನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ನಿಮ್ಮ ಬೆಳೆಗೆ ಉತ್ತಮ ಮಾರುಕಟ್ಟೆಯನ್ನು ಕಂಡುಹಿಡಿಯಿರಿ."
+                                : "Check the latest government mandi prices and find the best market for your crop."}
                         </p>
 
                     </div>
@@ -388,13 +662,13 @@ const MarketPrice = () => {
 
                             <h2>
                                 {isKannada
-                                    ? "ಮಾರುಕಟ್ಟೆ ಹುಡುಕಿ"
+                                    ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆಗಳನ್ನು ಹುಡುಕಿ"
                                     : "Find Market Prices"}
                             </h2>
 
                             <p>
                                 {isKannada
-                                    ? "ಬೆಳೆ ಮತ್ತು ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+                                    ? "ಬೆಳೆ ಮತ್ತು ಸ್ಥಳವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
                                     : "Select crop and location"}
                             </p>
 
@@ -410,7 +684,7 @@ const MarketPrice = () => {
                             <label>
                                 🌾{" "}
                                 {isKannada
-                                    ? "ಬೆಳೆ"
+                                    ? "ಬೆಳೆ / ಕೃಷಿ ಉತ್ಪನ್ನ"
                                     : "Commodity"}
                             </label>
 
@@ -432,10 +706,12 @@ const MarketPrice = () => {
                                 {commodities.map(
                                     (item) => (
                                         <option
-                                            key={item}
-                                            value={item}
+                                            key={item.value}
+                                            value={item.value}
                                         >
-                                            {item}
+                                            {isKannada
+                                                ? item.kn
+                                                : item.en}
                                         </option>
                                     )
                                 )}
@@ -472,10 +748,12 @@ const MarketPrice = () => {
                                 {states.map(
                                     (item) => (
                                         <option
-                                            key={item}
-                                            value={item}
+                                            key={item.value}
+                                            value={item.value}
                                         >
-                                            {item}
+                                            {isKannada
+                                                ? item.kn
+                                                : item.en}
                                         </option>
                                     )
                                 )}
@@ -512,10 +790,12 @@ const MarketPrice = () => {
                                 {availableDistricts.map(
                                     (item) => (
                                         <option
-                                            key={item}
-                                            value={item}
+                                            key={item.value}
+                                            value={item.value}
                                         >
-                                            {item}
+                                            {isKannada
+                                                ? item.kn
+                                                : item.en}
                                         </option>
                                     )
                                 )}
@@ -530,8 +810,8 @@ const MarketPrice = () => {
                             <label>
                                 🏪{" "}
                                 {isKannada
-                                    ? "ಮಾರುಕಟ್ಟೆ"
-                                    : "Market"}
+                                    ? "ಮಾರುಕಟ್ಟೆ / ಮಂಡಿ"
+                                    : "Market / Mandi"}
                             </label>
 
                             <select
@@ -574,30 +854,26 @@ const MarketPrice = () => {
                             disabled={loading}
                         >
                             {loading
-                                ? "⏳ Loading..."
+                                ? "⏳ " +
+                                  (isKannada
+                                      ? "ಬೆಲೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ..."
+                                      : "Loading prices...")
                                 : `🔍 ${
                                       isKannada
-                                          ? "ಬೆಲೆ ಹುಡುಕಿ"
+                                          ? "ಬೆಲೆಗಳನ್ನು ಹುಡುಕಿ"
                                           : "Search Prices"
                                   }`}
                         </button>
 
                         <button
                             className="market-clear-button"
-                            onClick={() => {
-                                clearFilters();
-
-                                setTimeout(
-                                    fetchPrices,
-                                    0
-                                );
-                            }}
+                            onClick={clearFilters}
                             disabled={loading}
                         >
                             ↻{" "}
                             {isKannada
-                                ? "ಮರುಹೊಂದಿಸಿ"
-                                : "Reset"}
+                                ? "ಫಿಲ್ಟರ್‌ಗಳನ್ನು ತೆರವುಗೊಳಿಸಿ"
+                                : "Reset Filters"}
                         </button>
 
                     </div>
@@ -652,7 +928,7 @@ const MarketPrice = () => {
 
                                     <p>
                                         {isKannada
-                                            ? "ಸರಾಸರಿ ಮೋಡಲ್ ಬೆಲೆ"
+                                            ? "ಸರಾಸರಿ ಮಾದರಿ ಬೆಲೆ"
                                             : "Average Modal Price"}
                                     </p>
 
@@ -700,8 +976,8 @@ const MarketPrice = () => {
 
                                     <p>
                                         {isKannada
-                                            ? "ಮಾರುಕಟ್ಟೆಗಳು"
-                                            : "Markets Found"}
+                                            ? "ಲಭ್ಯವಿರುವ ದಾಖಲೆಗಳು"
+                                            : "Records Found"}
                                     </p>
 
                                     <strong>
@@ -726,7 +1002,7 @@ const MarketPrice = () => {
 
                                     <span>
                                         {isKannada
-                                            ? "ಬೆಳೆಯಲು ಅತ್ಯುತ್ತಮ ಮಾರುಕಟ್ಟೆ"
+                                            ? "ಮಾರಾಟಕ್ಕೆ ಉತ್ತಮ ಮಾರುಕಟ್ಟೆ"
                                             : "Best Market to Sell"}
                                     </span>
 
@@ -758,7 +1034,9 @@ const MarketPrice = () => {
                                     )}
 
                                     <small>
-                                        / quintal
+                                        {isKannada
+                                            ? " / ಕ್ವಿಂಟಾಲ್"
+                                            : " / quintal"}
                                     </small>
 
                                 </div>
@@ -769,13 +1047,17 @@ const MarketPrice = () => {
                         {/* Latest Mandi Date */}
                         {latestArrivalDate && (
                             <div className="market-latest-info">
+
                                 📅{" "}
+
                                 <strong>
                                     {isKannada
                                         ? "ಇತ್ತೀಚಿನ ಮಂಡಿ ದಿನಾಂಕ:"
                                         : "Latest Mandi Date:"}
                                 </strong>{" "}
+
                                 {latestArrivalDate}
+
                             </div>
                         )}
 
@@ -794,7 +1076,7 @@ const MarketPrice = () => {
 
                                     <p>
                                         {isKannada
-                                            ? `${records.length} ದಾಖಲೆಗಳು`
+                                            ? `${records.length} ಮಾರುಕಟ್ಟೆ ದಾಖಲೆಗಳು`
                                             : `${records.length} market records`}
                                     </p>
 
@@ -806,8 +1088,9 @@ const MarketPrice = () => {
                                     disabled={loading}
                                 >
                                     🔄{" "}
+
                                     {isKannada
-                                        ? "ರಿಫ್ರೆಶ್"
+                                        ? "ನವೀಕರಿಸಿ"
                                         : "Refresh"}
                                 </button>
 
@@ -835,8 +1118,8 @@ const MarketPrice = () => {
 
                                             <th>
                                                 {isKannada
-                                                    ? "ಮಾರುಕಟ್ಟೆ"
-                                                    : "Market"}
+                                                    ? "ಮಾರುಕಟ್ಟೆ / ಮಂಡಿ"
+                                                    : "Market / Mandi"}
                                             </th>
 
                                             <th>
@@ -847,7 +1130,7 @@ const MarketPrice = () => {
 
                                             <th>
                                                 {isKannada
-                                                    ? "ವಿಧ"
+                                                    ? "ತಳಿ"
                                                     : "Variety"}
                                             </th>
 
@@ -859,20 +1142,20 @@ const MarketPrice = () => {
 
                                             <th>
                                                 {isKannada
-                                                    ? "ಕನಿಷ್ಠ"
-                                                    : "Min"}
+                                                    ? "ಕನಿಷ್ಠ ಬೆಲೆ"
+                                                    : "Min Price"}
                                             </th>
 
                                             <th>
                                                 {isKannada
-                                                    ? "ಗರಿಷ್ಠ"
-                                                    : "Max"}
+                                                    ? "ಗರಿಷ್ಠ ಬೆಲೆ"
+                                                    : "Max Price"}
                                             </th>
 
                                             <th>
                                                 {isKannada
-                                                    ? "ಮೋಡಲ್"
-                                                    : "Modal"}
+                                                    ? "ಮಾದರಿ ಬೆಲೆ"
+                                                    : "Modal Price"}
                                             </th>
 
                                         </tr>
@@ -968,8 +1251,8 @@ const MarketPrice = () => {
 
                             <p>
                                 {isKannada
-                                    ? "ಬೇರೆ ಬೆಳೆ ಅಥವಾ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆಮಾಡಿ."
-                                    : "Try another commodity or location."}
+                                    ? "ಬೇರೆ ಬೆಳೆ ಅಥವಾ ಪ್ರದೇಶವನ್ನು ಆಯ್ಕೆಮಾಡಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+                                    : "Try selecting another commodity or location."}
                             </p>
 
                         </div>
@@ -980,9 +1263,10 @@ const MarketPrice = () => {
 
                     <span>
                         🇮🇳{" "}
+
                         {isKannada
-                            ? "ಸರ್ಕಾರಿ ಮಂಡಿ ಬೆಲೆ ಮಾಹಿತಿ"
-                            : "Latest Government Mandi Prices"}
+                            ? "ಸರ್ಕಾರದ ಮಂಡಿ ಬೆಲೆ ಮಾಹಿತಿ"
+                            : "Government Mandi Price Information"}
                     </span>
 
                     {latestArrivalDate && (
@@ -997,7 +1281,7 @@ const MarketPrice = () => {
                     {lastUpdated && (
                         <span>
                             {isKannada
-                                ? "ಪಡೆದ ಸಮಯ:"
+                                ? "ಮಾಹಿತಿ ಪಡೆದ ಸಮಯ:"
                                 : "Retrieved:"}{" "}
                             {lastUpdated.toLocaleTimeString()}
                         </span>
