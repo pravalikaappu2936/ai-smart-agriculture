@@ -17,7 +17,7 @@
 }
 
 /* =========================
-   KANNADA TEXT SUPPORT
+   TEXT / KANNADA SUPPORT
 ========================= */
 
 .market-page,
@@ -27,8 +27,15 @@
     line-height: 1.5;
 }
 
-.market-page:lang(kn),
-.market-page [lang="kn"] {
+.market-page[lang="kn"],
+.market-page:lang(kn) {
+    line-height: 1.65;
+}
+
+.market-page[lang="kn"] select,
+.market-page[lang="kn"] button,
+.market-page:lang(kn) select,
+.market-page:lang(kn) button {
     line-height: 1.65;
 }
 
@@ -40,13 +47,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 15px;
     margin-bottom: 25px;
 }
 
 .market-back-button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 7px;
+    min-height: 42px;
     padding: 10px 16px;
     border: 1px solid #c7dfca;
     border-radius: 10px;
@@ -55,12 +65,17 @@
     text-decoration: none;
     font-weight: 700;
     transition: 0.2s ease;
+    box-sizing: border-box;
 }
 
 .market-back-button:hover {
     background: #28743a;
     color: white;
 }
+
+/* =========================
+   LANGUAGE SWITCH
+========================= */
 
 .market-language {
     display: flex;
@@ -69,12 +84,14 @@
     border-radius: 10px;
     background: white;
     border: 1px solid #d7e6d9;
+    flex-shrink: 0;
 }
 
 .market-language button {
     border: none;
     background: transparent;
     padding: 7px 12px;
+    min-height: 34px;
     border-radius: 7px;
     cursor: pointer;
     font-weight: 600;
@@ -124,7 +141,7 @@
 }
 
 /* =========================
-   FILTER CARD
+   FILTER / RESULT CARD
 ========================= */
 
 .market-filter-card,
@@ -136,6 +153,10 @@
     box-shadow: 0 7px 24px rgba(45, 85, 52, 0.07);
     margin-bottom: 22px;
 }
+
+/* =========================
+   SECTION TITLE
+========================= */
 
 .market-section-title {
     display: flex;
@@ -162,9 +183,13 @@
     line-height: 1.5;
 }
 
+/* =========================
+   FILTER GRID
+========================= */
+
 .market-filter-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 16px;
 }
 
@@ -182,11 +207,15 @@
     line-height: 1.5;
 }
 
+/* =========================
+   FILTER INPUTS / SELECTS
+========================= */
+
 .market-field select,
 .market-field input {
     width: 100%;
     box-sizing: border-box;
-    min-height: 44px;
+    min-height: 46px;
     padding: 10px 13px;
     border: 1px solid #cbdcca;
     border-radius: 10px;
@@ -195,10 +224,30 @@
     outline: none;
     font-size: 14px;
     line-height: 1.5;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+/*
+ * Important for long district and market names.
+ * Prevents the select controls from becoming too narrow.
+ */
+.market-field:nth-child(3),
+.market-field:nth-child(4) {
+    min-width: 0;
 }
 
 .market-field select {
     cursor: pointer;
+    appearance: auto;
+}
+
+.market-field select:hover,
+.market-field input:hover {
+    border-color: #9fc8a5;
+    background: #ffffff;
 }
 
 .market-field select:disabled,
@@ -220,6 +269,7 @@
 
 .market-filter-actions {
     display: flex;
+    align-items: center;
     gap: 10px;
     margin-top: 22px;
 }
@@ -227,12 +277,14 @@
 .market-search-button,
 .market-clear-button,
 .refresh-market-button {
+    min-height: 44px;
     border-radius: 10px;
     padding: 11px 18px;
     cursor: pointer;
     font-weight: 700;
     transition: 0.2s ease;
     line-height: 1.5;
+    box-sizing: border-box;
 }
 
 .market-search-button {
@@ -274,6 +326,7 @@
     color: #a33b3b;
     margin-bottom: 20px;
     line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 /* =========================
@@ -282,7 +335,7 @@
 
 .market-summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 15px;
     margin-bottom: 20px;
 }
@@ -341,6 +394,7 @@
     border-radius: 17px;
     padding: 21px;
     margin-bottom: 22px;
+    min-width: 0;
 }
 
 .best-market-icon {
@@ -364,6 +418,7 @@
     margin: 5px 0;
     color: #21632f;
     line-height: 1.4;
+    overflow-wrap: anywhere;
 }
 
 .best-market-content p {
@@ -371,6 +426,7 @@
     color: #69786c;
     font-size: 14px;
     line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 .best-market-price {
@@ -379,6 +435,7 @@
     color: #1e6b30;
     text-align: right;
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .best-market-price small {
@@ -390,7 +447,7 @@
 }
 
 /* =========================
-   LATEST DATA INFORMATION
+   LATEST DATA
 ========================= */
 
 .market-latest-info {
@@ -405,6 +462,7 @@
     color: #55705b;
     font-size: 13px;
     line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 .market-latest-info strong {
@@ -412,7 +470,7 @@
 }
 
 /* =========================
-   RESULTS
+   RESULTS HEADER
 ========================= */
 
 .market-results-header {
@@ -454,8 +512,10 @@
 .market-table-wrapper {
     width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     border: 1px solid #e0e9e1;
     border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .market-table {
@@ -530,22 +590,50 @@
     color: #718073;
     font-size: 12px;
     line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+/* =========================
+   KANNADA SPECIFIC
+========================= */
+
+.market-page[lang="kn"] .market-heading h1,
+.market-page[lang="kn"] .market-section-title h2,
+.market-page[lang="kn"] .market-field label,
+.market-page[lang="kn"] .market-search-button,
+.market-page[lang="kn"] .market-clear-button,
+.market-page[lang="kn"] .refresh-market-button {
+    line-height: 1.65;
+}
+
+.market-page[lang="kn"] .market-field select {
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+.market-page[lang="kn"] .market-table th,
+.market-page[lang="kn"] .market-table td {
+    line-height: 1.65;
 }
 
 /* =========================
    RESPONSIVE
 ========================= */
 
-@media (max-width: 1000px) {
+@media (max-width: 1100px) {
 
     .market-filter-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .market-summary-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+/* =========================
+   TABLET / MOBILE
+========================= */
 
 @media (max-width: 650px) {
 
@@ -560,6 +648,7 @@
 
     .market-heading {
         align-items: flex-start;
+        gap: 13px;
     }
 
     .market-heading h1 {
@@ -588,6 +677,7 @@
 
     .market-filter-actions {
         flex-direction: column;
+        align-items: stretch;
     }
 
     .market-search-button,
@@ -600,10 +690,15 @@
         flex-wrap: wrap;
     }
 
+    .best-market-content {
+        flex: 1 1 calc(100% - 70px);
+    }
+
     .best-market-price {
         width: 100%;
         text-align: left;
         white-space: normal;
+        padding-left: 53px;
     }
 
     .market-results-header {
@@ -626,7 +721,29 @@
     }
 }
 
+/* =========================
+   SMALL MOBILE
+========================= */
+
 @media (max-width: 430px) {
+
+    .market-page {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .market-topbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .market-back-button {
+        width: 100%;
+    }
+
+    .market-language {
+        align-self: flex-end;
+    }
 
     .market-heading {
         gap: 10px;
@@ -645,13 +762,12 @@
         font-size: 12px;
     }
 
-    .market-back-button {
-        padding: 8px 11px;
+    .market-latest-info {
         font-size: 12px;
     }
 
-    .market-latest-info {
-        font-size: 12px;
+    .market-section-title {
+        align-items: flex-start;
     }
 
     .market-section-title h2 {
@@ -668,6 +784,7 @@
 
     .market-field select,
     .market-field input {
+        min-height: 44px;
         font-size: 13px;
     }
 
@@ -677,5 +794,47 @@
 
     .best-market-content h2 {
         font-size: 20px;
+    }
+
+    .best-market-price {
+        padding-left: 0;
+    }
+}
+
+/* =========================
+   VERY SMALL SCREENS
+========================= */
+
+@media (max-width: 360px) {
+
+    .market-filter-card,
+    .market-results-card {
+        padding: 15px;
+    }
+
+    .market-heading-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 24px;
+        border-radius: 14px;
+    }
+
+    .market-heading h1 {
+        font-size: 19px;
+    }
+
+    .market-summary-card {
+        gap: 10px;
+        padding: 14px;
+    }
+
+    .summary-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 19px;
+    }
+
+    .market-summary-card strong {
+        font-size: 18px;
     }
 }

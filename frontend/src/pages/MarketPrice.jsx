@@ -313,6 +313,12 @@ const MarketPrice = () => {
 
     /*
      * Fetch market prices
+     *
+     * IMPORTANT:
+     * filters must be an object.
+     * Search/Refresh buttons therefore call fetchPrices()
+     * through an arrow function so the click event is NOT
+     * passed as the filters argument.
      */
     const fetchPrices = async (filters = null) => {
         setLoading(true);
@@ -375,6 +381,7 @@ const MarketPrice = () => {
      */
     useEffect(() => {
         fetchPrices();
+
         // Initial load only.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -848,9 +855,10 @@ const MarketPrice = () => {
 
                     <div className="market-filter-actions">
 
+                        {/* FIXED: do not pass click event */}
                         <button
                             className="market-search-button"
-                            onClick={fetchPrices}
+                            onClick={() => fetchPrices()}
                             disabled={loading}
                         >
                             {loading
@@ -1082,9 +1090,10 @@ const MarketPrice = () => {
 
                                 </div>
 
+                                {/* FIXED: do not pass click event */}
                                 <button
                                     className="refresh-market-button"
-                                    onClick={fetchPrices}
+                                    onClick={() => fetchPrices()}
                                     disabled={loading}
                                 >
                                     🔄{" "}
