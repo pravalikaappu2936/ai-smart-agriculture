@@ -587,6 +587,70 @@ const formatDiseaseName = (name) => {
 };
 
 // =========================================================
+// WAIT FOR VIDEO ELEMENT
+// =========================================================
+
+const waitForVideoElement = (videoRef, timeout = 10000) => {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+
+        const check = () => {
+            if (videoRef.current) {
+                resolve(videoRef.current);
+                return;
+            }
+
+            if (Date.now() - startTime >= timeout) {
+                reject(
+                    new Error(
+                        "Video element did not become available."
+                    )
+                );
+                return;
+            }
+
+            requestAnimationFrame(check);
+        };
+
+        check();
+    });
+};
+
+// =========================================================
+// WAIT FOR VIDEO TO ACTUALLY BECOME READY
+// =========================================================
+
+const waitForVideoReady = (video, timeout = 10000) => {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+
+        const check = () => {
+            if (
+                video.readyState >= 2 &&
+                video.videoWidth > 0 &&
+                video.videoHeight > 0
+            ) {
+                resolve();
+                return;
+            }
+
+            if (Date.now() - startTime >= timeout) {
+                reject(
+                    new Error(
+                        "Camera video did not become ready."
+                    )
+                );
+                return;
+            }
+
+            setTimeout(check, 100);
+        };
+
+        check();
+    });
+};
+
+// =========================================================
 // COMPONENT
 // =========================================================
 
@@ -603,12 +667,16 @@ const PlantDisease = () => {
     // Camera state
     const [cameraOpen, setCameraOpen] = useState(false);
     const [cameraLoading, setCameraLoading] = useState(false);
+    const [cameraReady, setCameraReady] = useState(false);
     const [capturedPhoto, setCapturedPhoto] = useState(null);
 
     const fileInputRef = useRef(null);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
+
+    // Used to cancel an old camera request
+    const cameraRequestRef = useRef(0);
 
     const t = TEXT[language];
 
@@ -618,9 +686,11 @@ const PlantDisease = () => {
 
     const stopCamera = () => {
         if (streamRef.current) {
-            streamRef.current.getTracks().forEach((track) => {
-                track.stop();
-            });
+            streamRef.current
+                .getTracks()
+                .forEach((track) => {
+                    track.stop();
+                });
 
             streamRef.current = null;
         }
@@ -630,6 +700,7 @@ const PlantDisease = () => {
             videoRef.current.srcObject = null;
         }
 
+        setCameraReady(false);
         setCameraLoading(false);
     };
 
@@ -639,14 +710,31 @@ const PlantDisease = () => {
 
     useEffect(() => {
         return () => {
+            cameraRequestRef.current += 1;
+
             if (streamRef.current) {
-                streamRef.current.getTracks().forEach((track) => {
-                    track.stop();
-                });
+                streamRef.current
+                    .getTracks()
+                    .forEach((track) => {
+                        track.stop();
+                    });
 
                 streamRef.current = null;
             }
 
+            if (videoRef.current) {
+                videoRef.current.pause();
+                videoRef.current.srcObject = null;
+            }
+        };
+    }, []);
+
+    // =====================================================
+    // CLEAN PREVIEW URL
+    // =====================================================
+
+    useEffect(() => {
+        return () => {
             if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
             }
@@ -658,15 +746,21 @@ const PlantDisease = () => {
     // =====================================================
 
     const handleOpenCamera = () => {
+        const requestId =
+            cameraRequestRef.current + 1;
+
+        cameraRequestRef.current = requestId;
+
         setError("");
         setResult(null);
         setCapturedPhoto(null);
-        setCameraOpen(true);
+        setCameraReady(false);
         setCameraLoading(true);
+        setCameraOpen(true);
     };
 
     // =====================================================
-    // START CAMERA AFTER VIDEO ELEMENT IS MOUNTED
+    // START CAMERA
     // =====================================================
 
     useEffect(() => {
@@ -674,133 +768,277 @@ const PlantDisease = () => {
             return;
         }
 
+        const requestId =
+            cameraRequestRef.current;
+
         let cancelled = false;
         let currentStream = null;
 
         const startCamera = async () => {
             try {
+                setCameraLoading(true);
+                setCameraReady(false);
+
                 if (!navigator.mediaDevices?.getUserMedia) {
-                    throw new Error(t.cameraNotSupported);
+                    throw new Error(
+                        t.cameraNotSupported
+                    );
                 }
 
-                // Wait for React to mount the video element
-                await new Promise((resolve) => {
-                    requestAnimationFrame(resolve);
-                });
+                /*
+                 * IMPORTANT:
+                 * The video element is now rendered even
+                 * while cameraLoading is true.
+                 */
+                const video =
+                    await waitForVideoElement(
+                        videoRef
+                    );
 
-                if (cancelled || !videoRef.current) {
+                if (
+                    cancelled ||
+                    requestId !==
+                        cameraRequestRef.current
+                ) {
                     return;
                 }
 
-                const stream =
-                    await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            facingMode: {
-                                ideal: "environment",
-                            },
-                            width: {
-                                ideal: 1280,
-                            },
-                            height: {
-                                ideal: 720,
-                            },
-                        },
-                        audio: false,
-                    });
+                console.log(
+                    "VIDEO ELEMENT FOUND"
+                );
+
+                let stream;
+
+                try {
+                    stream =
+                        await navigator.mediaDevices.getUserMedia(
+                            {
+                                video: {
+                                    facingMode: {
+                                        ideal: "environment",
+                                    },
+                                    width: {
+                                        ideal: 1280,
+                                    },
+                                    height: {
+                                        ideal: 720,
+                                    },
+                                },
+                                audio: false,
+                            }
+                        );
+                } catch (firstError) {
+                    console.warn(
+                        "Preferred camera constraints failed:",
+                        firstError
+                    );
+
+                    if (
+                        firstError?.name ===
+                            "NotAllowedError" ||
+                        firstError?.name ===
+                            "SecurityError"
+                    ) {
+                        throw firstError;
+                    }
+
+                    // Fallback for desktop cameras
+                    stream =
+                        await navigator.mediaDevices.getUserMedia(
+                            {
+                                video: true,
+                                audio: false,
+                            }
+                        );
+                }
 
                 currentStream = stream;
 
-                if (cancelled) {
-                    stream.getTracks().forEach((track) => {
-                        track.stop();
-                    });
+                if (
+                    cancelled ||
+                    requestId !==
+                        cameraRequestRef.current
+                ) {
+                    stream
+                        .getTracks()
+                        .forEach((track) =>
+                            track.stop()
+                        );
 
                     return;
                 }
 
                 streamRef.current = stream;
 
-                const video = videoRef.current;
-
-                if (!video) {
-                    stream.getTracks().forEach((track) => {
-                        track.stop();
-                    });
-
-                    return;
-                }
-
+                // Attach stream to video
                 video.srcObject = stream;
                 video.muted = true;
+                video.autoplay = true;
                 video.playsInline = true;
 
-                // Wait for camera metadata
-                await new Promise((resolve) => {
-                    if (video.readyState >= 1) {
-                        resolve();
-                    } else {
-                        video.onloadedmetadata = () => {
-                            resolve();
-                        };
-                    }
-                });
+                video.setAttribute(
+                    "autoplay",
+                    ""
+                );
 
-                if (cancelled) {
+                video.setAttribute(
+                    "playsinline",
+                    ""
+                );
+
+                video.setAttribute(
+                    "muted",
+                    ""
+                );
+
+                console.log(
+                    "CAMERA STREAM ATTACHED"
+                );
+
+                // Wait for metadata
+                await new Promise(
+                    (resolve, reject) => {
+                        const timeout =
+                            setTimeout(() => {
+                                cleanup();
+
+                                reject(
+                                    new Error(
+                                        t.cameraNotReady
+                                    )
+                                );
+                            }, 10000);
+
+                        const cleanup = () => {
+                            clearTimeout(
+                                timeout
+                            );
+
+                            video.removeEventListener(
+                                "loadedmetadata",
+                                handleMetadata
+                            );
+                        };
+
+                        const handleMetadata =
+                            () => {
+                                cleanup();
+                                resolve();
+                            };
+
+                        if (
+                            video.readyState >=
+                                1 &&
+                            video.videoWidth >
+                                0
+                        ) {
+                            cleanup();
+                            resolve();
+                        } else {
+                            video.addEventListener(
+                                "loadedmetadata",
+                                handleMetadata
+                            );
+                        }
+                    }
+                );
+
+                if (
+                    cancelled ||
+                    requestId !==
+                        cameraRequestRef.current
+                ) {
                     return;
                 }
 
                 await video.play();
 
-                if (cancelled) {
+                if (
+                    cancelled ||
+                    requestId !==
+                        cameraRequestRef.current
+                ) {
                     return;
                 }
 
-                console.log("Camera started successfully:", {
-                    readyState: video.readyState,
-                    videoWidth: video.videoWidth,
-                    videoHeight: video.videoHeight,
-                });
+                console.log(
+                    "VIDEO PLAY STARTED"
+                );
 
-                // Wait until actual video dimensions are available
-                if (!video.videoWidth || !video.videoHeight) {
-                    await new Promise((resolve) => {
-                        const checkVideo = () => {
-                            if (
-                                video.videoWidth &&
-                                video.videoHeight
-                            ) {
-                                resolve();
-                            } else if (!cancelled) {
-                                requestAnimationFrame(checkVideo);
-                            } else {
-                                resolve();
-                            }
-                        };
+                // Wait for actual dimensions/frame
+                await waitForVideoReady(
+                    video
+                );
 
-                        checkVideo();
-                    });
+                if (
+                    cancelled ||
+                    requestId !==
+                        cameraRequestRef.current
+                ) {
+                    return;
                 }
-            } catch (cameraError) {
-                console.error("Camera Error:", cameraError);
 
-                if (cancelled) {
+                console.log(
+                    "CAMERA FULLY READY:",
+                    {
+                        readyState:
+                            video.readyState,
+                        videoWidth:
+                            video.videoWidth,
+                        videoHeight:
+                            video.videoHeight,
+                        trackState:
+                            stream
+                                .getVideoTracks()[0]
+                                ?.readyState,
+                    }
+                );
+
+                setCameraReady(true);
+                setCameraLoading(false);
+            } catch (cameraError) {
+                console.error(
+                    "CAMERA ERROR:",
+                    cameraError
+                );
+
+                if (
+                    cancelled ||
+                    requestId !==
+                        cameraRequestRef.current
+                ) {
                     if (currentStream) {
                         currentStream
                             .getTracks()
-                            .forEach((track) => track.stop());
+                            .forEach((track) =>
+                                track.stop()
+                            );
                     }
 
                     return;
                 }
 
-                stopCamera();
+                if (currentStream) {
+                    currentStream
+                        .getTracks()
+                        .forEach((track) =>
+                            track.stop()
+                        );
+                }
+
+                streamRef.current = null;
+
+                setCameraReady(false);
+                setCameraLoading(false);
                 setCameraOpen(false);
 
                 if (
                     cameraError?.name ===
                     "NotAllowedError"
                 ) {
-                    setError(t.cameraPermission);
+                    setError(
+                        t.cameraPermission
+                    );
                 } else if (
                     cameraError?.name ===
                     "NotFoundError"
@@ -815,16 +1053,14 @@ const PlantDisease = () => {
                     cameraError?.name ===
                     "SecurityError"
                 ) {
-                    setError(t.cameraPermission);
+                    setError(
+                        t.cameraPermission
+                    );
                 } else {
                     setError(
                         cameraError?.message ||
-                        t.cameraNotSupported
+                            t.cameraNotSupported
                     );
-                }
-            } finally {
-                if (!cancelled) {
-                    setCameraLoading(false);
                 }
             }
         };
@@ -837,7 +1073,9 @@ const PlantDisease = () => {
             if (currentStream) {
                 currentStream
                     .getTracks()
-                    .forEach((track) => track.stop());
+                    .forEach((track) =>
+                        track.stop()
+                    );
             }
         };
     }, [cameraOpen, capturedPhoto]);
@@ -847,6 +1085,8 @@ const PlantDisease = () => {
     // =====================================================
 
     const handleCloseCamera = () => {
+        cameraRequestRef.current += 1;
+
         stopCamera();
 
         setCameraOpen(false);
@@ -861,25 +1101,32 @@ const PlantDisease = () => {
         const video = videoRef.current;
         const canvas = canvasRef.current;
 
-        if (!video || !canvas) {
-            setError(t.cameraNotReady);
-            return;
-        }
-
-        // Make sure video is actually producing frames
         if (
-            video.readyState < 2 ||
-            !video.videoWidth ||
-            !video.videoHeight
+            !cameraReady ||
+            !video ||
+            !canvas
         ) {
             setError(t.cameraNotReady);
             return;
         }
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        if (
+            video.readyState < 2 ||
+            video.videoWidth <= 0 ||
+            video.videoHeight <= 0
+        ) {
+            setError(t.cameraNotReady);
+            return;
+        }
 
-        const context = canvas.getContext("2d");
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const context =
+            canvas.getContext("2d");
 
         if (!context) {
             setError(t.error);
@@ -890,13 +1137,30 @@ const PlantDisease = () => {
             video,
             0,
             0,
-            canvas.width,
-            canvas.height
+            width,
+            height
         );
 
-        const dataUrl = canvas.toDataURL(
-            "image/jpeg",
-            0.9
+        const dataUrl =
+            canvas.toDataURL(
+                "image/jpeg",
+                0.9
+            );
+
+        if (
+            !dataUrl ||
+            dataUrl === "data:,"
+        ) {
+            setError(t.cameraNotReady);
+            return;
+        }
+
+        console.log(
+            "PHOTO CAPTURED:",
+            {
+                width,
+                height,
+            }
         );
 
         setCapturedPhoto(dataUrl);
@@ -913,17 +1177,22 @@ const PlantDisease = () => {
         dataUrl,
         filename
     ) => {
-        const parts = dataUrl.split(",");
+        const parts =
+            dataUrl.split(",");
 
         const mime =
-            parts[0].match(/:(.*?);/)?.[1] ||
+            parts[0].match(
+                /:(.*?);/
+            )?.[1] ||
             "image/jpeg";
 
-        const binary = atob(parts[1]);
+        const binary =
+            atob(parts[1]);
 
-        const array = new Uint8Array(
-            binary.length
-        );
+        const array =
+            new Uint8Array(
+                binary.length
+            );
 
         for (
             let i = 0;
@@ -952,22 +1221,32 @@ const PlantDisease = () => {
             return;
         }
 
-        const file = dataUrlToFile(
-            capturedPhoto,
-            `plant-leaf-${Date.now()}.jpg`
-        );
+        const file =
+            dataUrlToFile(
+                capturedPhoto,
+                `plant-leaf-${Date.now()}.jpg`
+            );
 
-        if (file.size > 5 * 1024 * 1024) {
-            setError(t.capturedTooLarge);
+        if (
+            file.size >
+            5 * 1024 * 1024
+        ) {
+            setError(
+                t.capturedTooLarge
+            );
             return;
         }
 
         if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
+            URL.revokeObjectURL(
+                previewUrl
+            );
         }
 
         const url =
-            URL.createObjectURL(file);
+            URL.createObjectURL(
+                file
+            );
 
         setSelectedImage(file);
         setPreviewUrl(url);
@@ -975,6 +1254,7 @@ const PlantDisease = () => {
         setError("");
         setCapturedPhoto(null);
         setCameraOpen(false);
+        setCameraReady(false);
     };
 
     // =====================================================
@@ -982,17 +1262,24 @@ const PlantDisease = () => {
     // =====================================================
 
     const handleRetakePhoto = () => {
+        cameraRequestRef.current += 1;
+
+        stopCamera();
+
         setCapturedPhoto(null);
         setError("");
-        setCameraOpen(true);
+        setCameraReady(false);
         setCameraLoading(true);
+        setCameraOpen(true);
     };
 
     // =====================================================
     // IMAGE SELECTION
     // =====================================================
 
-    const handleImageChange = (event) => {
+    const handleImageChange = (
+        event
+    ) => {
         const file =
             event.target.files?.[0];
 
@@ -1005,7 +1292,9 @@ const PlantDisease = () => {
 
         if (
             !file.type ||
-            !file.type.startsWith("image/")
+            !file.type.startsWith(
+                "image/"
+            )
         ) {
             setError(
                 language === "kn"
@@ -1036,7 +1325,9 @@ const PlantDisease = () => {
         }
 
         const url =
-            URL.createObjectURL(file);
+            URL.createObjectURL(
+                file
+            );
 
         setSelectedImage(file);
         setPreviewUrl(url);
@@ -1047,6 +1338,8 @@ const PlantDisease = () => {
     // =====================================================
 
     const handleRemoveImage = () => {
+        cameraRequestRef.current += 1;
+
         if (previewUrl) {
             URL.revokeObjectURL(
                 previewUrl
@@ -1061,9 +1354,11 @@ const PlantDisease = () => {
         setResult(null);
         setError("");
         setCameraOpen(false);
+        setCameraReady(false);
 
         if (fileInputRef.current) {
-            fileInputRef.current.value = "";
+            fileInputRef.current.value =
+                "";
         }
     };
 
@@ -1071,47 +1366,55 @@ const PlantDisease = () => {
     // PREDICT DISEASE
     // =====================================================
 
-    const handlePrediction = async () => {
-        if (!selectedImage) {
-            setError(t.uploadFirst);
-            return;
-        }
-
-        setLoading(true);
-        setError("");
-        setResult(null);
-
-        try {
-            const data =
-                await predictPlantDisease(
-                    selectedImage
+    const handlePrediction =
+        async () => {
+            if (!selectedImage) {
+                setError(
+                    t.uploadFirst
                 );
-
-            if (!data?.success) {
-                throw new Error(
-                    "Disease prediction failed."
-                );
+                return;
             }
 
-            setResult(data);
-        } catch (predictionError) {
-            console.error(
-                "Plant Disease Prediction Error:",
+            setLoading(true);
+            setError("");
+            setResult(null);
+
+            try {
+                const data =
+                    await predictPlantDisease(
+                        selectedImage
+                    );
+
+                if (!data?.success) {
+                    throw new Error(
+                        "Disease prediction failed."
+                    );
+                }
+
+                setResult(data);
+            } catch (
                 predictionError
-            );
+            ) {
+                console.error(
+                    "Plant Disease Prediction Error:",
+                    predictionError
+                );
 
-            const backendMessage =
-                predictionError?.response?.data?.detail;
+                const backendMessage =
+                    predictionError
+                        ?.response
+                        ?.data
+                        ?.detail;
 
-            setError(
-                backendMessage ||
-                predictionError?.message ||
-                t.error
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
+                setError(
+                    backendMessage ||
+                        predictionError?.message ||
+                        t.error
+                );
+            } finally {
+                setLoading(false);
+            }
+        };
 
     // =====================================================
     // GET DISPLAY DISEASE NAME
@@ -1254,20 +1557,16 @@ const PlantDisease = () => {
             {/* HEADER */}
 
             <header className="disease-header">
-
                 <div className="disease-header-left">
-
                     <Link
                         to="/dashboard"
                         className="disease-back-button"
                     >
                         {t.backDashboard}
                     </Link>
-
                 </div>
 
                 <div className="disease-language-buttons">
-
                     <button
                         type="button"
                         className={
@@ -1295,23 +1594,18 @@ const PlantDisease = () => {
                     >
                         ಕನ್ನಡ
                     </button>
-
                 </div>
-
             </header>
 
             {/* MAIN */}
 
             <main className="disease-main">
-
                 <section className="disease-hero">
-
                     <div className="disease-hero-icon">
                         🌿
                     </div>
 
                     <div>
-
                         <h1>
                             {t.title}
                         </h1>
@@ -1319,25 +1613,19 @@ const PlantDisease = () => {
                         <p>
                             {t.subtitle}
                         </p>
-
                     </div>
-
                 </section>
 
                 <div className="disease-grid">
-
                     {/* UPLOAD / CAMERA CARD */}
 
                     <section className="disease-card upload-card">
-
                         <div className="card-title-row">
-
                             <div className="card-icon">
                                 📷
                             </div>
 
                             <div>
-
                                 <h2>
                                     {t.uploadTitle}
                                 </h2>
@@ -1345,21 +1633,17 @@ const PlantDisease = () => {
                                 <p>
                                     {t.uploadDescription}
                                 </p>
-
                             </div>
-
                         </div>
 
                         {/* CAMERA */}
 
                         {cameraOpen && (
-
                             <div className="camera-container">
-
                                 <div className="camera-header">
-
                                     <strong>
-                                        📷 {t.useCamera}
+                                        📷{" "}
+                                        {t.useCamera}
                                     </strong>
 
                                     <button
@@ -1369,134 +1653,138 @@ const PlantDisease = () => {
                                             handleCloseCamera
                                         }
                                     >
-                                        ✕ {t.closeCamera}
+                                        ✕{" "}
+                                        {
+                                            t.closeCamera
+                                        }
                                     </button>
-
                                 </div>
 
-                                {cameraLoading ? (
+                                {/*
+                                 * IMPORTANT FIX:
+                                 * Video is ALWAYS mounted while camera is open.
+                                 * Loading is now an overlay instead of replacing
+                                 * the video element.
+                                 */}
 
-                                    <div className="camera-loading">
-
-                                        <span className="spinner"></span>
-
-                                        <p>
-                                            {t.cameraStarting}
-                                        </p>
-
-                                    </div>
-
-                                ) : (
-
-                                    <>
-
-                                        {!capturedPhoto ? (
-
-                                            <div className="camera-preview-wrapper">
-
-                                                <video
-                                                    ref={videoRef}
-                                                    className="camera-video"
-                                                    autoPlay
-                                                    playsInline
-                                                    muted
-                                                />
-
-                                                <div className="camera-guide">
-
-                                                    <span>
-                                                        {t.cameraReady}
-                                                    </span>
-
-                                                </div>
-
-                                            </div>
-
-                                        ) : (
-
-                                            <div className="camera-preview-wrapper">
-
-                                                <img
-                                                    src={capturedPhoto}
-                                                    alt={t.capturedPhoto}
-                                                    className="camera-captured-image"
-                                                />
-
-                                            </div>
-
-                                        )}
-
-                                        <div className="camera-actions">
-
-                                            {!capturedPhoto ? (
-
-                                                <button
-                                                    type="button"
-                                                    className="capture-btn"
-                                                    onClick={
-                                                        handleCapturePhoto
-                                                    }
-                                                    disabled={
-                                                        cameraLoading
-                                                    }
-                                                >
-                                                    📸 {t.capturePhoto}
-                                                </button>
-
-                                            ) : (
-
-                                                <>
-
-                                                    <button
-                                                        type="button"
-                                                        className="secondary-btn"
-                                                        onClick={
-                                                            handleRetakePhoto
-                                                        }
-                                                    >
-                                                        🔄 {t.retakePhoto}
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        className="predict-btn"
-                                                        onClick={
-                                                            handleUseCapturedPhoto
-                                                        }
-                                                    >
-                                                        ✅ {t.usePhoto}
-                                                    </button>
-
-                                                </>
-
-                                            )}
-
-                                        </div>
-
-                                        <canvas
-                                            ref={canvasRef}
-                                            hidden
+                                {!capturedPhoto && (
+                                    <div className="camera-preview-wrapper">
+                                        <video
+                                            ref={
+                                                videoRef
+                                            }
+                                            className="camera-video"
+                                            autoPlay
+                                            playsInline
+                                            muted
                                         />
 
-                                    </>
+                                        <div className="camera-guide">
+                                            <span>
+                                                {
+                                                    t.cameraReady
+                                                }
+                                            </span>
+                                        </div>
 
+                                        {cameraLoading && (
+                                            <div className="camera-loading">
+                                                <span className="spinner"></span>
+
+                                                <p>
+                                                    {
+                                                        t.cameraStarting
+                                                    }
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
 
-                            </div>
+                                {capturedPhoto && (
+                                    <div className="camera-preview-wrapper">
+                                        <img
+                                            src={
+                                                capturedPhoto
+                                            }
+                                            alt={
+                                                t.capturedPhoto
+                                            }
+                                            className="camera-captured-image"
+                                        />
+                                    </div>
+                                )}
 
+                                <div className="camera-actions">
+                                    {!capturedPhoto ? (
+                                        <button
+                                            type="button"
+                                            className="capture-btn"
+                                            onClick={
+                                                handleCapturePhoto
+                                            }
+                                            disabled={
+                                                cameraLoading ||
+                                                !cameraReady
+                                            }
+                                        >
+                                            📸{" "}
+                                            {
+                                                t.capturePhoto
+                                            }
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <button
+                                                type="button"
+                                                className="secondary-btn"
+                                                onClick={
+                                                    handleRetakePhoto
+                                                }
+                                            >
+                                                🔄{" "}
+                                                {
+                                                    t.retakePhoto
+                                                }
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className="predict-btn"
+                                                onClick={
+                                                    handleUseCapturedPhoto
+                                                }
+                                            >
+                                                ✅{" "}
+                                                {
+                                                    t.usePhoto
+                                                }
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+
+                                <canvas
+                                    ref={
+                                        canvasRef
+                                    }
+                                    hidden
+                                />
+                            </div>
                         )}
 
                         {/* IMAGE PREVIEW */}
 
                         {!cameraOpen &&
                             previewUrl && (
-
                                 <div className="image-preview-container">
-
                                     <img
-                                        src={previewUrl}
+                                        src={
+                                            previewUrl
+                                        }
                                         alt={
-                                            language === "kn"
+                                            language ===
+                                            "kn"
                                                 ? "ಆಯ್ಕೆಮಾಡಿದ ಸಸ್ಯದ ಎಲೆ"
                                                 : "Selected plant leaf"
                                         }
@@ -1504,7 +1792,6 @@ const PlantDisease = () => {
                                     />
 
                                     <div className="image-actions">
-
                                         <button
                                             type="button"
                                             className="secondary-btn"
@@ -1512,7 +1799,10 @@ const PlantDisease = () => {
                                                 fileInputRef.current?.click()
                                             }
                                         >
-                                            🔄 {t.changeImage}
+                                            🔄{" "}
+                                            {
+                                                t.changeImage
+                                            }
                                         </button>
 
                                         <button
@@ -1522,22 +1812,20 @@ const PlantDisease = () => {
                                                 handleRemoveImage
                                             }
                                         >
-                                            🗑️ {t.removeImage}
+                                            🗑️{" "}
+                                            {
+                                                t.removeImage
+                                            }
                                         </button>
-
                                     </div>
-
                                 </div>
-
                             )}
 
                         {/* UPLOAD / CAMERA OPTIONS */}
 
                         {!cameraOpen &&
                             !previewUrl && (
-
                                 <div className="disease-input-options">
-
                                     <button
                                         type="button"
                                         className="upload-zone"
@@ -1545,19 +1833,21 @@ const PlantDisease = () => {
                                             fileInputRef.current?.click()
                                         }
                                     >
-
                                         <div className="upload-icon">
                                             🌱
                                         </div>
 
                                         <strong>
-                                            {t.chooseImage}
+                                            {
+                                                t.chooseImage
+                                            }
                                         </strong>
 
                                         <span>
-                                            {t.supported}
+                                            {
+                                                t.supported
+                                            }
                                         </span>
-
                                     </button>
 
                                     <button
@@ -1567,30 +1857,29 @@ const PlantDisease = () => {
                                             handleOpenCamera
                                         }
                                     >
-
                                         <div className="upload-icon">
                                             📸
                                         </div>
 
                                         <strong>
-                                            {t.useCamera}
+                                            {
+                                                t.useCamera
+                                            }
                                         </strong>
 
                                         <span>
-                                            {t.cameraDescription}
+                                            {
+                                                t.cameraDescription
+                                            }
                                         </span>
-
                                     </button>
-
                                 </div>
-
                             )}
 
                         {/* CAMERA BUTTON WITH SELECTED IMAGE */}
 
                         {!cameraOpen &&
                             previewUrl && (
-
                                 <button
                                     type="button"
                                     className="camera-secondary-btn"
@@ -1598,13 +1887,17 @@ const PlantDisease = () => {
                                         handleOpenCamera
                                     }
                                 >
-                                    📸 {t.useCamera}
+                                    📸{" "}
+                                    {
+                                        t.useCamera
+                                    }
                                 </button>
-
                             )}
 
                         <input
-                            ref={fileInputRef}
+                            ref={
+                                fileInputRef
+                            }
                             type="file"
                             accept="image/png,image/jpeg,image/jpg"
                             onChange={
@@ -1627,70 +1920,59 @@ const PlantDisease = () => {
                                 handlePrediction
                             }
                         >
-
                             {loading ? (
-
                                 <>
                                     <span className="spinner"></span>
-                                    {t.detecting}
+                                    {
+                                        t.detecting
+                                    }
                                 </>
-
                             ) : (
-
                                 <>
-                                    🔍 {t.predict}
+                                    🔍{" "}
+                                    {
+                                        t.predict
+                                    }
                                 </>
-
                             )}
-
                         </button>
 
                         {/* ERROR */}
 
                         {error && (
-
                             <div className="disease-error">
                                 ⚠️ {error}
                             </div>
-
                         )}
-
                     </section>
 
                     {/* RESULT CARD */}
 
                     <section className="disease-card result-card">
-
                         <div className="card-title-row">
-
                             <div className="card-icon">
                                 🧪
                             </div>
 
                             <div>
-
                                 <h2>
-                                    {t.resultTitle}
+                                    {
+                                        t.resultTitle
+                                    }
                                 </h2>
 
                                 <p>
                                     {result
-                                        ? (
-                                            isHealthy
-                                                ? t.healthy
-                                                : t.diseaseDetected
-                                        )
+                                        ? isHealthy
+                                            ? t.healthy
+                                            : t.diseaseDetected
                                         : t.noResult}
                                 </p>
-
                             </div>
-
                         </div>
 
                         {result ? (
-
                             <div className="result-content">
-
                                 {/* MAIN RESULT */}
 
                                 <div
@@ -1700,83 +1982,85 @@ const PlantDisease = () => {
                                             : "status-box disease"
                                     }
                                 >
-
                                     <div className="status-icon">
-
                                         {isHealthy
                                             ? "🌿"
                                             : "🦠"}
-
                                     </div>
 
                                     <div>
-
                                         <span>
-                                            {t.disease}
+                                            {
+                                                t.disease
+                                            }
                                         </span>
 
                                         <strong>
-                                            {getDiseaseName()}
+                                            {
+                                                getDiseaseName()
+                                            }
                                         </strong>
-
                                     </div>
-
                                 </div>
 
                                 {/* BASIC INFORMATION */}
 
                                 <div className="result-info-grid">
-
                                     <div className="info-box">
-
                                         <span>
-                                            🌱 {t.crop}
+                                            🌱{" "}
+                                            {
+                                                t.crop
+                                            }
                                         </span>
 
                                         <strong>
-                                            {getCropName()}
+                                            {
+                                                getCropName()
+                                            }
                                         </strong>
-
                                     </div>
 
                                     <div className="info-box">
-
                                         <span>
-                                            📊 {t.confidence}
+                                            📊{" "}
+                                            {
+                                                t.confidence
+                                            }
                                         </span>
 
                                         <strong>
                                             {Number(
                                                 result.confidence
-                                            ).toFixed(2)}
+                                            ).toFixed(
+                                                2
+                                            )}
                                             %
                                         </strong>
-
                                     </div>
-
                                 </div>
 
                                 {/* CONFIDENCE BAR */}
 
                                 <div className="confidence-section">
-
                                     <div className="confidence-header">
-
                                         <span>
-                                            {t.confidence}
+                                            {
+                                                t.confidence
+                                            }
                                         </span>
 
                                         <strong>
                                             {Number(
                                                 result.confidence
-                                            ).toFixed(2)}
+                                            ).toFixed(
+                                                2
+                                            )}
                                             %
                                         </strong>
-
                                     </div>
 
                                     <div className="confidence-bar">
-
                                         <div
                                             className="confidence-fill"
                                             style={{
@@ -1784,171 +2068,158 @@ const PlantDisease = () => {
                                                     Math.max(
                                                         Number(
                                                             result.confidence
-                                                        ) || 0,
+                                                        ) ||
+                                                            0,
                                                         0
                                                     ),
                                                     100
                                                 )}%`,
                                             }}
                                         />
-
                                     </div>
-
                                 </div>
 
                                 {/* TREATMENT */}
 
                                 <div className="guidance-box treatment-box">
-
                                     <div className="guidance-icon">
                                         💊
                                     </div>
 
                                     <div>
-
                                         <h3>
-                                            {t.treatment}
+                                            {
+                                                t.treatment
+                                            }
                                         </h3>
 
                                         <p>
-                                            {getTreatment()}
+                                            {
+                                                getTreatment()
+                                            }
                                         </p>
-
                                     </div>
-
                                 </div>
 
                                 {/* PREVENTION */}
 
                                 <div className="guidance-box prevention-box">
-
                                     <div className="guidance-icon">
                                         🛡️
                                     </div>
 
                                     <div>
-
                                         <h3>
-                                            {t.prevention}
+                                            {
+                                                t.prevention
+                                            }
                                         </h3>
 
                                         <p>
-                                            {getPrevention()}
+                                            {
+                                                getPrevention()
+                                            }
                                         </p>
-
                                     </div>
-
                                 </div>
-
                             </div>
-
                         ) : (
-
                             <div className="empty-result">
-
                                 <div className="empty-result-icon">
                                     🌱
                                 </div>
 
                                 <p>
-                                    {t.noResult}
+                                    {
+                                        t.noResult
+                                    }
                                 </p>
-
                             </div>
-
                         )}
-
                     </section>
-
                 </div>
 
                 {/* MODEL INFORMATION */}
 
                 <section className="disease-card model-card">
-
                     <div className="card-title-row">
-
                         <div className="card-icon">
                             🤖
                         </div>
 
                         <div>
-
                             <h2>
-                                {t.modelInformation}
+                                {
+                                    t.modelInformation
+                                }
                             </h2>
 
                             <p>
                                 MobileNetV3-Small
                             </p>
-
                         </div>
-
                     </div>
 
                     <div className="model-info-grid">
-
                         <div className="model-info-box">
-
                             <span>
-                                🤖 {t.model}
+                                🤖{" "}
+                                {t.model}
                             </span>
 
                             <strong>
                                 {result?.model ||
                                     "MobileNetV3-Small"}
                             </strong>
-
                         </div>
 
                         <div className="model-info-box">
-
                             <span>
-                                📈 {t.accuracy}
+                                📈{" "}
+                                {
+                                    t.accuracy
+                                }
                             </span>
 
                             <strong>
                                 {result?.model_accuracy
                                     ? `${Number(
-                                        result.model_accuracy
-                                    ).toFixed(2)}%`
+                                          result.model_accuracy
+                                      ).toFixed(
+                                          2
+                                      )}%`
                                     : "92.37%"}
                             </strong>
-
                         </div>
 
                         <div className="model-info-box">
-
                             <span>
-                                🖼️ {t.datasetImages}
+                                🖼️{" "}
+                                {
+                                    t.datasetImages
+                                }
                             </span>
 
                             <strong>
                                 {result?.dataset_images_used ||
                                     "5,700"}
                             </strong>
-
                         </div>
 
                         <div className="model-info-box">
-
                             <span>
-                                🔢 {t.classes}
+                                🔢{" "}
+                                {t.classes}
                             </span>
 
                             <strong>
                                 {result?.total_classes ||
                                     "38"}
                             </strong>
-
                         </div>
-
                     </div>
-
                 </section>
-
             </main>
-
         </div>
     );
 };
