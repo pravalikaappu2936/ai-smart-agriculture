@@ -34,6 +34,12 @@ const TEXT = {
             "Please allow camera permission in your browser.",
         cameraNotSupported:
             "Camera is not supported by this browser or device.",
+        cameraReady:
+            "Position the leaf inside the frame",
+        cameraDescription:
+            "Take a photo directly using your camera.",
+
+        capturedPhoto: "Captured Photo",
 
         supported:
             "Supported formats: JPG, JPEG, PNG • Maximum size: 5 MB",
@@ -61,22 +67,36 @@ const TEXT = {
         error:
             "Unable to analyze the image. Please try again.",
 
+        capturedTooLarge:
+            "Captured image is larger than 5 MB.",
+
+        cameraNotReady:
+            "Camera is not ready. Please wait a moment and try again.",
+
         healthy: "Healthy",
 
         diseaseDetected: "Disease Detected",
 
         noResult:
             "Upload or capture an image and click Detect Disease to see the result.",
+
+        noCamera:
+            "No camera was found. Please check your camera connection.",
+
+        cameraBusy:
+            "The camera is being used by another application.",
     },
 
     kn: {
         title: "ಸಸ್ಯ ರೋಗ ಪತ್ತೆ",
+
         subtitle:
             "ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಕ್ಯಾಮೆರಾ ಬಳಸಿ ಚಿತ್ರ ತೆಗೆದು ರೋಗವನ್ನು ಗುರುತಿಸಿ ಮತ್ತು ಚಿಕಿತ್ಸೆಯ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಿರಿ.",
 
         backDashboard: "← ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ",
 
         uploadTitle: "ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
+
         uploadDescription:
             "ಸ್ಪಷ್ಟವಾದ ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಕ್ಯಾಮೆರಾ ಬಳಸಿ ಚಿತ್ರ ತೆಗೆಯಿರಿ.",
 
@@ -91,10 +111,20 @@ const TEXT = {
         usePhoto: "ಚಿತ್ರ ಬಳಸಿ",
 
         cameraStarting: "ಕ್ಯಾಮೆರಾ ಪ್ರಾರಂಭಿಸಲಾಗುತ್ತಿದೆ...",
+
         cameraPermission:
             "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಅನುಮತಿಯನ್ನು ನೀಡಿ.",
+
         cameraNotSupported:
             "ಈ ಬ್ರೌಸರ್ ಅಥವಾ ಸಾಧನದಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಬೆಂಬಲಿತವಾಗಿಲ್ಲ.",
+
+        cameraReady:
+            "ಎಲೆಯನ್ನು ಚೌಕಟ್ಟಿನ ಒಳಗೆ ಇರಿಸಿ",
+
+        cameraDescription:
+            "ಕ್ಯಾಮೆರಾ ಬಳಸಿ ನೇರವಾಗಿ ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ತೆಗೆಯಿರಿ.",
+
+        capturedPhoto: "ತೆಗೆದ ಚಿತ್ರ",
 
         supported:
             "ಬೆಂಬಲಿತ ಫಾರ್ಮ್ಯಾಟ್‌ಗಳು: JPG, JPEG, PNG • ಗರಿಷ್ಠ ಗಾತ್ರ: 5 MB",
@@ -122,13 +152,46 @@ const TEXT = {
         error:
             "ಚಿತ್ರವನ್ನು ವಿಶ್ಲೇಷಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
 
+        capturedTooLarge:
+            "ತೆಗೆದ ಚಿತ್ರವು 5 MB ಗಿಂತ ದೊಡ್ಡದಾಗಿದೆ.",
+
+        cameraNotReady:
+            "ಕ್ಯಾಮೆರಾ ಇನ್ನೂ ಸಿದ್ಧವಾಗಿಲ್ಲ. ಸ್ವಲ್ಪ ಸಮಯ ಕಾಯ್ದು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+
         healthy: "ಆರೋಗ್ಯಕರ",
 
         diseaseDetected: "ರೋಗ ಪತ್ತೆಯಾಗಿದೆ",
 
         noResult:
             "ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಕ್ಯಾಮೆರಾದಿಂದ ಚಿತ್ರ ತೆಗೆದು ಫಲಿತಾಂಶವನ್ನು ನೋಡಲು ರೋಗ ಪತ್ತೆ ಬಟನ್ ಒತ್ತಿರಿ.",
+
+        noCamera:
+            "ಕ್ಯಾಮೆರಾ ಕಂಡುಬಂದಿಲ್ಲ. ದಯವಿಟ್ಟು ಕ್ಯಾಮೆರಾ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ.",
+
+        cameraBusy:
+            "ಕ್ಯಾಮೆರಾವನ್ನು ಮತ್ತೊಂದು ಅಪ್ಲಿಕೇಶನ್ ಬಳಸುತ್ತಿದೆ.",
     },
+};
+
+// =========================================================
+// CROP TRANSLATION
+// =========================================================
+
+const KANNADA_CROP_NAMES = {
+    Apple: "ಆಪಲ್",
+    Blueberry: "ಬ್ಲೂಬೆರ್ರಿ",
+    Cherry: "ಚೆರ್ರಿ",
+    Corn: "ಜೋಳ",
+    Grape: "ದ್ರಾಕ್ಷಿ",
+    Orange: "ಕಿತ್ತಳೆ",
+    Peach: "ಪೀಚ್",
+    Pepper: "ಮೆಣಸಿನಕಾಯಿ",
+    Potato: "ಆಲೂಗಡ್ಡೆ",
+    Raspberry: "ರಾಸ್ಪ್ಬೆರಿ",
+    Soybean: "ಸೋಯಾಬೀನ್",
+    Squash: "ಸ್ಕ್ವಾಷ್",
+    Strawberry: "ಸ್ಟ್ರಾಬೆರಿ",
+    Tomato: "ಟೊಮೆಟೊ",
 };
 
 // =========================================================
@@ -169,8 +232,11 @@ const KANNADA_DISEASE_NAMES = {
     "Orange Huanglongbing Citrus Greening":
         "ಕಿತ್ತಳೆಯ ಸಿಟ್ರಸ್ ಗ್ರೀನಿಂಗ್",
 
-    "Peach Bacterial Spot": "ಪೀಚ್ ಬ್ಯಾಕ್ಟೀರಿಯಲ್ ಸ್ಪಾಟ್",
-    "Healthy Peach": "ಆರೋಗ್ಯಕರ ಪೀಚ್",
+    "Peach Bacterial Spot":
+        "ಪೀಚ್ ಬ್ಯಾಕ್ಟೀರಿಯಲ್ ಸ್ಪಾಟ್",
+
+    "Healthy Peach":
+        "ಆರೋಗ್ಯಕರ ಪೀಚ್",
 
     "Bell Pepper Bacterial Spot":
         "ಬೆಲ್ ಪೆಪ್ಪರ್ ಬ್ಯಾಕ್ಟೀರಿಯಲ್ ಸ್ಪಾಟ್",
@@ -234,6 +300,278 @@ const KANNADA_DISEASE_NAMES = {
 };
 
 // =========================================================
+// TREATMENT / PREVENTION TRANSLATION
+// =========================================================
+
+const KANNADA_GUIDANCE = {
+    "Apple Scab": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳು ಮತ್ತು ಹಣ್ಣುಗಳನ್ನು ತೆಗೆದುಹಾಕಿ. ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ತೋಟದಲ್ಲಿ ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವನ್ನು ಕಾಪಾಡಿಕೊಳ್ಳಿ ಮತ್ತು ಬಿದ್ದ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ.",
+    },
+
+    "Apple Black Rot": {
+        treatment:
+            "ಸೋಂಕಿತ ಭಾಗಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಸತ್ತ ಕೊಂಬೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಮರದ ಸುತ್ತಲಿನ ಪ್ರದೇಶವನ್ನು ಸ್ವಚ್ಛವಾಗಿಡಿ.",
+    },
+
+    "Apple Cedar Apple Rust": {
+        treatment:
+            "ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ ಮತ್ತು ಸೋಂಕಿತ ಭಾಗಗಳನ್ನು ತೆಗೆದುಹಾಕಿ.",
+        prevention:
+            "ಸೋಂಕಿಗೆ ಒಳಗಾದ ಸಸ್ಯ ಭಾಗಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Healthy Apple": {
+        treatment:
+            "ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ಪ್ರಸ್ತುತ ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ನಿಯಮಿತವಾಗಿ ಸಸ್ಯವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಸರಿಯಾದ ನೀರು ಹಾಗೂ ಪೋಷಕಾಂಶಗಳನ್ನು ಒದಗಿಸಿ.",
+    },
+
+    "Healthy Blueberry": {
+        treatment:
+            "ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ಪ್ರಸ್ತುತ ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸಸ್ಯಕ್ಕೆ ಸರಿಯಾದ ನೀರು, ಪೋಷಕಾಂಶ ಮತ್ತು ಗಾಳಿಯ ಹರಿವು ಒದಗಿಸಿ.",
+    },
+
+    "Cherry Powdery Mildew": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಗಾಳಿಯ ಹರಿವು ಹೆಚ್ಚಿಸಿ ಮತ್ತು ಎಲೆಗಳ ಮೇಲೆ ಹೆಚ್ಚಿನ ತೇವಾಂಶ ಉಳಿಯದಂತೆ ನೋಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Healthy Cherry": {
+        treatment:
+            "ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ನಿಯಮಿತವಾಗಿ ಸಸ್ಯವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Corn Cercospora Leaf Spot Gray Leaf Spot": {
+        treatment:
+            "ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ ಮತ್ತು ಸೋಂಕಿತ ಸಸ್ಯ ಅವಶೇಷಗಳನ್ನು ತೆಗೆದುಹಾಕಿ.",
+        prevention:
+            "ಬೆಳೆ ಪರಿವರ್ತನೆ ಮಾಡಿ ಮತ್ತು ಹೊಲದಲ್ಲಿ ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Corn Common Rust": {
+        treatment:
+            "ತೀವ್ರ ಸೋಂಕಿನ ಸಂದರ್ಭದಲ್ಲಿ ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ರೋಗ ನಿರೋಧಕ ಜೋಳದ ತಳಿಗಳನ್ನು ಬಳಸಿ ಮತ್ತು ಉತ್ತಮ ಹೊಲ ನಿರ್ವಹಣೆ ಮಾಡಿ.",
+    },
+
+    "Corn Northern Leaf Blight": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಬೆಳೆ ಪರಿವರ್ತನೆ ಮಾಡಿ ಮತ್ತು ಸೋಂಕಿತ ಅವಶೇಷಗಳನ್ನು ಹೊಲದಿಂದ ತೆಗೆದುಹಾಕಿ.",
+    },
+
+    "Healthy Corn": {
+        treatment:
+            "ಜೋಳದ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರಾವರಿ, ಪೋಷಕಾಂಶ ಮತ್ತು ಹೊಲ ನಿರ್ವಹಣೆ ಮುಂದುವರಿಸಿ.",
+    },
+
+    "Grape Black Rot": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳು ಮತ್ತು ಹಣ್ಣುಗಳನ್ನು ತೆಗೆದುಹಾಕಿ. ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ದ್ರಾಕ್ಷಿ ತೋಟದಲ್ಲಿ ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಮತ್ತು ಸ್ವಚ್ಛತೆ ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Grape Esca Black Measles": {
+        treatment:
+            "ತೀವ್ರವಾಗಿ ಸೋಂಕಿತ ಕೊಂಬೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ನಿರ್ವಹಣಾ ಕ್ರಮಗಳನ್ನು ಅನುಸರಿಸಿ.",
+        prevention:
+            "ಸೋಂಕಿತ ಕೊಂಬೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಕತ್ತರಿಸುವ ಉಪಕರಣಗಳನ್ನು ಸ್ವಚ್ಛವಾಗಿಡಿ.",
+    },
+
+    "Grape Leaf Blight Isariopsis Leaf Spot": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಗಾಳಿಯ ಹರಿವು ಸುಧಾರಿಸಿ ಮತ್ತು ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಹೆಚ್ಚು ಕಾಲ ಉಳಿಯದಂತೆ ನೋಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Healthy Grape": {
+        treatment:
+            "ದ್ರಾಕ್ಷಿ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರು, ಪೋಷಕಾಂಶ ಮತ್ತು ಕತ್ತರಿಸುವ ಕ್ರಮಗಳನ್ನು ಅನುಸರಿಸಿ.",
+    },
+
+    "Orange Huanglongbing Citrus Greening": {
+        treatment:
+            "ಸೋಂಕಿತ ಸಸ್ಯಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ರೋಗ ಹರಡುವ ಕೀಟಗಳನ್ನು ನಿಯಂತ್ರಿಸಿ.",
+        prevention:
+            "ರೋಗಮುಕ್ತ ನೆಡುವ ವಸ್ತು ಬಳಸಿ ಮತ್ತು ವಾಹಕ ಕೀಟಗಳ ನಿಯಂತ್ರಣ ಮಾಡಿ.",
+    },
+
+    "Peach Bacterial Spot": {
+        treatment:
+            "ಸೋಂಕಿತ ಭಾಗಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಶಿಫಾರಸು ಮಾಡಿದ ಬ್ಯಾಕ್ಟೀರಿಯಾ ನಿಯಂತ್ರಣ ಕ್ರಮಗಳನ್ನು ಅನುಸರಿಸಿ.",
+        prevention:
+            "ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಚಿಮ್ಮುವುದನ್ನು ಕಡಿಮೆ ಮಾಡಿ ಮತ್ತು ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Healthy Peach": {
+        treatment:
+            "ಪೀಚ್ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ನಿಯಮಿತವಾಗಿ ಸಸ್ಯವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಸರಿಯಾದ ನೀರಾವರಿ ಒದಗಿಸಿ.",
+    },
+
+    "Bell Pepper Bacterial Spot": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಬ್ಯಾಕ್ಟೀರಿಯಾ ನಿಯಂತ್ರಣ ಕ್ರಮಗಳನ್ನು ಅನುಸರಿಸಿ.",
+        prevention:
+            "ರೋಗಮುಕ್ತ ಬೀಜಗಳನ್ನು ಬಳಸಿ ಮತ್ತು ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಚಿಮ್ಮುವುದನ್ನು ತಪ್ಪಿಸಿ.",
+    },
+
+    "Healthy Bell Pepper": {
+        treatment:
+            "ಬೆಲ್ ಪೆಪ್ಪರ್ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರು ಮತ್ತು ಪೋಷಕಾಂಶಗಳನ್ನು ನೀಡಿ ಮತ್ತು ಸಸ್ಯವನ್ನು ನಿಯಮಿತವಾಗಿ ಪರಿಶೀಲಿಸಿ.",
+    },
+
+    "Potato Early Blight": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಬೆಳೆ ಪರಿವರ್ತನೆ ಮಾಡಿ ಮತ್ತು ಸಸ್ಯಗಳ ನಡುವೆ ಉತ್ತಮ ಅಂತರ ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Potato Late Blight": {
+        treatment:
+            "ತೀವ್ರ ಸೋಂಕಿತ ಭಾಗಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ತಕ್ಷಣ ಬಳಸಿ.",
+        prevention:
+            "ಅತಿಯಾದ ತೇವಾಂಶ ತಪ್ಪಿಸಿ ಮತ್ತು ರೋಗ ನಿರೋಧಕ ತಳಿಗಳನ್ನು ಬಳಸುವುದು ಉತ್ತಮ.",
+    },
+
+    "Healthy Potato": {
+        treatment:
+            "ಆಲೂಗಡ್ಡೆ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರಾವರಿ ಮತ್ತು ಉತ್ತಮ ಹೊಲ ಸ್ವಚ್ಛತೆ ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Healthy Raspberry": {
+        treatment:
+            "ರಾಸ್ಪ್ಬೆರಿ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರು, ಪೋಷಕಾಂಶ ಮತ್ತು ಗಾಳಿಯ ಹರಿವು ಒದಗಿಸಿ.",
+    },
+
+    "Healthy Soybean": {
+        treatment:
+            "ಸೋಯಾಬೀನ್ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರಾವರಿ, ಪೋಷಕಾಂಶ ಮತ್ತು ಕೀಟ ನಿಯಂತ್ರಣ ಕ್ರಮಗಳನ್ನು ಅನುಸರಿಸಿ.",
+    },
+
+    "Squash Powdery Mildew": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಸಸ್ಯಗಳ ನಡುವೆ ಸಾಕಷ್ಟು ಅಂತರವಿಟ್ಟು ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Strawberry Leaf Scorch": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸಸ್ಯಕ್ಕೆ ಸೂಕ್ತ ಆರೈಕೆ ನೀಡಿ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರಾವರಿ ಮತ್ತು ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Healthy Strawberry": {
+        treatment:
+            "ಸ್ಟ್ರಾಬೆರಿ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರು ಮತ್ತು ಪೋಷಕಾಂಶಗಳನ್ನು ನೀಡಿ ಹಾಗೂ ಸಸ್ಯವನ್ನು ನಿಯಮಿತವಾಗಿ ಪರಿಶೀಲಿಸಿ.",
+    },
+
+    "Tomato Bacterial Spot": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಬ್ಯಾಕ್ಟೀರಿಯಾ ನಿಯಂತ್ರಣ ಕ್ರಮಗಳನ್ನು ಅನುಸರಿಸಿ.",
+        prevention:
+            "ರೋಗಮುಕ್ತ ಬೀಜಗಳನ್ನು ಬಳಸಿ ಮತ್ತು ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಚಿಮ್ಮುವುದನ್ನು ತಪ್ಪಿಸಿ.",
+    },
+
+    "Tomato Early Blight": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಬೆಳೆ ಪರಿವರ್ತನೆ ಮಾಡಿ ಮತ್ತು ಸಸ್ಯಗಳ ನಡುವೆ ಉತ್ತಮ ಅಂತರ ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Tomato Late Blight": {
+        treatment:
+            "ಸೋಂಕಿತ ಭಾಗಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಉಳಿಯದಂತೆ ನೋಡಿಕೊಳ್ಳಿ ಮತ್ತು ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Tomato Leaf Mold": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ತೇವಾಂಶವನ್ನು ನಿಯಂತ್ರಿಸಿ ಮತ್ತು ಉತ್ತಮ ಗಾಳಿಯ ಹರಿವು ಕಾಪಾಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Tomato Septoria Leaf Spot": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಸಸ್ಯದ ಸುತ್ತಲಿನ ಅವಶೇಷಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಚಿಮ್ಮುವುದನ್ನು ತಪ್ಪಿಸಿ.",
+    },
+
+    "Tomato Spider Mites": {
+        treatment:
+            "ಸೋಂಕಿತ ಸಸ್ಯವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಅಗತ್ಯವಿದ್ದರೆ ಸೂಕ್ತ ಕೀಟನಾಶಕ ಅಥವಾ ಮೈಟ್ ನಿಯಂತ್ರಣ ಕ್ರಮ ಬಳಸಿ.",
+        prevention:
+            "ಸಸ್ಯಕ್ಕೆ ಸೂಕ್ತ ತೇವಾಂಶ ಒದಗಿಸಿ ಮತ್ತು ನಿಯಮಿತವಾಗಿ ಕೀಟಗಳಿಗಾಗಿ ಪರಿಶೀಲಿಸಿ.",
+    },
+
+    "Tomato Target Spot": {
+        treatment:
+            "ಸೋಂಕಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೂಕ್ತ ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಬಳಸಿ.",
+        prevention:
+            "ಸಸ್ಯಗಳ ನಡುವೆ ಉತ್ತಮ ಅಂತರ ಕಾಪಾಡಿಕೊಳ್ಳಿ ಮತ್ತು ಎಲೆಗಳ ಮೇಲೆ ನೀರು ಉಳಿಯದಂತೆ ನೋಡಿಕೊಳ್ಳಿ.",
+    },
+
+    "Tomato Yellow Leaf Curl Virus": {
+        treatment:
+            "ವೈರಸ್ ಸೋಂಕಿತ ಸಸ್ಯಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಬಿಳಿ ನೊಣಗಳ ನಿಯಂತ್ರಣ ಮಾಡಿ.",
+        prevention:
+            "ರೋಗಮುಕ್ತ ಸಸಿಗಳನ್ನು ಬಳಸಿ ಮತ್ತು ವೈರಸ್ ಹರಡುವ ಕೀಟಗಳನ್ನು ನಿಯಂತ್ರಿಸಿ.",
+    },
+
+    "Tomato Mosaic Virus": {
+        treatment:
+            "ತೀವ್ರವಾಗಿ ಸೋಂಕಿತ ಸಸ್ಯಗಳನ್ನು ತೆಗೆದುಹಾಕಿ ಮತ್ತು ಸೋಂಕಿತ ಸಸ್ಯಗಳನ್ನು ಮುಟ್ಟಿದ ನಂತರ ಕೈಗಳನ್ನು ಸ್ವಚ್ಛಗೊಳಿಸಿ.",
+        prevention:
+            "ರೋಗಮುಕ್ತ ಬೀಜಗಳನ್ನು ಬಳಸಿ ಮತ್ತು ಉಪಕರಣಗಳನ್ನು ನಿಯಮಿತವಾಗಿ ಸ್ವಚ್ಛಗೊಳಿಸಿ.",
+    },
+
+    "Healthy Tomato": {
+        treatment:
+            "ಟೊಮೆಟೊ ಸಸ್ಯವು ಆರೋಗ್ಯಕರವಾಗಿದೆ. ವಿಶೇಷ ಚಿಕಿತ್ಸೆಯ ಅಗತ್ಯವಿಲ್ಲ.",
+        prevention:
+            "ಸರಿಯಾದ ನೀರಾವರಿ, ಪೋಷಕಾಂಶ ಮತ್ತು ಕೀಟ ನಿಯಂತ್ರಣ ಕ್ರಮಗಳನ್ನು ಮುಂದುವರಿಸಿ.",
+    },
+};
+
+// =========================================================
 // FORMAT DISEASE NAME
 // =========================================================
 
@@ -288,6 +626,7 @@ const PlantDisease = () => {
         }
 
         if (videoRef.current) {
+            videoRef.current.pause();
             videoRef.current.srcObject = null;
         }
 
@@ -304,6 +643,8 @@ const PlantDisease = () => {
                 streamRef.current.getTracks().forEach((track) => {
                     track.stop();
                 });
+
+                streamRef.current = null;
             }
 
             if (previewUrl) {
@@ -316,65 +657,190 @@ const PlantDisease = () => {
     // OPEN CAMERA
     // =====================================================
 
-    const handleOpenCamera = async () => {
+    const handleOpenCamera = () => {
         setError("");
         setResult(null);
         setCapturedPhoto(null);
         setCameraOpen(true);
         setCameraLoading(true);
+    };
 
-        try {
-            if (!navigator.mediaDevices?.getUserMedia) {
-                throw new Error(t.cameraNotSupported);
-            }
+    // =====================================================
+    // START CAMERA AFTER VIDEO ELEMENT IS MOUNTED
+    // =====================================================
 
-            const stream =
-                await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: {
-                            ideal: "environment",
-                        },
-                        width: {
-                            ideal: 1280,
-                        },
-                        height: {
-                            ideal: 720,
-                        },
-                    },
-                    audio: false,
+    useEffect(() => {
+        if (!cameraOpen || capturedPhoto) {
+            return;
+        }
+
+        let cancelled = false;
+        let currentStream = null;
+
+        const startCamera = async () => {
+            try {
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    throw new Error(t.cameraNotSupported);
+                }
+
+                // Wait for React to mount the video element
+                await new Promise((resolve) => {
+                    requestAnimationFrame(resolve);
                 });
 
-            streamRef.current = stream;
+                if (cancelled || !videoRef.current) {
+                    return;
+                }
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
+                const stream =
+                    await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: {
+                                ideal: "environment",
+                            },
+                            width: {
+                                ideal: 1280,
+                            },
+                            height: {
+                                ideal: 720,
+                            },
+                        },
+                        audio: false,
+                    });
 
-                await videoRef.current.play();
+                currentStream = stream;
+
+                if (cancelled) {
+                    stream.getTracks().forEach((track) => {
+                        track.stop();
+                    });
+
+                    return;
+                }
+
+                streamRef.current = stream;
+
+                const video = videoRef.current;
+
+                if (!video) {
+                    stream.getTracks().forEach((track) => {
+                        track.stop();
+                    });
+
+                    return;
+                }
+
+                video.srcObject = stream;
+                video.muted = true;
+                video.playsInline = true;
+
+                // Wait for camera metadata
+                await new Promise((resolve) => {
+                    if (video.readyState >= 1) {
+                        resolve();
+                    } else {
+                        video.onloadedmetadata = () => {
+                            resolve();
+                        };
+                    }
+                });
+
+                if (cancelled) {
+                    return;
+                }
+
+                await video.play();
+
+                if (cancelled) {
+                    return;
+                }
+
+                console.log("Camera started successfully:", {
+                    readyState: video.readyState,
+                    videoWidth: video.videoWidth,
+                    videoHeight: video.videoHeight,
+                });
+
+                // Wait until actual video dimensions are available
+                if (!video.videoWidth || !video.videoHeight) {
+                    await new Promise((resolve) => {
+                        const checkVideo = () => {
+                            if (
+                                video.videoWidth &&
+                                video.videoHeight
+                            ) {
+                                resolve();
+                            } else if (!cancelled) {
+                                requestAnimationFrame(checkVideo);
+                            } else {
+                                resolve();
+                            }
+                        };
+
+                        checkVideo();
+                    });
+                }
+            } catch (cameraError) {
+                console.error("Camera Error:", cameraError);
+
+                if (cancelled) {
+                    if (currentStream) {
+                        currentStream
+                            .getTracks()
+                            .forEach((track) => track.stop());
+                    }
+
+                    return;
+                }
+
+                stopCamera();
+                setCameraOpen(false);
+
+                if (
+                    cameraError?.name ===
+                    "NotAllowedError"
+                ) {
+                    setError(t.cameraPermission);
+                } else if (
+                    cameraError?.name ===
+                    "NotFoundError"
+                ) {
+                    setError(t.noCamera);
+                } else if (
+                    cameraError?.name ===
+                    "NotReadableError"
+                ) {
+                    setError(t.cameraBusy);
+                } else if (
+                    cameraError?.name ===
+                    "SecurityError"
+                ) {
+                    setError(t.cameraPermission);
+                } else {
+                    setError(
+                        cameraError?.message ||
+                        t.cameraNotSupported
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setCameraLoading(false);
+                }
             }
-        } catch (cameraError) {
-            console.error(
-                "Camera Error:",
-                cameraError
-            );
+        };
 
-            stopCamera();
-            setCameraOpen(false);
+        startCamera();
 
-            if (
-                cameraError?.name ===
-                "NotAllowedError"
-            ) {
-                setError(t.cameraPermission);
-            } else {
-                setError(
-                    cameraError?.message ||
-                    t.cameraNotSupported
-                );
+        return () => {
+            cancelled = true;
+
+            if (currentStream) {
+                currentStream
+                    .getTracks()
+                    .forEach((track) => track.stop());
             }
-        } finally {
-            setCameraLoading(false);
-        }
-    };
+        };
+    }, [cameraOpen, capturedPhoto]);
 
     // =====================================================
     // CLOSE CAMERA
@@ -382,6 +848,7 @@ const PlantDisease = () => {
 
     const handleCloseCamera = () => {
         stopCamera();
+
         setCameraOpen(false);
         setCapturedPhoto(null);
     };
@@ -395,24 +862,29 @@ const PlantDisease = () => {
         const canvas = canvasRef.current;
 
         if (!video || !canvas) {
+            setError(t.cameraNotReady);
             return;
         }
 
+        // Make sure video is actually producing frames
         if (
+            video.readyState < 2 ||
             !video.videoWidth ||
             !video.videoHeight
         ) {
-            setError(
-                "Camera is not ready. Please wait a moment and try again."
-            );
+            setError(t.cameraNotReady);
             return;
         }
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
 
-        const context =
-            canvas.getContext("2d");
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+            setError(t.error);
+            return;
+        }
 
         context.drawImage(
             video,
@@ -422,11 +894,10 @@ const PlantDisease = () => {
             canvas.height
         );
 
-        const dataUrl =
-            canvas.toDataURL(
-                "image/jpeg",
-                0.9
-            );
+        const dataUrl = canvas.toDataURL(
+            "image/jpeg",
+            0.9
+        );
 
         setCapturedPhoto(dataUrl);
         setError("");
@@ -442,23 +913,17 @@ const PlantDisease = () => {
         dataUrl,
         filename
     ) => {
-        const parts =
-            dataUrl.split(",");
+        const parts = dataUrl.split(",");
 
         const mime =
-            parts[0]
-                .match(
-                    /:(.*?);/
-                )?.[1] ||
+            parts[0].match(/:(.*?);/)?.[1] ||
             "image/jpeg";
 
-        const binary =
-            atob(parts[1]);
+        const binary = atob(parts[1]);
 
-        const array =
-            new Uint8Array(
-                binary.length
-            );
+        const array = new Uint8Array(
+            binary.length
+        );
 
         for (
             let i = 0;
@@ -487,23 +952,18 @@ const PlantDisease = () => {
             return;
         }
 
-        const file =
-            dataUrlToFile(
-                capturedPhoto,
-                `plant-leaf-${Date.now()}.jpg`
-            );
+        const file = dataUrlToFile(
+            capturedPhoto,
+            `plant-leaf-${Date.now()}.jpg`
+        );
 
         if (file.size > 5 * 1024 * 1024) {
-            setError(
-                "Captured image is larger than 5 MB."
-            );
+            setError(t.capturedTooLarge);
             return;
         }
 
         if (previewUrl) {
-            URL.revokeObjectURL(
-                previewUrl
-            );
+            URL.revokeObjectURL(previewUrl);
         }
 
         const url =
@@ -521,10 +981,11 @@ const PlantDisease = () => {
     // RETAKE PHOTO
     // =====================================================
 
-    const handleRetakePhoto = async () => {
+    const handleRetakePhoto = () => {
         setCapturedPhoto(null);
         setError("");
-        await handleOpenCamera();
+        setCameraOpen(true);
+        setCameraLoading(true);
     };
 
     // =====================================================
@@ -542,10 +1003,16 @@ const PlantDisease = () => {
         setError("");
         setResult(null);
 
-        if (!file.type.startsWith("image/")) {
+        if (
+            !file.type ||
+            !file.type.startsWith("image/")
+        ) {
             setError(
-                "Please select a valid image file."
+                language === "kn"
+                    ? "ದಯವಿಟ್ಟು ಮಾನ್ಯವಾದ ಚಿತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ."
+                    : "Please select a valid image file."
             );
+
             return;
         }
 
@@ -554,8 +1021,11 @@ const PlantDisease = () => {
 
         if (file.size > maxSize) {
             setError(
-                "Image size must be less than 5 MB."
+                language === "kn"
+                    ? "ಚಿತ್ರದ ಗಾತ್ರವು 5 MB ಗಿಂತ ಕಡಿಮೆ ಇರಬೇಕು."
+                    : "Image size must be less than 5 MB."
             );
+
             return;
         }
 
@@ -661,11 +1131,100 @@ const PlantDisease = () => {
             return (
                 KANNADA_DISEASE_NAMES[
                     formatted
-                ] || formatted
+                ] ||
+                formatted
             );
         }
 
         return formatted;
+    };
+
+    // =====================================================
+    // GET DISPLAY CROP NAME
+    // =====================================================
+
+    const getCropName = () => {
+        if (!result?.crop) {
+            return "";
+        }
+
+        const crop =
+            formatDiseaseName(
+                result.crop
+            );
+
+        if (language === "kn") {
+            return (
+                KANNADA_CROP_NAMES[
+                    crop
+                ] ||
+                crop
+            );
+        }
+
+        return crop;
+    };
+
+    // =====================================================
+    // GET TREATMENT
+    // =====================================================
+
+    const getTreatment = () => {
+        if (!result?.treatment) {
+            return "";
+        }
+
+        if (language === "kn") {
+            const disease =
+                formatDiseaseName(
+                    result.disease
+                );
+
+            if (
+                KANNADA_GUIDANCE[
+                    disease
+                ]?.treatment
+            ) {
+                return (
+                    KANNADA_GUIDANCE[
+                        disease
+                    ].treatment
+                );
+            }
+        }
+
+        return result.treatment;
+    };
+
+    // =====================================================
+    // GET PREVENTION
+    // =====================================================
+
+    const getPrevention = () => {
+        if (!result?.prevention) {
+            return "";
+        }
+
+        if (language === "kn") {
+            const disease =
+                formatDiseaseName(
+                    result.disease
+                );
+
+            if (
+                KANNADA_GUIDANCE[
+                    disease
+                ]?.prevention
+            ) {
+                return (
+                    KANNADA_GUIDANCE[
+                        disease
+                    ].prevention
+                );
+            }
+        }
+
+        return result.prevention;
     };
 
     // =====================================================
@@ -692,21 +1251,23 @@ const PlantDisease = () => {
                     : "en"
             }
         >
-            {/* =========================================
-                HEADER
-            ========================================= */}
+            {/* HEADER */}
 
             <header className="disease-header">
+
                 <div className="disease-header-left">
+
                     <Link
                         to="/dashboard"
                         className="disease-back-button"
                     >
                         {t.backDashboard}
                     </Link>
+
                 </div>
 
                 <div className="disease-language-buttons">
+
                     <button
                         type="button"
                         className={
@@ -734,20 +1295,23 @@ const PlantDisease = () => {
                     >
                         ಕನ್ನಡ
                     </button>
+
                 </div>
+
             </header>
 
-            {/* =========================================
-                MAIN
-            ========================================= */}
+            {/* MAIN */}
 
             <main className="disease-main">
+
                 <section className="disease-hero">
+
                     <div className="disease-hero-icon">
                         🌿
                     </div>
 
                     <div>
+
                         <h1>
                             {t.title}
                         </h1>
@@ -755,22 +1319,25 @@ const PlantDisease = () => {
                         <p>
                             {t.subtitle}
                         </p>
+
                     </div>
+
                 </section>
 
                 <div className="disease-grid">
 
-                    {/* =====================================
-                        UPLOAD / CAMERA CARD
-                    ===================================== */}
+                    {/* UPLOAD / CAMERA CARD */}
 
                     <section className="disease-card upload-card">
+
                         <div className="card-title-row">
+
                             <div className="card-icon">
                                 📷
                             </div>
 
                             <div>
+
                                 <h2>
                                     {t.uploadTitle}
                                 </h2>
@@ -778,43 +1345,55 @@ const PlantDisease = () => {
                                 <p>
                                     {t.uploadDescription}
                                 </p>
+
                             </div>
+
                         </div>
 
-                        {/* =================================
-                            CAMERA
-                        ================================= */}
+                        {/* CAMERA */}
 
                         {cameraOpen && (
+
                             <div className="camera-container">
 
                                 <div className="camera-header">
+
                                     <strong>
                                         📷 {t.useCamera}
                                     </strong>
 
                                     <button
                                         type="button"
-                                        className="secondary-btn"
+                                        className="camera-secondary-btn"
                                         onClick={
                                             handleCloseCamera
                                         }
                                     >
                                         ✕ {t.closeCamera}
                                     </button>
+
                                 </div>
 
                                 {cameraLoading ? (
+
                                     <div className="camera-loading">
+
                                         <span className="spinner"></span>
+
                                         <p>
                                             {t.cameraStarting}
                                         </p>
+
                                     </div>
+
                                 ) : (
+
                                     <>
+
                                         {!capturedPhoto ? (
+
                                             <div className="camera-preview-wrapper">
+
                                                 <video
                                                     ref={videoRef}
                                                     className="camera-video"
@@ -824,35 +1403,50 @@ const PlantDisease = () => {
                                                 />
 
                                                 <div className="camera-guide">
+
                                                     <span>
-                                                        Position the leaf inside the frame
+                                                        {t.cameraReady}
                                                     </span>
+
                                                 </div>
+
                                             </div>
+
                                         ) : (
+
                                             <div className="camera-preview-wrapper">
+
                                                 <img
                                                     src={capturedPhoto}
-                                                    alt="Captured plant leaf"
+                                                    alt={t.capturedPhoto}
                                                     className="camera-captured-image"
                                                 />
+
                                             </div>
+
                                         )}
 
                                         <div className="camera-actions">
 
                                             {!capturedPhoto ? (
+
                                                 <button
                                                     type="button"
                                                     className="capture-btn"
                                                     onClick={
                                                         handleCapturePhoto
                                                     }
+                                                    disabled={
+                                                        cameraLoading
+                                                    }
                                                 >
                                                     📸 {t.capturePhoto}
                                                 </button>
+
                                             ) : (
+
                                                 <>
+
                                                     <button
                                                         type="button"
                                                         className="secondary-btn"
@@ -872,30 +1466,40 @@ const PlantDisease = () => {
                                                     >
                                                         ✅ {t.usePhoto}
                                                     </button>
+
                                                 </>
+
                                             )}
+
                                         </div>
 
                                         <canvas
                                             ref={canvasRef}
                                             hidden
                                         />
+
                                     </>
+
                                 )}
+
                             </div>
+
                         )}
 
-                        {/* =================================
-                            IMAGE PREVIEW
-                        ================================= */}
+                        {/* IMAGE PREVIEW */}
 
                         {!cameraOpen &&
                             previewUrl && (
+
                                 <div className="image-preview-container">
 
                                     <img
                                         src={previewUrl}
-                                        alt="Selected plant leaf"
+                                        alt={
+                                            language === "kn"
+                                                ? "ಆಯ್ಕೆಮಾಡಿದ ಸಸ್ಯದ ಎಲೆ"
+                                                : "Selected plant leaf"
+                                        }
                                         className="plant-preview-image"
                                     />
 
@@ -922,68 +1526,71 @@ const PlantDisease = () => {
                                         </button>
 
                                     </div>
+
                                 </div>
+
                             )}
 
-                        {/* =================================
-                            UPLOAD / CAMERA OPTIONS
-                        ================================= */}
+                        {/* UPLOAD / CAMERA OPTIONS */}
 
                         {!cameraOpen &&
                             !previewUrl && (
-                                <>
-                                    <div className="disease-input-options">
 
-                                        <button
-                                            type="button"
-                                            className="upload-zone"
-                                            onClick={() =>
-                                                fileInputRef.current?.click()
-                                            }
-                                        >
-                                            <div className="upload-icon">
-                                                🌱
-                                            </div>
+                                <div className="disease-input-options">
 
-                                            <strong>
-                                                {t.chooseImage}
-                                            </strong>
+                                    <button
+                                        type="button"
+                                        className="upload-zone"
+                                        onClick={() =>
+                                            fileInputRef.current?.click()
+                                        }
+                                    >
 
-                                            <span>
-                                                {t.supported}
-                                            </span>
-                                        </button>
+                                        <div className="upload-icon">
+                                            🌱
+                                        </div>
 
-                                        <button
-                                            type="button"
-                                            className="camera-zone"
-                                            onClick={
-                                                handleOpenCamera
-                                            }
-                                        >
-                                            <div className="upload-icon">
-                                                📸
-                                            </div>
+                                        <strong>
+                                            {t.chooseImage}
+                                        </strong>
 
-                                            <strong>
-                                                {t.useCamera}
-                                            </strong>
+                                        <span>
+                                            {t.supported}
+                                        </span>
 
-                                            <span>
-                                                Take a photo directly using your camera
-                                            </span>
-                                        </button>
+                                    </button>
 
-                                    </div>
-                                </>
+                                    <button
+                                        type="button"
+                                        className="camera-zone"
+                                        onClick={
+                                            handleOpenCamera
+                                        }
+                                    >
+
+                                        <div className="upload-icon">
+                                            📸
+                                        </div>
+
+                                        <strong>
+                                            {t.useCamera}
+                                        </strong>
+
+                                        <span>
+                                            {t.cameraDescription}
+                                        </span>
+
+                                    </button>
+
+                                </div>
+
                             )}
 
-                        {/* =================================
-                            CHANGE IMAGE / CAMERA
-                        ================================= */}
+                        {/* CAMERA BUTTON WITH SELECTED IMAGE */}
 
                         {!cameraOpen &&
                             previewUrl && (
+
                                 <button
                                     type="button"
                                     className="camera-secondary-btn"
@@ -993,6 +1600,7 @@ const PlantDisease = () => {
                                 >
                                     📸 {t.useCamera}
                                 </button>
+
                             )}
 
                         <input
@@ -1005,9 +1613,7 @@ const PlantDisease = () => {
                             hidden
                         />
 
-                        {/* =================================
-                            PREDICT BUTTON
-                        ================================= */}
+                        {/* PREDICT BUTTON */}
 
                         <button
                             type="button"
@@ -1021,32 +1627,37 @@ const PlantDisease = () => {
                                 handlePrediction
                             }
                         >
+
                             {loading ? (
+
                                 <>
                                     <span className="spinner"></span>
                                     {t.detecting}
                                 </>
+
                             ) : (
+
                                 <>
                                     🔍 {t.predict}
                                 </>
+
                             )}
+
                         </button>
 
-                        {/* =================================
-                            ERROR
-                        ================================= */}
+                        {/* ERROR */}
 
                         {error && (
+
                             <div className="disease-error">
                                 ⚠️ {error}
                             </div>
+
                         )}
+
                     </section>
 
-                    {/* =====================================
-                        RESULT CARD
-                    ===================================== */}
+                    {/* RESULT CARD */}
 
                     <section className="disease-card result-card">
 
@@ -1123,7 +1734,7 @@ const PlantDisease = () => {
                                         </span>
 
                                         <strong>
-                                            {result.crop}
+                                            {getCropName()}
                                         </strong>
 
                                     </div>
@@ -1200,7 +1811,7 @@ const PlantDisease = () => {
                                         </h3>
 
                                         <p>
-                                            {result.treatment}
+                                            {getTreatment()}
                                         </p>
 
                                     </div>
@@ -1222,7 +1833,7 @@ const PlantDisease = () => {
                                         </h3>
 
                                         <p>
-                                            {result.prevention}
+                                            {getPrevention()}
                                         </p>
 
                                     </div>
@@ -1248,11 +1859,10 @@ const PlantDisease = () => {
                         )}
 
                     </section>
+
                 </div>
 
-                {/* =========================================
-                    MODEL INFORMATION
-                ========================================= */}
+                {/* MODEL INFORMATION */}
 
                 <section className="disease-card model-card">
 
@@ -1338,9 +1948,9 @@ const PlantDisease = () => {
                 </section>
 
             </main>
+
         </div>
     );
 };
 
 export default PlantDisease;
-
