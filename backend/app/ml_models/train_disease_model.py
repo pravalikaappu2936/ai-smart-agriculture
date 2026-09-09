@@ -61,7 +61,7 @@ BATCH_SIZE = 32
 
 # Maximum images used from each disease class.
 # This keeps training practical on CPU.
-MAX_IMAGES_PER_CLASS = 300
+MAX_IMAGES_PER_CLASS = 150
 
 EPOCHS = 5
 
