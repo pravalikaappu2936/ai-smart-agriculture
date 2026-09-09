@@ -15,4 +15,6 @@ openai
 shap
 groq
 edge-tts
-python-dotenv
+torch
+torchvision
+pillow
