@@ -35,6 +35,7 @@ from app.api.assistant import router as assistant_router
 from app.api.tts import router as tts_router
 from app.api.yield_prediction import router as yield_router
 from app.api.market import router as market_router
+from app.api.disease import router as disease_router
 
 
 # =========================================================
@@ -116,6 +117,8 @@ app.include_router(tts_router)
 app.include_router(yield_router)
 
 app.include_router(market_router)
+
+app.include_router(disease_router)
 
 # =========================================================
 # ROOT

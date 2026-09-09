@@ -51,3 +51,9 @@ Thumbs.db
 # ==============================
 
 .vercel/
+
+# ==============================
+# PLANT DISEASE DATASET
+# ==============================
+
+backend/dataset/PlantVillage/

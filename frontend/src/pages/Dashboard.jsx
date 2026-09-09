@@ -360,6 +360,10 @@ function Dashboard() {
 
     const modules = [
 
+        // ========================================
+        // CROP RECOMMENDATION
+        // ========================================
+
         {
             title: isKannada
                 ? "ಬೆಳೆ ಶಿಫಾರಸು"
@@ -374,6 +378,10 @@ function Dashboard() {
             path: "/crop",
         },
 
+
+        // ========================================
+        // SOIL ANALYSIS
+        // ========================================
 
         {
             title: isKannada
@@ -390,6 +398,10 @@ function Dashboard() {
         },
 
 
+        // ========================================
+        // FERTILIZER RECOMMENDATION
+        // ========================================
+
         {
             title: isKannada
                 ? "ರಸಗೊಬ್ಬರ ಶಿಫಾರಸು"
@@ -404,6 +416,10 @@ function Dashboard() {
             path: "/fertilizer",
         },
 
+
+        // ========================================
+        // IRRIGATION
+        // ========================================
 
         {
             title: isKannada
@@ -421,7 +437,7 @@ function Dashboard() {
 
 
         // ========================================
-        // NEW CROP YIELD MODULE
+        // CROP YIELD PREDICTION
         // ========================================
 
         {
@@ -439,6 +455,10 @@ function Dashboard() {
         },
 
 
+        // ========================================
+        // MARKET PRICE ANALYSIS
+        // ========================================
+
         {
             title: isKannada
                 ? "ಮಾರುಕಟ್ಟೆ ಬೆಲೆ ವಿಶ್ಲೇಷಣೆ"
@@ -454,6 +474,29 @@ function Dashboard() {
         },
 
 
+        // ========================================
+        // PLANT DISEASE DETECTION
+        // ========================================
+
+        {
+            title: isKannada
+                ? "ಸಸ್ಯ ರೋಗ ಪತ್ತೆ"
+                : "Plant Disease Detection",
+
+            icon: "🔬",
+
+            description: isKannada
+                ? "ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಮತ್ತು ಸಸ್ಯದ ರೋಗವನ್ನು ಪತ್ತೆಹಚ್ಚಿ."
+                : "Upload a plant leaf image to detect plant diseases using AI.",
+
+            path: "/disease",
+        },
+
+
+        // ========================================
+        // WEATHER
+        // ========================================
+
         {
             title: isKannada
                 ? "ಹವಾಮಾನ"
@@ -468,6 +511,10 @@ function Dashboard() {
             path: "/weather",
         },
 
+
+        // ========================================
+        // AI AGRICULTURE ASSISTANT
+        // ========================================
 
         {
             title: isKannada

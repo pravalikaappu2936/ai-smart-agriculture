@@ -19,6 +19,7 @@ import Profile from "./pages/Profile";
 import Assistant from "./pages/Assistant";
 import YieldPrediction from "./pages/YieldPrediction";
 import MarketPrice from "./pages/MarketPrice";
+import PlantDisease from "./pages/PlantDisease";
 
 import "./App.css";
 
@@ -108,6 +109,16 @@ function App() {
                 <Route
                     path="/market"
                     element={<MarketPrice />}
+                />
+
+
+                {/* =================================================
+                    PLANT DISEASE DETECTION
+                ================================================= */}
+
+                <Route
+                    path="/disease"
+                    element={<PlantDisease />}
                 />
 
 

@@ -949,6 +949,150 @@ export const getMarketPrices = async ({
 
 
 // =========================================================
+// PLANT DISEASE DETECTION
+// =========================================================
+//
+// Backend endpoint:
+//
+// POST /disease/predict
+//
+// Request:
+//
+// multipart/form-data
+//
+// Field:
+//
+// file
+//
+// Maximum image size:
+//
+// 5 MB
+//
+// =========================================================
+
+export const predictPlantDisease = async (
+    imageFile
+) => {
+
+    // -----------------------------------------------------
+    // Validate image
+    // -----------------------------------------------------
+
+    if (!imageFile) {
+
+        throw new Error(
+            "Plant image is required."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate file type
+    // -----------------------------------------------------
+
+    if (
+        !imageFile.type ||
+        !imageFile.type.startsWith("image/")
+    ) {
+
+        throw new Error(
+            "Please select a valid image file."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Validate file size
+    // -----------------------------------------------------
+
+    const MAX_IMAGE_SIZE =
+        5 * 1024 * 1024;
+
+    if (
+        imageFile.size >
+        MAX_IMAGE_SIZE
+    ) {
+
+        throw new Error(
+            "Image size must be less than 5 MB."
+        );
+
+    }
+
+
+    // -----------------------------------------------------
+    // Prepare multipart form data
+    // -----------------------------------------------------
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "file",
+        imageFile
+    );
+
+
+    // -----------------------------------------------------
+    // Console debugging
+    // -----------------------------------------------------
+
+    console.log(
+        "Plant Disease API request:",
+        {
+            fileName:
+                imageFile.name,
+
+            fileType:
+                imageFile.type,
+
+            fileSize:
+                imageFile.size,
+        }
+    );
+
+
+    // -----------------------------------------------------
+    // API REQUEST
+    // -----------------------------------------------------
+
+    const response =
+        await API.post(
+
+            "/disease/predict",
+
+            formData,
+
+            {
+                headers: {
+                    "Content-Type":
+                        "multipart/form-data",
+                },
+
+                timeout: 60000,
+            }
+
+        );
+
+
+    // -----------------------------------------------------
+    // Console response
+    // -----------------------------------------------------
+
+    console.log(
+        "Plant Disease API response:",
+        response.data
+    );
+
+
+    return response.data;
+
+};
+
+
+// =========================================================
 // WEATHER - CURRENT
 // =========================================================
 
