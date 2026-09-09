@@ -1,8 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { predictPlantDisease } from "../services/api";
 import "./PlantDisease.css";
-
 
 // =========================================================
 // PLANT DISEASE DETECTION
@@ -12,17 +11,29 @@ const TEXT = {
     en: {
         title: "Plant Disease Detection",
         subtitle:
-            "Upload a plant leaf image to identify possible diseases and get treatment guidance.",
+            "Upload a plant leaf image or use your camera to identify possible diseases and get treatment guidance.",
 
         backDashboard: "← Back to Dashboard",
 
         uploadTitle: "Upload Plant Leaf Image",
         uploadDescription:
-            "Choose a clear image of a plant leaf for disease detection.",
+            "Choose a clear image of a plant leaf or capture one using your camera.",
 
         chooseImage: "Choose Image",
         changeImage: "Change Image",
         removeImage: "Remove Image",
+
+        useCamera: "Use Camera",
+        closeCamera: "Close Camera",
+        capturePhoto: "Capture Photo",
+        retakePhoto: "Retake Photo",
+        usePhoto: "Use Photo",
+
+        cameraStarting: "Starting camera...",
+        cameraPermission:
+            "Please allow camera permission in your browser.",
+        cameraNotSupported:
+            "Camera is not supported by this browser or device.",
 
         supported:
             "Supported formats: JPG, JPEG, PNG • Maximum size: 5 MB",
@@ -45,35 +56,45 @@ const TEXT = {
         classes: "Disease Classes",
 
         uploadFirst:
-            "Please upload a plant leaf image first.",
+            "Please upload or capture a plant leaf image first.",
 
         error:
             "Unable to analyze the image. Please try again.",
 
-        healthy:
-            "Healthy",
+        healthy: "Healthy",
 
-        diseaseDetected:
-            "Disease Detected",
+        diseaseDetected: "Disease Detected",
 
         noResult:
-            "Upload an image and click Detect Disease to see the result.",
+            "Upload or capture an image and click Detect Disease to see the result.",
     },
 
     kn: {
         title: "ಸಸ್ಯ ರೋಗ ಪತ್ತೆ",
         subtitle:
-            "ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ರೋಗವನ್ನು ಗುರುತಿಸಿ ಮತ್ತು ಚಿಕಿತ್ಸೆಯ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಿರಿ.",
+            "ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಕ್ಯಾಮೆರಾ ಬಳಸಿ ಚಿತ್ರ ತೆಗೆದು ರೋಗವನ್ನು ಗುರುತಿಸಿ ಮತ್ತು ಚಿಕಿತ್ಸೆಯ ಮಾಹಿತಿಯನ್ನು ಪಡೆಯಿರಿ.",
 
         backDashboard: "← ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ",
 
         uploadTitle: "ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
         uploadDescription:
-            "ರೋಗ ಪತ್ತೆಗಾಗಿ ಸ್ಪಷ್ಟವಾದ ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+            "ಸ್ಪಷ್ಟವಾದ ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಕ್ಯಾಮೆರಾ ಬಳಸಿ ಚಿತ್ರ ತೆಗೆಯಿರಿ.",
 
         chooseImage: "ಚಿತ್ರ ಆಯ್ಕೆಮಾಡಿ",
         changeImage: "ಚಿತ್ರ ಬದಲಾಯಿಸಿ",
         removeImage: "ಚಿತ್ರ ತೆಗೆದುಹಾಕಿ",
+
+        useCamera: "ಕ್ಯಾಮೆರಾ ಬಳಸಿ",
+        closeCamera: "ಕ್ಯಾಮೆರಾ ಮುಚ್ಚಿ",
+        capturePhoto: "ಚಿತ್ರ ತೆಗೆಯಿರಿ",
+        retakePhoto: "ಮತ್ತೆ ಚಿತ್ರ ತೆಗೆಯಿರಿ",
+        usePhoto: "ಚಿತ್ರ ಬಳಸಿ",
+
+        cameraStarting: "ಕ್ಯಾಮೆರಾ ಪ್ರಾರಂಭಿಸಲಾಗುತ್ತಿದೆ...",
+        cameraPermission:
+            "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಅನುಮತಿಯನ್ನು ನೀಡಿ.",
+        cameraNotSupported:
+            "ಈ ಬ್ರೌಸರ್ ಅಥವಾ ಸಾಧನದಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಬೆಂಬಲಿತವಾಗಿಲ್ಲ.",
 
         supported:
             "ಬೆಂಬಲಿತ ಫಾರ್ಮ್ಯಾಟ್‌ಗಳು: JPG, JPEG, PNG • ಗರಿಷ್ಠ ಗಾತ್ರ: 5 MB",
@@ -96,22 +117,19 @@ const TEXT = {
         classes: "ರೋಗ ವರ್ಗಗಳು",
 
         uploadFirst:
-            "ಮೊದಲು ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
+            "ಮೊದಲು ಸಸ್ಯದ ಎಲೆಯ ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಕ್ಯಾಮೆರಾದಿಂದ ಚಿತ್ರ ತೆಗೆಯಿರಿ.",
 
         error:
             "ಚಿತ್ರವನ್ನು ವಿಶ್ಲೇಷಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
 
-        healthy:
-            "ಆರೋಗ್ಯಕರ",
+        healthy: "ಆರೋಗ್ಯಕರ",
 
-        diseaseDetected:
-            "ರೋಗ ಪತ್ತೆಯಾಗಿದೆ",
+        diseaseDetected: "ರೋಗ ಪತ್ತೆಯಾಗಿದೆ",
 
         noResult:
-            "ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಮತ್ತು ಫಲಿತಾಂಶವನ್ನು ನೋಡಲು ರೋಗ ಪತ್ತೆ ಬಟನ್ ಒತ್ತಿರಿ.",
+            "ಚಿತ್ರವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಕ್ಯಾಮೆರಾದಿಂದ ಚಿತ್ರ ತೆಗೆದು ಫಲಿತಾಂಶವನ್ನು ನೋಡಲು ರೋಗ ಪತ್ತೆ ಬಟನ್ ಒತ್ತಿರಿ.",
     },
 };
-
 
 // =========================================================
 // DISEASE NAME TRANSLATION
@@ -139,6 +157,7 @@ const KANNADA_DISEASE_NAMES = {
     "Healthy Corn": "ಆರೋಗ್ಯಕರ ಜೋಳ",
 
     "Grape Black Rot": "ದ್ರಾಕ್ಷಿಯ ಬ್ಲ್ಯಾಕ್ ರಾಟ್",
+
     "Grape Esca Black Measles":
         "ದ್ರಾಕ್ಷಿಯ ಎಸ್ಕಾ",
 
@@ -156,15 +175,23 @@ const KANNADA_DISEASE_NAMES = {
     "Bell Pepper Bacterial Spot":
         "ಬೆಲ್ ಪೆಪ್ಪರ್ ಬ್ಯಾಕ್ಟೀರಿಯಲ್ ಸ್ಪಾಟ್",
 
-    "Healthy Bell Pepper": "ಆರೋಗ್ಯಕರ ಬೆಲ್ ಪೆಪ್ಪರ್",
+    "Healthy Bell Pepper":
+        "ಆರೋಗ್ಯಕರ ಬೆಲ್ ಪೆಪ್ಪರ್",
 
-    "Potato Early Blight": "ಆಲೂಗಡ್ಡೆಯ ಆರಂಭಿಕ ಬ್ಲೈಟ್",
-    "Potato Late Blight": "ಆಲೂಗಡ್ಡೆಯ ತಡವಾದ ಬ್ಲೈಟ್",
-    "Healthy Potato": "ಆರೋಗ್ಯಕರ ಆಲೂಗಡ್ಡೆ",
+    "Potato Early Blight":
+        "ಆಲೂಗಡ್ಡೆಯ ಆರಂಭಿಕ ಬ್ಲೈಟ್",
 
-    "Healthy Raspberry": "ಆರೋಗ್ಯಕರ ರಾಸ್ಪ್ಬೆರಿ",
+    "Potato Late Blight":
+        "ಆಲೂಗಡ್ಡೆಯ ತಡವಾದ ಬ್ಲೈಟ್",
 
-    "Healthy Soybean": "ಆರೋಗ್ಯಕರ ಸೋಯಾಬೀನ್",
+    "Healthy Potato":
+        "ಆರೋಗ್ಯಕರ ಆಲೂಗಡ್ಡೆ",
+
+    "Healthy Raspberry":
+        "ಆರೋಗ್ಯಕರ ರಾಸ್ಪ್ಬೆರಿ",
+
+    "Healthy Soybean":
+        "ಆರೋಗ್ಯಕರ ಸೋಯಾಬೀನ್",
 
     "Squash Powdery Mildew":
         "ಸ್ಕ್ವಾಷ್ ಪೌಡರಿ ಮಿಲ್ಡ್ಯೂ",
@@ -172,7 +199,8 @@ const KANNADA_DISEASE_NAMES = {
     "Strawberry Leaf Scorch":
         "ಸ್ಟ್ರಾಬೆರಿ ಲೀಫ್ ಸ್ಕಾರ್ಚ",
 
-    "Healthy Strawberry": "ಆರೋಗ್ಯಕರ ಸ್ಟ್ರಾಬೆರಿ",
+    "Healthy Strawberry":
+        "ಆರೋಗ್ಯಕರ ಸ್ಟ್ರಾಬೆರಿ",
 
     "Tomato Bacterial Spot":
         "ಟೊಮೆಟೊ ಬ್ಯಾಕ್ಟೀರಿಯಲ್ ಸ್ಪಾಟ್",
@@ -205,7 +233,6 @@ const KANNADA_DISEASE_NAMES = {
         "ಆರೋಗ್ಯಕರ ಟೊಮೆಟೊ",
 };
 
-
 // =========================================================
 // FORMAT DISEASE NAME
 // =========================================================
@@ -221,43 +248,290 @@ const formatDiseaseName = (name) => {
         .trim();
 };
 
-
 // =========================================================
 // COMPONENT
 // =========================================================
 
 const PlantDisease = () => {
-
     const [language, setLanguage] = useState("en");
 
-    const [selectedImage, setSelectedImage] =
-        useState(null);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState("");
 
-    const [previewUrl, setPreviewUrl] =
-        useState("");
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const [result, setResult] =
-        useState(null);
+    // Camera state
+    const [cameraOpen, setCameraOpen] = useState(false);
+    const [cameraLoading, setCameraLoading] = useState(false);
+    const [capturedPhoto, setCapturedPhoto] = useState(null);
 
-    const [loading, setLoading] =
-        useState(false);
-
-    const [error, setError] =
-        useState("");
-
-    const fileInputRef =
-        useRef(null);
-
+    const fileInputRef = useRef(null);
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const streamRef = useRef(null);
 
     const t = TEXT[language];
 
+    // =====================================================
+    // STOP CAMERA
+    // =====================================================
+
+    const stopCamera = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => {
+                track.stop();
+            });
+
+            streamRef.current = null;
+        }
+
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+
+        setCameraLoading(false);
+    };
+
+    // =====================================================
+    // CLEAN CAMERA WHEN PAGE CLOSES
+    // =====================================================
+
+    useEffect(() => {
+        return () => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach((track) => {
+                    track.stop();
+                });
+            }
+
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
+    // =====================================================
+    // OPEN CAMERA
+    // =====================================================
+
+    const handleOpenCamera = async () => {
+        setError("");
+        setResult(null);
+        setCapturedPhoto(null);
+        setCameraOpen(true);
+        setCameraLoading(true);
+
+        try {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                throw new Error(t.cameraNotSupported);
+            }
+
+            const stream =
+                await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: {
+                            ideal: "environment",
+                        },
+                        width: {
+                            ideal: 1280,
+                        },
+                        height: {
+                            ideal: 720,
+                        },
+                    },
+                    audio: false,
+                });
+
+            streamRef.current = stream;
+
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+
+                await videoRef.current.play();
+            }
+        } catch (cameraError) {
+            console.error(
+                "Camera Error:",
+                cameraError
+            );
+
+            stopCamera();
+            setCameraOpen(false);
+
+            if (
+                cameraError?.name ===
+                "NotAllowedError"
+            ) {
+                setError(t.cameraPermission);
+            } else {
+                setError(
+                    cameraError?.message ||
+                    t.cameraNotSupported
+                );
+            }
+        } finally {
+            setCameraLoading(false);
+        }
+    };
+
+    // =====================================================
+    // CLOSE CAMERA
+    // =====================================================
+
+    const handleCloseCamera = () => {
+        stopCamera();
+        setCameraOpen(false);
+        setCapturedPhoto(null);
+    };
+
+    // =====================================================
+    // CAPTURE PHOTO
+    // =====================================================
+
+    const handleCapturePhoto = () => {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+
+        if (!video || !canvas) {
+            return;
+        }
+
+        if (
+            !video.videoWidth ||
+            !video.videoHeight
+        ) {
+            setError(
+                "Camera is not ready. Please wait a moment and try again."
+            );
+            return;
+        }
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const context =
+            canvas.getContext("2d");
+
+        context.drawImage(
+            video,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        const dataUrl =
+            canvas.toDataURL(
+                "image/jpeg",
+                0.9
+            );
+
+        setCapturedPhoto(dataUrl);
+        setError("");
+
+        stopCamera();
+    };
+
+    // =====================================================
+    // CONVERT CAPTURED PHOTO TO FILE
+    // =====================================================
+
+    const dataUrlToFile = (
+        dataUrl,
+        filename
+    ) => {
+        const parts =
+            dataUrl.split(",");
+
+        const mime =
+            parts[0]
+                .match(
+                    /:(.*?);/
+                )?.[1] ||
+            "image/jpeg";
+
+        const binary =
+            atob(parts[1]);
+
+        const array =
+            new Uint8Array(
+                binary.length
+            );
+
+        for (
+            let i = 0;
+            i < binary.length;
+            i++
+        ) {
+            array[i] =
+                binary.charCodeAt(i);
+        }
+
+        return new File(
+            [array],
+            filename,
+            {
+                type: mime,
+            }
+        );
+    };
+
+    // =====================================================
+    // USE CAPTURED PHOTO
+    // =====================================================
+
+    const handleUseCapturedPhoto = () => {
+        if (!capturedPhoto) {
+            return;
+        }
+
+        const file =
+            dataUrlToFile(
+                capturedPhoto,
+                `plant-leaf-${Date.now()}.jpg`
+            );
+
+        if (file.size > 5 * 1024 * 1024) {
+            setError(
+                "Captured image is larger than 5 MB."
+            );
+            return;
+        }
+
+        if (previewUrl) {
+            URL.revokeObjectURL(
+                previewUrl
+            );
+        }
+
+        const url =
+            URL.createObjectURL(file);
+
+        setSelectedImage(file);
+        setPreviewUrl(url);
+        setResult(null);
+        setError("");
+        setCapturedPhoto(null);
+        setCameraOpen(false);
+    };
+
+    // =====================================================
+    // RETAKE PHOTO
+    // =====================================================
+
+    const handleRetakePhoto = async () => {
+        setCapturedPhoto(null);
+        setError("");
+        await handleOpenCamera();
+    };
 
     // =====================================================
     // IMAGE SELECTION
     // =====================================================
 
     const handleImageChange = (event) => {
-
         const file =
             event.target.files?.[0];
 
@@ -265,188 +539,134 @@ const PlantDisease = () => {
             return;
         }
 
-
         setError("");
         setResult(null);
 
-
-        // -------------------------------------------------
-        // Validate file type
-        // -------------------------------------------------
-
         if (!file.type.startsWith("image/")) {
-
             setError(
                 "Please select a valid image file."
             );
-
             return;
-
         }
-
-
-        // -------------------------------------------------
-        // Validate file size
-        // -------------------------------------------------
 
         const maxSize =
             5 * 1024 * 1024;
 
         if (file.size > maxSize) {
-
             setError(
                 "Image size must be less than 5 MB."
             );
-
             return;
-
         }
 
-
-        // -------------------------------------------------
-        // Create preview
-        // -------------------------------------------------
+        if (previewUrl) {
+            URL.revokeObjectURL(
+                previewUrl
+            );
+        }
 
         const url =
             URL.createObjectURL(file);
 
         setSelectedImage(file);
         setPreviewUrl(url);
-
     };
-
 
     // =====================================================
     // REMOVE IMAGE
     // =====================================================
 
     const handleRemoveImage = () => {
-
         if (previewUrl) {
-
             URL.revokeObjectURL(
                 previewUrl
             );
-
         }
+
+        stopCamera();
 
         setSelectedImage(null);
         setPreviewUrl("");
+        setCapturedPhoto(null);
         setResult(null);
         setError("");
-
+        setCameraOpen(false);
 
         if (fileInputRef.current) {
-
             fileInputRef.current.value = "";
-
         }
-
     };
-
 
     // =====================================================
     // PREDICT DISEASE
     // =====================================================
 
     const handlePrediction = async () => {
-
         if (!selectedImage) {
-
             setError(t.uploadFirst);
-
             return;
-
         }
-
 
         setLoading(true);
         setError("");
         setResult(null);
 
-
         try {
-
             const data =
                 await predictPlantDisease(
                     selectedImage
                 );
 
-
             if (!data?.success) {
-
                 throw new Error(
                     "Disease prediction failed."
                 );
-
             }
 
-
             setResult(data);
-
-        }
-
-        catch (predictionError) {
-
+        } catch (predictionError) {
             console.error(
                 "Plant Disease Prediction Error:",
                 predictionError
             );
 
-
             const backendMessage =
                 predictionError?.response?.data?.detail;
-
 
             setError(
                 backendMessage ||
                 predictionError?.message ||
                 t.error
             );
-
-        }
-
-        finally {
-
+        } finally {
             setLoading(false);
-
         }
-
     };
-
 
     // =====================================================
     // GET DISPLAY DISEASE NAME
     // =====================================================
 
     const getDiseaseName = () => {
-
         if (!result?.disease) {
             return "";
         }
-
 
         const formatted =
             formatDiseaseName(
                 result.disease
             );
 
-
         if (language === "kn") {
-
             return (
                 KANNADA_DISEASE_NAMES[
                     formatted
                 ] || formatted
             );
-
         }
 
-
         return formatted;
-
     };
-
 
     // =====================================================
     // HEALTH STATUS
@@ -459,13 +679,11 @@ const PlantDisease = () => {
             .toLowerCase()
             .includes("healthy");
 
-
     // =====================================================
     // RENDER
     // =====================================================
 
     return (
-
         <div
             className="plant-disease-page"
             lang={
@@ -474,27 +692,21 @@ const PlantDisease = () => {
                     : "en"
             }
         >
-
             {/* =========================================
                 HEADER
             ========================================= */}
 
             <header className="disease-header">
-
                 <div className="disease-header-left">
-
                     <Link
                         to="/dashboard"
                         className="disease-back-button"
                     >
                         {t.backDashboard}
                     </Link>
-
                 </div>
 
-
                 <div className="disease-language-buttons">
-
                     <button
                         type="button"
                         className={
@@ -522,26 +734,20 @@ const PlantDisease = () => {
                     >
                         ಕನ್ನಡ
                     </button>
-
                 </div>
-
             </header>
-
 
             {/* =========================================
                 MAIN
             ========================================= */}
 
             <main className="disease-main">
-
                 <section className="disease-hero">
-
                     <div className="disease-hero-icon">
                         🌿
                     </div>
 
                     <div>
-
                         <h1>
                             {t.title}
                         </h1>
@@ -549,28 +755,22 @@ const PlantDisease = () => {
                         <p>
                             {t.subtitle}
                         </p>
-
                     </div>
-
                 </section>
-
 
                 <div className="disease-grid">
 
                     {/* =====================================
-                        UPLOAD CARD
+                        UPLOAD / CAMERA CARD
                     ===================================== */}
 
                     <section className="disease-card upload-card">
-
                         <div className="card-title-row">
-
                             <div className="card-icon">
                                 📷
                             </div>
 
                             <div>
-
                                 <h2>
                                     {t.uploadTitle}
                                 </h2>
@@ -578,78 +778,222 @@ const PlantDisease = () => {
                                 <p>
                                     {t.uploadDescription}
                                 </p>
-
                             </div>
-
                         </div>
 
+                        {/* =================================
+                            CAMERA
+                        ================================= */}
+
+                        {cameraOpen && (
+                            <div className="camera-container">
+
+                                <div className="camera-header">
+                                    <strong>
+                                        📷 {t.useCamera}
+                                    </strong>
+
+                                    <button
+                                        type="button"
+                                        className="secondary-btn"
+                                        onClick={
+                                            handleCloseCamera
+                                        }
+                                    >
+                                        ✕ {t.closeCamera}
+                                    </button>
+                                </div>
+
+                                {cameraLoading ? (
+                                    <div className="camera-loading">
+                                        <span className="spinner"></span>
+                                        <p>
+                                            {t.cameraStarting}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {!capturedPhoto ? (
+                                            <div className="camera-preview-wrapper">
+                                                <video
+                                                    ref={videoRef}
+                                                    className="camera-video"
+                                                    autoPlay
+                                                    playsInline
+                                                    muted
+                                                />
+
+                                                <div className="camera-guide">
+                                                    <span>
+                                                        Position the leaf inside the frame
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="camera-preview-wrapper">
+                                                <img
+                                                    src={capturedPhoto}
+                                                    alt="Captured plant leaf"
+                                                    className="camera-captured-image"
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="camera-actions">
+
+                                            {!capturedPhoto ? (
+                                                <button
+                                                    type="button"
+                                                    className="capture-btn"
+                                                    onClick={
+                                                        handleCapturePhoto
+                                                    }
+                                                >
+                                                    📸 {t.capturePhoto}
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        className="secondary-btn"
+                                                        onClick={
+                                                            handleRetakePhoto
+                                                        }
+                                                    >
+                                                        🔄 {t.retakePhoto}
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        className="predict-btn"
+                                                        onClick={
+                                                            handleUseCapturedPhoto
+                                                        }
+                                                    >
+                                                        ✅ {t.usePhoto}
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        <canvas
+                                            ref={canvasRef}
+                                            hidden
+                                        />
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         {/* =================================
                             IMAGE PREVIEW
                         ================================= */}
 
-                        {previewUrl ? (
+                        {!cameraOpen &&
+                            previewUrl && (
+                                <div className="image-preview-container">
 
-                            <div className="image-preview-container">
+                                    <img
+                                        src={previewUrl}
+                                        alt="Selected plant leaf"
+                                        className="plant-preview-image"
+                                    />
 
-                                <img
-                                    src={previewUrl}
-                                    alt="Selected plant leaf"
-                                    className="plant-preview-image"
-                                />
+                                    <div className="image-actions">
 
-                                <div className="image-actions">
+                                        <button
+                                            type="button"
+                                            className="secondary-btn"
+                                            onClick={() =>
+                                                fileInputRef.current?.click()
+                                            }
+                                        >
+                                            🔄 {t.changeImage}
+                                        </button>
 
-                                    <button
-                                        type="button"
-                                        className="secondary-btn"
-                                        onClick={() =>
-                                            fileInputRef.current?.click()
-                                        }
-                                    >
-                                        🔄 {t.changeImage}
-                                    </button>
+                                        <button
+                                            type="button"
+                                            className="remove-btn"
+                                            onClick={
+                                                handleRemoveImage
+                                            }
+                                        >
+                                            🗑️ {t.removeImage}
+                                        </button>
 
-                                    <button
-                                        type="button"
-                                        className="remove-btn"
-                                        onClick={
-                                            handleRemoveImage
-                                        }
-                                    >
-                                        🗑️ {t.removeImage}
-                                    </button>
-
+                                    </div>
                                 </div>
+                            )}
 
-                            </div>
+                        {/* =================================
+                            UPLOAD / CAMERA OPTIONS
+                        ================================= */}
 
-                        ) : (
+                        {!cameraOpen &&
+                            !previewUrl && (
+                                <>
+                                    <div className="disease-input-options">
 
-                            <button
-                                type="button"
-                                className="upload-zone"
-                                onClick={() =>
-                                    fileInputRef.current?.click()
-                                }
-                            >
+                                        <button
+                                            type="button"
+                                            className="upload-zone"
+                                            onClick={() =>
+                                                fileInputRef.current?.click()
+                                            }
+                                        >
+                                            <div className="upload-icon">
+                                                🌱
+                                            </div>
 
-                                <div className="upload-icon">
-                                    🌱
-                                </div>
+                                            <strong>
+                                                {t.chooseImage}
+                                            </strong>
 
-                                <strong>
-                                    {t.chooseImage}
-                                </strong>
+                                            <span>
+                                                {t.supported}
+                                            </span>
+                                        </button>
 
-                                <span>
-                                    {t.supported}
-                                </span>
+                                        <button
+                                            type="button"
+                                            className="camera-zone"
+                                            onClick={
+                                                handleOpenCamera
+                                            }
+                                        >
+                                            <div className="upload-icon">
+                                                📸
+                                            </div>
 
-                            </button>
+                                            <strong>
+                                                {t.useCamera}
+                                            </strong>
 
-                        )}
+                                            <span>
+                                                Take a photo directly using your camera
+                                            </span>
+                                        </button>
 
+                                    </div>
+                                </>
+                            )}
+
+                        {/* =================================
+                            CHANGE IMAGE / CAMERA
+                        ================================= */}
+
+                        {!cameraOpen &&
+                            previewUrl && (
+                                <button
+                                    type="button"
+                                    className="camera-secondary-btn"
+                                    onClick={
+                                        handleOpenCamera
+                                    }
+                                >
+                                    📸 {t.useCamera}
+                                </button>
+                            )}
 
                         <input
                             ref={fileInputRef}
@@ -661,7 +1005,6 @@ const PlantDisease = () => {
                             hidden
                         />
 
-
                         {/* =================================
                             PREDICT BUTTON
                         ================================= */}
@@ -671,47 +1014,35 @@ const PlantDisease = () => {
                             className="predict-btn"
                             disabled={
                                 !selectedImage ||
-                                loading
+                                loading ||
+                                cameraOpen
                             }
                             onClick={
                                 handlePrediction
                             }
                         >
-
                             {loading ? (
-
                                 <>
                                     <span className="spinner"></span>
                                     {t.detecting}
                                 </>
-
                             ) : (
-
                                 <>
                                     🔍 {t.predict}
                                 </>
-
                             )}
-
                         </button>
-
 
                         {/* =================================
                             ERROR
                         ================================= */}
 
                         {error && (
-
                             <div className="disease-error">
-
                                 ⚠️ {error}
-
                             </div>
-
                         )}
-
                     </section>
-
 
                     {/* =====================================
                         RESULT CARD
@@ -745,14 +1076,11 @@ const PlantDisease = () => {
 
                         </div>
 
-
                         {result ? (
 
                             <div className="result-content">
 
-                                {/* =================================
-                                    MAIN RESULT
-                                ================================= */}
+                                {/* MAIN RESULT */}
 
                                 <div
                                     className={
@@ -784,10 +1112,7 @@ const PlantDisease = () => {
 
                                 </div>
 
-
-                                {/* =================================
-                                    BASIC INFORMATION
-                                ================================= */}
+                                {/* BASIC INFORMATION */}
 
                                 <div className="result-info-grid">
 
@@ -802,7 +1127,6 @@ const PlantDisease = () => {
                                         </strong>
 
                                     </div>
-
 
                                     <div className="info-box">
 
@@ -821,10 +1145,7 @@ const PlantDisease = () => {
 
                                 </div>
 
-
-                                {/* =================================
-                                    CONFIDENCE BAR
-                                ================================= */}
+                                {/* CONFIDENCE BAR */}
 
                                 <div className="confidence-section">
 
@@ -864,10 +1185,7 @@ const PlantDisease = () => {
 
                                 </div>
 
-
-                                {/* =================================
-                                    TREATMENT
-                                ================================= */}
+                                {/* TREATMENT */}
 
                                 <div className="guidance-box treatment-box">
 
@@ -889,10 +1207,7 @@ const PlantDisease = () => {
 
                                 </div>
 
-
-                                {/* =================================
-                                    PREVENTION
-                                ================================= */}
+                                {/* PREVENTION */}
 
                                 <div className="guidance-box prevention-box">
 
@@ -933,9 +1248,7 @@ const PlantDisease = () => {
                         )}
 
                     </section>
-
                 </div>
-
 
                 {/* =========================================
                     MODEL INFORMATION
@@ -963,7 +1276,6 @@ const PlantDisease = () => {
 
                     </div>
 
-
                     <div className="model-info-grid">
 
                         <div className="model-info-box">
@@ -979,7 +1291,6 @@ const PlantDisease = () => {
 
                         </div>
 
-
                         <div className="model-info-box">
 
                             <span>
@@ -991,11 +1302,10 @@ const PlantDisease = () => {
                                     ? `${Number(
                                         result.model_accuracy
                                     ).toFixed(2)}%`
-                                    : "93.77%"}
+                                    : "92.37%"}
                             </strong>
 
                         </div>
-
 
                         <div className="model-info-box">
 
@@ -1005,11 +1315,10 @@ const PlantDisease = () => {
 
                             <strong>
                                 {result?.dataset_images_used ||
-                                    "11,400"}
+                                    "5,700"}
                             </strong>
 
                         </div>
-
 
                         <div className="model-info-box">
 
@@ -1029,12 +1338,9 @@ const PlantDisease = () => {
                 </section>
 
             </main>
-
         </div>
-
     );
-
 };
 
-
 export default PlantDisease;
+
