@@ -16,3 +16,4 @@ shap
 groq
 edge-tts
 pillow
+onnxruntime

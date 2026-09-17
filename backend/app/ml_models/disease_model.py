@@ -2,15 +2,13 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-import torch
-import torch.nn as nn
+import numpy as np
 from PIL import Image
-from torchvision import models, transforms
 
 
 # ============================================================
 # PLANT DISEASE PREDICTION
-# MobileNetV3-Small
+# MobileNetV3-Small + ONNX Runtime
 # Real-World Prediction Improvements
 # ============================================================
 
@@ -21,7 +19,6 @@ from torchvision import models, transforms
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-
 MODEL_DIR = (
     BASE_DIR
     / "app"
@@ -29,12 +26,11 @@ MODEL_DIR = (
     / "saved_models"
 )
 
-
+# Production model is now ONNX.
 MODEL_PATH = (
     MODEL_DIR
-    / "plant_disease_model.pth"
+    / "plant_disease_model.onnx"
 )
-
 
 METADATA_PATH = (
     MODEL_DIR
@@ -48,7 +44,8 @@ METADATA_PATH = (
 
 IMAGE_SIZE = 224
 
-DEVICE = torch.device("cpu")
+# CPU inference.
+DEVICE = "cpu"
 
 
 # ============================================================
@@ -59,6 +56,7 @@ DEVICE = torch.device("cpu")
 #
 # This is NOT a guarantee that the prediction is correct.
 # It is simply a safety threshold for uncertain images.
+
 MIN_CONFIDENCE = 55.0
 
 
@@ -67,38 +65,8 @@ MIN_CONFIDENCE = 55.0
 #
 # If two crops are very close, we treat the prediction
 # as uncertain.
+
 CROP_MARGIN = 15.0
-
-
-# ============================================================
-# IMAGE TRANSFORM
-# ============================================================
-
-IMAGE_TRANSFORM = transforms.Compose([
-
-    transforms.Resize(
-        (IMAGE_SIZE, IMAGE_SIZE)
-    ),
-
-    transforms.ToTensor(),
-
-    transforms.Normalize(
-
-        mean=[
-            0.485,
-            0.456,
-            0.406
-        ],
-
-        std=[
-            0.229,
-            0.224,
-            0.225
-        ]
-
-    )
-
-])
 
 
 # ============================================================
@@ -111,117 +79,59 @@ def load_metadata():
     if not METADATA_PATH.exists():
 
         raise FileNotFoundError(
-
             f"Disease metadata not found:\n"
             f"{METADATA_PATH}"
-
         )
 
-
     with open(
-
         METADATA_PATH,
-
         "r",
-
         encoding="utf-8"
-
     ) as file:
 
         metadata = json.load(file)
-
 
     return metadata
 
 
 # ============================================================
-# CREATE MODEL
-# ============================================================
-
-def create_model(
-    num_classes
-):
-
-    model = (
-        models.mobilenet_v3_small(
-            weights=None
-        )
-    )
-
-
-    input_features = (
-        model.classifier[-1]
-        .in_features
-    )
-
-
-    model.classifier[-1] = (
-        nn.Linear(
-            input_features,
-            num_classes
-        )
-    )
-
-
-    return model
-
-
-# ============================================================
-# LOAD MODEL LAZILY
+# LOAD ONNX MODEL LAZILY
 # ============================================================
 
 @lru_cache(maxsize=1)
 def load_disease_model():
 
+    # IMPORTANT:
+    # ONNX Runtime is imported only when disease prediction
+    # actually requires the model.
+    #
+    # This keeps disease inference dependencies out of
+    # FastAPI startup memory as much as possible.
+
+    import onnxruntime as ort
+
     if not MODEL_PATH.exists():
 
         raise FileNotFoundError(
-
-            f"Disease model not found:\n"
+            f"Disease ONNX model not found:\n"
             f"{MODEL_PATH}"
-
         )
 
-
     metadata = load_metadata()
-
 
     class_names = (
         metadata["classes"]
     )
 
-
-    model = create_model(
-        len(class_names)
+    session = ort.InferenceSession(
+        str(MODEL_PATH),
+        providers=[
+            "CPUExecutionProvider"
+        ]
     )
-
-
-    checkpoint = torch.load(
-
-        MODEL_PATH,
-
-        map_location=DEVICE,
-
-        weights_only=True
-
-    )
-
-
-    model.load_state_dict(
-        checkpoint
-    )
-
-
-    model.to(
-        DEVICE
-    )
-
-
-    model.eval()
-
 
     return (
-        model,
+        session,
         class_names
     )
 
@@ -238,14 +148,12 @@ def get_crop_from_class(
 
         return "Unknown"
 
-
     crop = (
         class_name.split(
             "___",
             1
         )[0]
     )
-
 
     crop = (
         crop
@@ -255,22 +163,19 @@ def get_crop_from_class(
         .replace(",", "")
     )
 
-
     # Normalize PlantVillage crop names.
+
     if crop.lower() == "corn maize":
 
         return "Corn"
-
 
     if crop.lower() == "pepper bell":
 
         return "Bell Pepper"
 
-
     if crop.lower() == "cherry including sour":
 
         return "Cherry"
-
 
     return crop
 
@@ -288,34 +193,28 @@ def format_disease_name(
         1
     )
 
-
     if len(parts) != 2:
 
         return class_name
 
-
     crop = parts[0]
 
     disease = parts[1]
-
 
     crop = (
         crop
         .replace("_", " ")
     )
 
-
     disease = (
         disease
         .replace("_", " ")
     )
 
-
     disease = (
         disease
         .replace("  ", " ")
     )
-
 
     return (
         crop,
@@ -609,7 +508,6 @@ def calculate_crop_probabilities(
 
     crop_probabilities = {}
 
-
     for index, class_name in enumerate(
         class_names
     ):
@@ -618,13 +516,10 @@ def calculate_crop_probabilities(
             class_name
         )
 
-
         probability = (
-            probabilities[index]
-            .item()
+            float(probabilities[index])
             * 100
         )
-
 
         crop_probabilities[crop] = (
             crop_probabilities.get(
@@ -633,7 +528,6 @@ def calculate_crop_probabilities(
             )
             + probability
         )
-
 
     return crop_probabilities
 
@@ -655,6 +549,128 @@ def get_top_crops(
 
 
 # ============================================================
+# SOFTMAX
+# ============================================================
+
+def softmax(logits):
+
+    logits = np.asarray(
+        logits,
+        dtype=np.float32
+    )
+
+    logits = (
+        logits
+        - np.max(
+            logits,
+            axis=1,
+            keepdims=True
+        )
+    )
+
+    probabilities = np.exp(
+        logits
+    )
+
+    probabilities = (
+        probabilities
+        / np.sum(
+            probabilities,
+            axis=1,
+            keepdims=True
+        )
+    )
+
+    return probabilities
+
+
+# ============================================================
+# IMAGE PREPROCESSING
+# ============================================================
+
+def prepare_image(
+    image
+):
+
+    if not isinstance(
+        image,
+        Image.Image
+    ):
+
+        image = Image.open(
+            image
+        )
+
+    image = image.convert(
+        "RGB"
+    )
+
+    # Same 224x224 input size used by
+    # the original MobileNetV3-Small model.
+
+    image = image.resize(
+        (
+            IMAGE_SIZE,
+            IMAGE_SIZE
+        )
+    )
+
+    # PIL image -> NumPy
+    image_array = np.asarray(
+        image,
+        dtype=np.float32
+    )
+
+    # Scale RGB values from [0,255] to [0,1].
+    image_array = (
+        image_array / 255.0
+    )
+
+    # ImageNet normalization.
+    mean = np.array(
+        [
+            0.485,
+            0.456,
+            0.406
+        ],
+        dtype=np.float32
+    )
+
+    std = np.array(
+        [
+            0.229,
+            0.224,
+            0.225
+        ],
+        dtype=np.float32
+    )
+
+    image_array = (
+        image_array - mean
+    ) / std
+
+    # HWC -> CHW
+    image_array = np.transpose(
+        image_array,
+        (
+            2,
+            0,
+            1
+        )
+    )
+
+    # Add batch dimension.
+    image_array = np.expand_dims(
+        image_array,
+        axis=0
+    )
+
+    return image_array.astype(
+        np.float32
+    )
+
+
+# ============================================================
 # PREDICTION
 # ============================================================
 
@@ -666,7 +682,7 @@ def predict_disease(
     # LOAD MODEL
     # ========================================================
 
-    model, class_names = (
+    session, class_names = (
         load_disease_model()
     )
 
@@ -675,37 +691,19 @@ def predict_disease(
     # PREPARE IMAGE
     # ========================================================
 
-    if not isinstance(
-        image,
-        Image.Image
-    ):
-
-        image = Image.open(
-            image
-        )
-
-
-    image = image.convert(
-        "RGB"
-    )
-
-
-    # ========================================================
-    # TRANSFORM IMAGE
-    # ========================================================
-
-    tensor = IMAGE_TRANSFORM(
+    input_tensor = prepare_image(
         image
     )
 
 
-    tensor = tensor.unsqueeze(
-        0
-    )
+    # ========================================================
+    # GET ONNX INPUT NAME
+    # ========================================================
 
-
-    tensor = tensor.to(
-        DEVICE
+    input_name = (
+        session
+        .get_inputs()[0]
+        .name
     )
 
 
@@ -713,17 +711,24 @@ def predict_disease(
     # MODEL PREDICTION
     # ========================================================
 
-    with torch.no_grad():
+    outputs = session.run(
+        None,
+        {
+            input_name:
+                input_tensor
+        }
+    )
 
-        outputs = model(
-            tensor
-        )
+    logits = outputs[0]
 
 
-        probabilities = torch.softmax(
-            outputs,
-            dim=1
-        )[0]
+    # ========================================================
+    # SOFTMAX
+    # ========================================================
+
+    probabilities = softmax(
+        logits
+    )[0]
 
 
     # ========================================================
@@ -735,12 +740,14 @@ def predict_disease(
         len(class_names)
     )
 
+    top_indices = np.argsort(
+        probabilities
+    )[::-1][:top_count]
 
-    top_probabilities, top_indices = (
-        torch.topk(
-            probabilities,
-            k=top_count
-        )
+    top_probabilities = (
+        probabilities[
+            top_indices
+        ]
     )
 
 
@@ -748,18 +755,16 @@ def predict_disease(
     # BEST PREDICTION
     # ========================================================
 
-    class_index = (
+    class_index = int(
         top_indices[0]
-        .item()
     )
-
 
     confidence_value = (
-        top_probabilities[0]
-        .item()
+        float(
+            top_probabilities[0]
+        )
         * 100
     )
-
 
     class_name = (
         class_names[
@@ -779,7 +784,6 @@ def predict_disease(
         )
     )
 
-
     top_crops = (
         get_top_crops(
             crop_probabilities
@@ -793,13 +797,11 @@ def predict_disease(
         else "Unknown"
     )
 
-
     best_crop_probability = (
         top_crops[0][1]
         if top_crops
         else 0.0
     )
-
 
     second_crop_probability = (
 
@@ -834,13 +836,12 @@ def predict_disease(
     # strongest crop as the reliability signal.
     #
     # We do NOT invent a disease for that crop.
-    # Instead, we can report the prediction as uncertain.
+    # Instead, we report the prediction as uncertain.
     # ========================================================
 
     crop_mismatch = (
-
-        predicted_crop != best_crop
-
+        predicted_crop
+        != best_crop
     )
 
 
@@ -861,7 +862,6 @@ def predict_disease(
             )
         )
 
-
         if isinstance(
             crop_disease,
             tuple
@@ -880,7 +880,6 @@ def predict_disease(
             disease_name = (
                 crop_disease
             )
-
 
         info = {
 
@@ -951,9 +950,11 @@ def predict_disease(
     # We preserve the normal API fields so your frontend
     # continues working.
     #
-    # When uncertain, we do not falsely claim that a tomato
-    # disease is definitely present.
+    # When uncertain, we do not falsely claim that a disease
+    # is definitely present.
     # ========================================================
+
+    metadata = load_metadata()
 
     if uncertain:
 
@@ -989,12 +990,12 @@ def predict_disease(
                 "MobileNetV3-Small",
 
             "model_accuracy":
-                load_metadata().get(
+                metadata.get(
                     "validation_accuracy"
                 ),
 
             "dataset_images_used":
-                load_metadata().get(
+                metadata.get(
                     "dataset_images_used"
                 ),
 
@@ -1037,12 +1038,12 @@ def predict_disease(
             "MobileNetV3-Small",
 
         "model_accuracy":
-            load_metadata().get(
+            metadata.get(
                 "validation_accuracy"
             ),
 
         "dataset_images_used":
-            load_metadata().get(
+            metadata.get(
                 "dataset_images_used"
             ),
 

@@ -1,5 +1,28 @@
+# =========================================================
+# RESOURCE / THREAD LIMITS
+# =========================================================
+
+import os
+
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+os.environ.setdefault("TORCH_NUM_THREADS", "1")
+
+
+# =========================================================
+# FASTAPI IMPORTS
+# =========================================================
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+
+# =========================================================
+# DATABASE
+# =========================================================
 
 from app.database.database import (
     Base,
@@ -52,11 +75,8 @@ Base.metadata.create_all(
 # =========================================================
 
 app = FastAPI(
-
     title="AI Smart Agriculture API",
-
     version="1.0.0"
-
 )
 
 
@@ -66,6 +86,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -74,6 +95,7 @@ app.add_middleware(
 
         # Production Vercel
         "https://ai-smart-agriculture-ten.vercel.app",
+        "https://aismartagriculture-b5b1g1jot-pravalikaappu2936.vercel.app",
     ],
 
     # Allow Vercel deployment URLs belonging to your project
@@ -84,41 +106,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # =========================================================
 # ROUTERS
 # =========================================================
 
 app.include_router(auth_router)
-
 app.include_router(users_router)
-
 app.include_router(dashboard_router)
-
 app.include_router(soil_router)
-
 app.include_router(crop_router)
-
 app.include_router(fertilizer_router)
-
 app.include_router(irrigation_router)
-
 app.include_router(weather_router)
-
 app.include_router(prediction_router)
-
 app.include_router(iot_router)
-
 app.include_router(notifications_router)
-
 app.include_router(assistant_router)
-
 app.include_router(tts_router)
-
 app.include_router(yield_router)
-
 app.include_router(market_router)
-
 app.include_router(disease_router)
+
 
 # =========================================================
 # ROOT
@@ -126,7 +135,6 @@ app.include_router(disease_router)
 
 @app.get("/")
 def root():
-
     return {
         "message": "AI Smart Agriculture Backend Running"
     }
