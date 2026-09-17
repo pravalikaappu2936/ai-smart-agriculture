@@ -57,3 +57,11 @@ Thumbs.db
 # ==============================
 
 backend/dataset/PlantVillage/
+
+# ==============================
+# LOCAL / LARGE ML DATASETS
+# ==============================
+backend/dataset/DigitalGreen/
+backend/dataset/KoppalChilli/
+backend/test_images/
+backend/chilli_error_inspection_v3/

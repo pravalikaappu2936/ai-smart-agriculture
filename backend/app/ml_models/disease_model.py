@@ -9,10 +9,18 @@ from torchvision import models, transforms
 
 
 # ============================================================
+# PLANT DISEASE PREDICTION
+# MobileNetV3-Small
+# Real-World Prediction Improvements
+# ============================================================
+
+
+# ============================================================
 # PATHS
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+
 
 MODEL_DIR = (
     BASE_DIR
@@ -21,10 +29,12 @@ MODEL_DIR = (
     / "saved_models"
 )
 
+
 MODEL_PATH = (
     MODEL_DIR
     / "plant_disease_model.pth"
 )
+
 
 METADATA_PATH = (
     MODEL_DIR
@@ -42,26 +52,52 @@ DEVICE = torch.device("cpu")
 
 
 # ============================================================
+# PREDICTION THRESHOLDS
+# ============================================================
+
+# Minimum confidence before accepting a prediction normally.
+#
+# This is NOT a guarantee that the prediction is correct.
+# It is simply a safety threshold for uncertain images.
+MIN_CONFIDENCE = 55.0
+
+
+# Difference between the best crop probability and the
+# second-best crop probability.
+#
+# If two crops are very close, we treat the prediction
+# as uncertain.
+CROP_MARGIN = 15.0
+
+
+# ============================================================
 # IMAGE TRANSFORM
 # ============================================================
 
 IMAGE_TRANSFORM = transforms.Compose([
+
     transforms.Resize(
         (IMAGE_SIZE, IMAGE_SIZE)
     ),
+
     transforms.ToTensor(),
+
     transforms.Normalize(
+
         mean=[
             0.485,
             0.456,
             0.406
         ],
+
         std=[
             0.229,
             0.224,
             0.225
         ]
+
     )
+
 ])
 
 
@@ -75,17 +111,25 @@ def load_metadata():
     if not METADATA_PATH.exists():
 
         raise FileNotFoundError(
+
             f"Disease metadata not found:\n"
             f"{METADATA_PATH}"
+
         )
 
+
     with open(
+
         METADATA_PATH,
+
         "r",
+
         encoding="utf-8"
+
     ) as file:
 
         metadata = json.load(file)
+
 
     return metadata
 
@@ -94,21 +138,30 @@ def load_metadata():
 # CREATE MODEL
 # ============================================================
 
-def create_model(num_classes):
+def create_model(
+    num_classes
+):
 
-    model = models.mobilenet_v3_small(
-        weights=None
+    model = (
+        models.mobilenet_v3_small(
+            weights=None
+        )
     )
+
 
     input_features = (
         model.classifier[-1]
         .in_features
     )
 
-    model.classifier[-1] = nn.Linear(
-        input_features,
-        num_classes
+
+    model.classifier[-1] = (
+        nn.Linear(
+            input_features,
+            num_classes
+        )
     )
+
 
     return model
 
@@ -123,33 +176,103 @@ def load_disease_model():
     if not MODEL_PATH.exists():
 
         raise FileNotFoundError(
+
             f"Disease model not found:\n"
             f"{MODEL_PATH}"
+
         )
+
 
     metadata = load_metadata()
 
-    class_names = metadata["classes"]
+
+    class_names = (
+        metadata["classes"]
+    )
+
 
     model = create_model(
         len(class_names)
     )
 
+
     checkpoint = torch.load(
+
         MODEL_PATH,
+
         map_location=DEVICE,
+
         weights_only=True
+
     )
+
 
     model.load_state_dict(
         checkpoint
     )
 
-    model.to(DEVICE)
+
+    model.to(
+        DEVICE
+    )
+
 
     model.eval()
 
-    return model, class_names
+
+    return (
+        model,
+        class_names
+    )
+
+
+# ============================================================
+# GET CROP FROM CLASS NAME
+# ============================================================
+
+def get_crop_from_class(
+    class_name
+):
+
+    if "___" not in class_name:
+
+        return "Unknown"
+
+
+    crop = (
+        class_name.split(
+            "___",
+            1
+        )[0]
+    )
+
+
+    crop = (
+        crop
+        .replace("_", " ")
+        .replace("(", "")
+        .replace(")", "")
+        .replace(",", "")
+    )
+
+
+    # Normalize PlantVillage crop names.
+    if crop.lower() == "corn maize":
+
+        return "Corn"
+
+
+    if crop.lower() == "pepper bell":
+
+        return "Bell Pepper"
+
+
+    if crop.lower() == "cherry including sour":
+
+        return "Cherry"
+
+
+    return crop
 
 
 # ============================================================
@@ -165,28 +288,34 @@ def format_disease_name(
         1
     )
 
+
     if len(parts) != 2:
 
         return class_name
+
 
     crop = parts[0]
 
     disease = parts[1]
 
-    crop = crop.replace(
-        "_",
-        " "
+
+    crop = (
+        crop
+        .replace("_", " ")
     )
 
-    disease = disease.replace(
-        "_",
-        " "
+
+    disease = (
+        disease
+        .replace("_", " ")
     )
 
-    disease = disease.replace(
-        "  ",
-        " "
+
+    disease = (
+        disease
+        .replace("  ", " ")
     )
+
 
     return (
         crop,
@@ -465,7 +594,64 @@ DISEASE_INFO = {
         "treatment": "No disease treatment is required.",
         "prevention": "Continue regular monitoring and maintain proper irrigation, nutrition, spacing, and sanitation."
     }
+
 }
+
+
+# ============================================================
+# BUILD CROP PROBABILITIES
+# ============================================================
+
+def calculate_crop_probabilities(
+    probabilities,
+    class_names
+):
+
+    crop_probabilities = {}
+
+
+    for index, class_name in enumerate(
+        class_names
+    ):
+
+        crop = get_crop_from_class(
+            class_name
+        )
+
+
+        probability = (
+            probabilities[index]
+            .item()
+            * 100
+        )
+
+
+        crop_probabilities[crop] = (
+            crop_probabilities.get(
+                crop,
+                0.0
+            )
+            + probability
+        )
+
+
+    return crop_probabilities
+
+
+# ============================================================
+# GET TOP CROP PROBABILITIES
+# ============================================================
+
+def get_top_crops(
+    crop_probabilities,
+    count=3
+):
+
+    return sorted(
+        crop_probabilities.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )[:count]
 
 
 # ============================================================
@@ -476,15 +662,18 @@ def predict_disease(
     image
 ):
 
-    # Load model only when prediction is requested
+    # ========================================================
+    # LOAD MODEL
+    # ========================================================
+
     model, class_names = (
         load_disease_model()
     )
 
 
-    # --------------------------------------------------------
-    # Prepare image
-    # --------------------------------------------------------
+    # ========================================================
+    # PREPARE IMAGE
+    # ========================================================
 
     if not isinstance(
         image,
@@ -501,6 +690,10 @@ def predict_disease(
     )
 
 
+    # ========================================================
+    # TRANSFORM IMAGE
+    # ========================================================
+
     tensor = IMAGE_TRANSFORM(
         image
     )
@@ -516,9 +709,9 @@ def predict_disease(
     )
 
 
-    # --------------------------------------------------------
-    # Prediction
-    # --------------------------------------------------------
+    # ========================================================
+    # MODEL PREDICTION
+    # ========================================================
 
     with torch.no_grad():
 
@@ -526,25 +719,44 @@ def predict_disease(
             tensor
         )
 
+
         probabilities = torch.softmax(
             outputs,
             dim=1
-        )
-
-        confidence, prediction = (
-            torch.max(
-                probabilities,
-                dim=1
-            )
-        )
+        )[0]
 
 
-    class_index = (
-        prediction.item()
+    # ========================================================
+    # TOP PREDICTIONS
+    # ========================================================
+
+    top_count = min(
+        5,
+        len(class_names)
     )
 
+
+    top_probabilities, top_indices = (
+        torch.topk(
+            probabilities,
+            k=top_count
+        )
+    )
+
+
+    # ========================================================
+    # BEST PREDICTION
+    # ========================================================
+
+    class_index = (
+        top_indices[0]
+        .item()
+    )
+
+
     confidence_value = (
-        confidence.item()
+        top_probabilities[0]
+        .item()
         * 100
     )
 
@@ -556,9 +768,85 @@ def predict_disease(
     )
 
 
-    # --------------------------------------------------------
-    # Disease information
-    # --------------------------------------------------------
+    # ========================================================
+    # CROP PROBABILITIES
+    # ========================================================
+
+    crop_probabilities = (
+        calculate_crop_probabilities(
+            probabilities,
+            class_names
+        )
+    )
+
+
+    top_crops = (
+        get_top_crops(
+            crop_probabilities
+        )
+    )
+
+
+    best_crop = (
+        top_crops[0][0]
+        if top_crops
+        else "Unknown"
+    )
+
+
+    best_crop_probability = (
+        top_crops[0][1]
+        if top_crops
+        else 0.0
+    )
+
+
+    second_crop_probability = (
+
+        top_crops[1][1]
+
+        if len(top_crops) > 1
+
+        else 0.0
+
+    )
+
+
+    crop_margin = (
+        best_crop_probability
+        - second_crop_probability
+    )
+
+
+    predicted_crop = (
+        get_crop_from_class(
+            class_name
+        )
+    )
+
+
+    # ========================================================
+    # CROP CONSISTENCY CHECK
+    # ========================================================
+    #
+    # If the highest disease class belongs to a crop that
+    # does not match the strongest crop probability, use the
+    # strongest crop as the reliability signal.
+    #
+    # We do NOT invent a disease for that crop.
+    # Instead, we can report the prediction as uncertain.
+    # ========================================================
+
+    crop_mismatch = (
+
+        predicted_crop != best_crop
+
+    )
+
+
+    # ========================================================
+    # DISEASE INFORMATION
+    # ========================================================
 
     info = DISEASE_INFO.get(
         class_name
@@ -573,6 +861,7 @@ def predict_disease(
             )
         )
 
+
         if isinstance(
             crop_disease,
             tuple
@@ -584,17 +873,22 @@ def predict_disease(
 
         else:
 
-            crop_name = "Unknown"
+            crop_name = (
+                predicted_crop
+            )
 
             disease_name = (
                 crop_disease
             )
 
+
         info = {
 
-            "crop": crop_name,
+            "crop":
+                crop_name,
 
-            "disease": disease_name,
+            "disease":
+                disease_name,
 
             "treatment":
                 "Consult a local agricultural expert for appropriate treatment.",
@@ -605,22 +899,130 @@ def predict_disease(
         }
 
 
-    # --------------------------------------------------------
-    # Return result
-    # --------------------------------------------------------
+    # ========================================================
+    # DETERMINE RELIABILITY
+    # ========================================================
+
+    uncertain = False
+
+    uncertainty_reason = ""
+
+
+    if (
+        confidence_value
+        < MIN_CONFIDENCE
+    ):
+
+        uncertain = True
+
+        uncertainty_reason = (
+            "The model confidence is low."
+        )
+
+
+    elif crop_mismatch:
+
+        uncertain = True
+
+        uncertainty_reason = (
+            "The strongest disease prediction "
+            "does not agree with the strongest "
+            "crop-level prediction."
+        )
+
+
+    elif (
+        len(top_crops) > 1
+        and crop_margin < CROP_MARGIN
+    ):
+
+        uncertain = True
+
+        uncertainty_reason = (
+            "The image contains competing "
+            "crop-level predictions."
+        )
+
+
+    # ========================================================
+    # SAFE RESULT
+    # ========================================================
+    #
+    # We preserve the normal API fields so your frontend
+    # continues working.
+    #
+    # When uncertain, we do not falsely claim that a tomato
+    # disease is definitely present.
+    # ========================================================
+
+    if uncertain:
+
+        return {
+
+            "success": True,
+
+            "crop": (
+                best_crop
+                if best_crop != "Unknown"
+                else info["crop"]
+            ),
+
+            "disease":
+                "Uncertain - Please upload a clearer leaf image",
+
+            "confidence":
+                round(
+                    confidence_value,
+                    2
+                ),
+
+            "class_index":
+                class_index,
+
+            "treatment":
+                "The image could not be classified reliably. Please upload a clear image showing most of the leaf, or consult a local agricultural expert.",
+
+            "prevention":
+                "Avoid making treatment decisions from an uncertain AI result. Check the crop and symptoms carefully.",
+
+            "model":
+                "MobileNetV3-Small",
+
+            "model_accuracy":
+                load_metadata().get(
+                    "validation_accuracy"
+                ),
+
+            "dataset_images_used":
+                load_metadata().get(
+                    "dataset_images_used"
+                ),
+
+            "total_classes":
+                len(class_names)
+
+        }
+
+
+    # ========================================================
+    # NORMAL RESULT
+    # ========================================================
 
     return {
 
         "success": True,
 
-        "crop": info["crop"],
+        "crop":
+            info["crop"],
 
-        "disease": info["disease"],
+        "disease":
+            info["disease"],
 
-        "confidence": round(
-            confidence_value,
-            2
-        ),
+        "confidence":
+            round(
+                confidence_value,
+                2
+            ),
 
         "class_index":
             class_index,

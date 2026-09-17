@@ -12,6 +12,7 @@ from PIL import Image
 # ============================================================
 # PLANT DISEASE DETECTION MODEL
 # MobileNetV3-Small + Transfer Learning
+# Improved for Real-World Images
 # ============================================================
 
 
@@ -23,7 +24,9 @@ from PIL import Image
 #       ↓ parents[0] = ml_models
 #       ↓ parents[1] = app
 #       ↓ parents[2] = backend
+
 BASE_DIR = Path(__file__).resolve().parents[2]
+
 
 DATASET_DIR = (
     BASE_DIR
@@ -33,6 +36,7 @@ DATASET_DIR = (
     / "color"
 )
 
+
 MODEL_DIR = (
     BASE_DIR
     / "app"
@@ -40,10 +44,12 @@ MODEL_DIR = (
     / "saved_models"
 )
 
+
 MODEL_PATH = (
     MODEL_DIR
     / "plant_disease_model.pth"
 )
+
 
 METADATA_PATH = (
     MODEL_DIR
@@ -59,13 +65,14 @@ IMAGE_SIZE = 224
 
 BATCH_SIZE = 32
 
-# Maximum images used from each disease class.
-# This keeps training practical on CPU.
+# Number of images selected from each class.
 MAX_IMAGES_PER_CLASS = 150
 
-EPOCHS = 5
+# Increased from 5 to improve learning.
+EPOCHS = 8
 
-LEARNING_RATE = 0.001
+# Lower learning rate for more stable transfer learning.
+LEARNING_RATE = 0.0005
 
 VALIDATION_SPLIT = 0.20
 
@@ -86,24 +93,135 @@ torch.manual_seed(RANDOM_SEED)
 
 
 # ============================================================
+# IMAGE NORMALIZATION
+# ============================================================
+
+NORMALIZE = transforms.Normalize(
+    mean=[
+        0.485,
+        0.456,
+        0.406
+    ],
+    std=[
+        0.229,
+        0.224,
+        0.225
+    ]
+)
+
+
+# ============================================================
+# TRAINING TRANSFORMS
+# ============================================================
+#
+# These augmentations are intended to make the model more
+# robust to photographs taken in actual farms.
+#
+# Examples:
+# - different brightness
+# - different contrast
+# - different colors
+# - rotation
+# - zoom
+# - translation
+# - partial leaf visibility
+# - small image imperfections
+# ============================================================
+
+train_transform = transforms.Compose([
+
+    transforms.Resize(
+        (256, 256)
+    ),
+
+    transforms.RandomResizedCrop(
+        IMAGE_SIZE,
+        scale=(0.75, 1.0),
+        ratio=(0.85, 1.15)
+    ),
+
+    transforms.RandomHorizontalFlip(
+        p=0.5
+    ),
+
+    transforms.RandomVerticalFlip(
+        p=0.2
+    ),
+
+    transforms.RandomRotation(
+        degrees=20
+    ),
+
+    transforms.ColorJitter(
+        brightness=0.25,
+        contrast=0.25,
+        saturation=0.25,
+        hue=0.08
+    ),
+
+    transforms.RandomAffine(
+        degrees=0,
+        translate=(0.10, 0.10),
+        scale=(0.90, 1.10)
+    ),
+
+    transforms.ToTensor(),
+
+    NORMALIZE,
+
+    transforms.RandomErasing(
+        p=0.15,
+        scale=(0.02, 0.12),
+        ratio=(0.3, 3.3)
+    ),
+])
+
+
+# ============================================================
+# VALIDATION TRANSFORMS
+# ============================================================
+
+validation_transform = transforms.Compose([
+
+    transforms.Resize(
+        (IMAGE_SIZE, IMAGE_SIZE)
+    ),
+
+    transforms.ToTensor(),
+
+    NORMALIZE
+])
+
+
+# ============================================================
 # DATASET CLASS
 # ============================================================
 
 class PlantDiseaseDataset(Dataset):
 
-    def __init__(self, samples, transform=None):
+    def __init__(
+        self,
+        samples,
+        transform=None
+    ):
 
         self.samples = samples
 
         self.transform = transform
 
+
     def __len__(self):
 
-        return len(self.samples)
+        return len(
+            self.samples
+        )
+
 
     def __getitem__(self, index):
 
-        image_path, label = self.samples[index]
+        image_path, label = (
+            self.samples[index]
+        )
 
         try:
 
@@ -114,15 +232,22 @@ class PlantDiseaseDataset(Dataset):
         except Exception as error:
 
             print(
-                f"\nWarning: Could not read image:"
-                f"\n{image_path}"
-                f"\nError: {error}"
+                "\nWarning: Could not read image:"
             )
 
-            # Try the next image
+            print(
+                image_path
+            )
+
+            print(
+                f"Error: {error}"
+            )
+
+            # Try another image.
             new_index = (
-                index + 1
-            ) % len(self.samples)
+                (index + 1)
+                % len(self.samples)
+            )
 
             image_path, label = (
                 self.samples[new_index]
@@ -132,69 +257,15 @@ class PlantDiseaseDataset(Dataset):
                 image_path
             ).convert("RGB")
 
+
         if self.transform:
 
-            image = self.transform(image)
+            image = self.transform(
+                image
+            )
+
 
         return image, label
-
-
-# ============================================================
-# IMAGE TRANSFORMS
-# ============================================================
-
-train_transform = transforms.Compose([
-
-    transforms.Resize(
-        (IMAGE_SIZE, IMAGE_SIZE)
-    ),
-
-    transforms.RandomHorizontalFlip(
-        p=0.5
-    ),
-
-    transforms.RandomRotation(
-        10
-    ),
-
-    transforms.ToTensor(),
-
-    transforms.Normalize(
-        mean=[
-            0.485,
-            0.456,
-            0.406
-        ],
-        std=[
-            0.229,
-            0.224,
-            0.225
-        ]
-    ),
-])
-
-
-validation_transform = transforms.Compose([
-
-    transforms.Resize(
-        (IMAGE_SIZE, IMAGE_SIZE)
-    ),
-
-    transforms.ToTensor(),
-
-    transforms.Normalize(
-        mean=[
-            0.485,
-            0.456,
-            0.406
-        ],
-        std=[
-            0.229,
-            0.224,
-            0.225
-        ]
-    ),
-])
 
 
 # ============================================================
@@ -203,20 +274,26 @@ validation_transform = transforms.Compose([
 
 def collect_samples():
 
-    print("\nChecking dataset...")
+    print(
+        "\nChecking dataset..."
+    )
 
     print(
         f"Dataset path:\n{DATASET_DIR}"
     )
 
+
     if not DATASET_DIR.exists():
 
         raise FileNotFoundError(
+
             "\nDataset directory not found:\n"
             f"{DATASET_DIR}\n\n"
+
             "Expected structure:\n"
             "backend/dataset/PlantVillage/raw/color/"
         )
+
 
     class_names = sorted([
 
@@ -228,17 +305,21 @@ def collect_samples():
 
     ])
 
+
     if not class_names:
 
         raise RuntimeError(
+
             f"No disease classes found in:\n"
             f"{DATASET_DIR}"
         )
+
 
     print(
         f"\nClasses found: "
         f"{len(class_names)}"
     )
+
 
     samples_by_class = {}
 
@@ -247,9 +328,9 @@ def collect_samples():
     total_used = 0
 
 
-    # --------------------------------------------------------
+    # ========================================================
     # COLLECT EACH CLASS
-    # --------------------------------------------------------
+    # ========================================================
 
     for class_index, class_name in enumerate(
         class_names
@@ -260,10 +341,11 @@ def collect_samples():
             / class_name
         )
 
+
         image_files = []
 
 
-        # Search supported image types
+        # Supported image formats.
         for pattern in [
             "*.jpg",
             "*.JPG",
@@ -282,37 +364,50 @@ def collect_samples():
             image_files
         )
 
+
         available_count = len(
             image_files
         )
+
 
         total_available += (
             available_count
         )
 
 
-        # Deterministic shuffle
+        # ====================================================
+        # DETERMINISTIC SHUFFLE
+        # ====================================================
+
         random_generator = random.Random(
             RANDOM_SEED + class_index
         )
+
 
         random_generator.shuffle(
             image_files
         )
 
 
-        # Limit number of images
+        # ====================================================
+        # SELECT IMAGES
+        # ====================================================
+
         selected_images = (
             image_files[
                 :MAX_IMAGES_PER_CLASS
             ]
         )
 
+
         used_count = len(
             selected_images
         )
 
-        total_used += used_count
+
+        total_used += (
+            used_count
+        )
 
 
         samples_by_class[
@@ -342,10 +437,12 @@ def collect_samples():
         f"{total_available}"
     )
 
+
     print(
         "Total images selected: "
         f"{total_used}"
     )
+
 
     return (
         class_names,
@@ -370,14 +467,17 @@ def create_split(
         samples_by_class.items()
     ):
 
-        # Copy so original list is not modified
-        samples = list(samples)
+        # Copy original list.
+        samples = list(
+            samples
+        )
 
 
-        # Shuffle each class independently
+        # Shuffle each class independently.
         random_generator = random.Random(
             RANDOM_SEED + class_index
         )
+
 
         random_generator.shuffle(
             samples
@@ -399,6 +499,7 @@ def create_split(
             ]
         )
 
+
         train_part = (
             samples[
                 validation_count:
@@ -410,17 +511,22 @@ def create_split(
             train_part
         )
 
+
         validation_samples.extend(
             validation_part
         )
 
 
-    # Shuffle final datasets
+    # ========================================================
+    # SHUFFLE FINAL DATASETS
+    # ========================================================
+
     random.Random(
         RANDOM_SEED
     ).shuffle(
         train_samples
     )
+
 
     random.Random(
         RANDOM_SEED
@@ -447,13 +553,16 @@ def create_model(
         "\nLoading MobileNetV3-Small..."
     )
 
+
     print(
         "Using pretrained ImageNet weights."
     )
 
 
-    # The weights are already cached after
-    # the previous training attempt.
+    # ========================================================
+    # LOAD PRETRAINED MODEL
+    # ========================================================
+
     weights = (
         models.MobileNet_V3_Small_Weights.DEFAULT
     )
@@ -466,9 +575,9 @@ def create_model(
     )
 
 
-    # --------------------------------------------------------
+    # ========================================================
     # FREEZE FEATURE EXTRACTOR
-    # --------------------------------------------------------
+    # ========================================================
 
     for parameter in (
         model.features.parameters()
@@ -477,9 +586,9 @@ def create_model(
         parameter.requires_grad = False
 
 
-    # --------------------------------------------------------
+    # ========================================================
     # REPLACE FINAL CLASSIFIER
-    # --------------------------------------------------------
+    # ========================================================
 
     input_features = (
         model.classifier[-1]
@@ -534,9 +643,11 @@ def train_model(
             + "=" * 60
         )
 
+
         print(
             f"Epoch {epoch}/{EPOCHS}"
         )
+
 
         print(
             "=" * 60
@@ -568,38 +679,54 @@ def train_model(
                 DEVICE
             )
 
+
             labels = labels.to(
                 DEVICE
             )
 
 
-            # Clear gradients
+            # ------------------------------------------------
+            # CLEAR GRADIENTS
+            # ------------------------------------------------
+
             optimizer.zero_grad()
 
 
-            # Forward pass
+            # ------------------------------------------------
+            # FORWARD PASS
+            # ------------------------------------------------
+
             outputs = model(
                 images
             )
 
 
-            # Calculate loss
+            # ------------------------------------------------
+            # LOSS
+            # ------------------------------------------------
+
             loss = criterion(
                 outputs,
                 labels
             )
 
 
-            # Backpropagation
+            # ------------------------------------------------
+            # BACKPROPAGATION
+            # ------------------------------------------------
+
             loss.backward()
 
 
-            # Update classifier
+            # ------------------------------------------------
+            # UPDATE CLASSIFIER
+            # ------------------------------------------------
+
             optimizer.step()
 
 
             # ------------------------------------------------
-            # Statistics
+            # STATISTICS
             # ------------------------------------------------
 
             training_loss += (
@@ -631,7 +758,7 @@ def train_model(
 
 
             # ------------------------------------------------
-            # Progress
+            # PROGRESS
             # ------------------------------------------------
 
             if (
@@ -683,6 +810,7 @@ def train_model(
                 images = images.to(
                     DEVICE
                 )
+
 
                 labels = labels.to(
                     DEVICE
@@ -744,22 +872,28 @@ def train_model(
         # DISPLAY RESULTS
         # ====================================================
 
-        print("\nResults:")
+        print(
+            "\nResults:"
+        )
+
 
         print(
             f"Train Loss: "
             f"{train_loss:.4f}"
         )
 
+
         print(
             f"Train Accuracy: "
             f"{train_accuracy:.2f}%"
         )
 
+
         print(
             f"Validation Loss: "
             f"{validation_loss:.4f}"
         )
+
 
         print(
             f"Validation Accuracy: "
@@ -823,9 +957,11 @@ def main():
         + "=" * 60
     )
 
+
     print(
         "PLANT DISEASE MODEL TRAINING"
     )
+
 
     print(
         "=" * 60
@@ -833,24 +969,39 @@ def main():
 
 
     print(
+        "Improved real-world training configuration"
+    )
+
+
+    print(
         f"Device: {DEVICE}"
     )
+
 
     print(
         f"Image size: {IMAGE_SIZE}"
     )
 
+
     print(
         f"Batch size: {BATCH_SIZE}"
     )
+
 
     print(
         f"Maximum images/class: "
         f"{MAX_IMAGES_PER_CLASS}"
     )
 
+
     print(
         f"Epochs: {EPOCHS}"
+    )
+
+
+    print(
+        f"Learning rate: "
+        f"{LEARNING_RATE}"
     )
 
 
@@ -881,9 +1032,11 @@ def main():
         + "=" * 60
     )
 
+
     print(
         "DATASET SUMMARY"
     )
+
 
     print(
         "=" * 60
@@ -895,10 +1048,12 @@ def main():
         f"{len(class_names)}"
     )
 
+
     print(
         f"Training images: "
         f"{len(train_samples)}"
     )
+
 
     print(
         f"Validation images: "
@@ -1002,6 +1157,7 @@ def main():
         f"{total_parameters:,}"
     )
 
+
     print(
         f"Trainable parameters: "
         f"{trainable_parameters:,}"
@@ -1011,9 +1167,15 @@ def main():
     # ========================================================
     # LOSS
     # ========================================================
+    #
+    # Label smoothing reduces excessive confidence on
+    # uncertain examples.
+    # ========================================================
 
     criterion = (
-        nn.CrossEntropyLoss()
+        nn.CrossEntropyLoss(
+            label_smoothing=0.1
+        )
     )
 
 
@@ -1143,7 +1305,21 @@ def main():
             "MobileNetV3-Small",
 
         "pretrained":
-            True
+            True,
+
+        "augmentation":
+            [
+                "RandomResizedCrop",
+                "RandomHorizontalFlip",
+                "RandomVerticalFlip",
+                "RandomRotation",
+                "ColorJitter",
+                "RandomAffine",
+                "RandomErasing"
+            ],
+
+        "label_smoothing":
+            0.1
 
     }
 
@@ -1180,9 +1356,11 @@ def main():
         + "=" * 60
     )
 
+
     print(
         "TRAINING COMPLETE"
     )
+
 
     print(
         "=" * 60
@@ -1199,6 +1377,7 @@ def main():
         "\nModel saved:"
     )
 
+
     print(
         MODEL_PATH
     )
@@ -1207,6 +1386,7 @@ def main():
     print(
         "\nMetadata saved:"
     )
+
 
     print(
         METADATA_PATH
