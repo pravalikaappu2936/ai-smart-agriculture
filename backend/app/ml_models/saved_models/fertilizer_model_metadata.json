@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f604b6081c229d1ac024e838b8b0ff06515acee8284da614980de35c0037306f
-size 375
+{
+    "accuracy": 0.9188,
+    "dataset_records": 50000,
+    "features": [
+        "nitrogen",
+        "phosphorus",
+        "potassium",
+        "ph",
+        "moisture",
+        "temperature"
+    ],
+    "classes": [
+        "DAP",
+        "NPK 10-10-10",
+        "NPK 10-26-26",
+        "NPK 20-20-20",
+        "Potassium Sulphate",
+        "Urea"
+    ]
+}
