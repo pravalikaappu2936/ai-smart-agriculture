@@ -4,7 +4,7 @@ import "./Profile.css";
 
 const API_URL =
     import.meta.env.VITE_API_URL ||
-    "https://ai-smart-agriculture-jf61.onrender.com";
+    "https://ai-smart-agriculture-production.up.railway.app";
 
 function Profile() {
   const navigate = useNavigate();
