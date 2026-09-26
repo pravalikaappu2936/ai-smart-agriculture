@@ -15,8 +15,8 @@ DATASET_DIR = BASE_DIR / "dataset"
 # DATASET PATHS
 # =========================================================
 
-# Updated crop dataset
-CROP_DATASET = DATASET_DIR / "crop_data_50000.csv"
+# Updated 100,000-record crop dataset
+CROP_DATASET = DATASET_DIR / "crop_data_100000.csv"
 
 # 50,000-record soil dataset
 SOIL_DATASET = DATASET_DIR / "soil_data_50000.csv"
@@ -48,7 +48,7 @@ def _load_csv(path: Path) -> pd.DataFrame:
 
 def load_crop_data():
 
-    # Load the updated 50,000-record crop dataset
+    # Load the updated 100,000-record crop dataset
     data = _load_csv(CROP_DATASET)
 
     # -----------------------------------------------------

@@ -21,10 +21,10 @@ from app.services.dataset_service import load_crop_data
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 MODEL_DIR = (
-    BASE_DIR /
-    "app" /
-    "ml_models" /
-    "saved_models"
+    BASE_DIR
+    / "app"
+    / "ml_models"
+    / "saved_models"
 )
 
 MODEL_DIR.mkdir(
@@ -33,23 +33,14 @@ MODEL_DIR.mkdir(
 )
 
 MODEL_PATH = (
-    MODEL_DIR /
-    "crop_random_forest.pkl"
+    MODEL_DIR
+    / "crop_random_forest.pkl"
 )
 
 
 # =========================================================
 # FEATURES
 # =========================================================
-
-# IMPORTANT:
-# These features MUST match:
-#
-# 1. crop_preprocessing.py
-# 2. crop_model.py
-# 3. crop dataset
-#
-# Crop model uses exactly 7 features.
 
 FEATURE_COLUMNS = [
     "nitrogen",
@@ -83,29 +74,36 @@ def train_model():
 
     dataset = load_crop_data()
 
-    print(
-        f"Dataset rows: {len(dataset)}"
+    print(f"Original dataset rows: {len(dataset)}")
+
+    print("\nOriginal dataset columns:")
+    print(dataset.columns.tolist())
+
+    # -----------------------------------------------------
+    # RENAME NEW DATASET COLUMNS
+    # -----------------------------------------------------
+
+    column_mapping = {
+        "N": "nitrogen",
+        "P": "phosphorus",
+        "K": "potassium",
+        "label": "crop"
+    }
+
+    dataset = dataset.rename(
+        columns=column_mapping
     )
 
-    print(
-        f"Crop classes: "
-        f"{dataset[TARGET_COLUMN].nunique()}"
-    )
-
-    print("\nCrop distribution:")
-
-    print(
-        dataset[TARGET_COLUMN]
-        .value_counts()
-    )
+    print("\nDataset columns after mapping:")
+    print(dataset.columns.tolist())
 
     # -----------------------------------------------------
     # VALIDATE REQUIRED COLUMNS
     # -----------------------------------------------------
 
     required_columns = (
-        FEATURE_COLUMNS +
-        [TARGET_COLUMN]
+        FEATURE_COLUMNS
+        + [TARGET_COLUMN]
     )
 
     missing_columns = [
@@ -115,11 +113,27 @@ def train_model():
     ]
 
     if missing_columns:
-
         raise ValueError(
             "Crop dataset is missing required columns: "
             + ", ".join(missing_columns)
         )
+
+    # -----------------------------------------------------
+    # CROP DISTRIBUTION
+    # -----------------------------------------------------
+
+    print("\n========================================")
+    print("CROP DISTRIBUTION")
+    print("========================================\n")
+
+    print(
+        dataset[TARGET_COLUMN].value_counts()
+    )
+
+    print(
+        f"\nNumber of crop classes: "
+        f"{dataset[TARGET_COLUMN].nunique()}"
+    )
 
     # -----------------------------------------------------
     # CONVERT NUMERICAL FEATURES
@@ -164,8 +178,8 @@ def train_model():
     )
 
     removed_rows = (
-        before_cleaning -
-        len(dataset)
+        before_cleaning
+        - len(dataset)
     )
 
     print(
@@ -188,14 +202,13 @@ def train_model():
         TARGET_COLUMN
     ]
 
-    print(
-        "\nFeatures used by the model:"
-    )
+    print("\n========================================")
+    print("FEATURES USED BY MODEL")
+    print("========================================")
 
     for index, feature in enumerate(
         FEATURE_COLUMNS
     ):
-
         print(
             f"{index}: {feature}"
         )
@@ -203,6 +216,8 @@ def train_model():
     # -----------------------------------------------------
     # TRAIN / TEST SPLIT
     # -----------------------------------------------------
+
+    print("\nSplitting dataset...")
 
     X_train, X_test, y_train, y_test = (
         train_test_split(
@@ -215,36 +230,38 @@ def train_model():
     )
 
     print(
-        "\nTraining samples:",
-        len(X_train)
+        f"\nTraining samples: {len(X_train)}"
     )
 
     print(
-        "Testing samples:",
-        len(X_test)
+        f"Testing samples: {len(X_test)}"
     )
 
     # -----------------------------------------------------
     # RANDOM FOREST
     # -----------------------------------------------------
 
-    print(
-        "\nTraining Random Forest..."
-    )
+    print("\n========================================")
+    print("TRAINING RANDOM FOREST")
+    print("========================================\n")
 
     model = RandomForestClassifier(
-    n_estimators=40,
-    max_depth=18,
-    min_samples_split=2,
-    min_samples_leaf=1,
-    random_state=42,
-    class_weight="balanced",
-    n_jobs=1
+        n_estimators=40,
+        max_depth=18,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        random_state=42,
+        class_weight="balanced",
+        n_jobs=1
     )
 
     model.fit(
         X_train,
         y_train
+    )
+
+    print(
+        "\nRandom Forest training completed."
     )
 
     # -----------------------------------------------------
@@ -281,6 +298,10 @@ def train_model():
         f"{accuracy * 100:.2f}%"
     )
 
+    # -----------------------------------------------------
+    # CLASSIFICATION REPORT
+    # -----------------------------------------------------
+
     print(
         "\nClassification Report:\n"
     )
@@ -292,6 +313,10 @@ def train_model():
             zero_division=0
         )
     )
+
+    # -----------------------------------------------------
+    # CONFUSION MATRIX
+    # -----------------------------------------------------
 
     print(
         "\nConfusion Matrix:\n"
@@ -308,9 +333,9 @@ def train_model():
     # FEATURE IMPORTANCE
     # -----------------------------------------------------
 
-    print(
-        "\nFeature Importance:\n"
-    )
+    print("\n========================================")
+    print("FEATURE IMPORTANCE")
+    print("========================================\n")
 
     importance = pd.DataFrame(
         {
@@ -336,17 +361,9 @@ def train_model():
         y.unique().tolist()
     )
 
-    print(
-        "\n========================================"
-    )
-
-    print(
-        "MODEL INFORMATION"
-    )
-
-    print(
-        "========================================"
-    )
+    print("\n========================================")
+    print("MODEL INFORMATION")
+    print("========================================")
 
     print(
         f"Dataset records: {len(dataset)}"
@@ -366,27 +383,25 @@ def train_model():
     )
 
     print(
+        f"Maximum tree depth: "
+        f"{model.max_depth}"
+    )
+
+    print(
         f"Accuracy: "
         f"{accuracy * 100:.2f}%"
     )
 
-    print(
-        "\nCrop classes:"
-    )
+    print("\nCrop classes:")
 
     for crop in crop_classes:
-
         print(
             f" - {crop}"
         )
 
     # -----------------------------------------------------
-    # SAVE MODEL
+    # MODEL PACKAGE
     # -----------------------------------------------------
-
-    print(
-        "\nSaving model..."
-    )
 
     model_package = {
         "model": model,
@@ -396,6 +411,14 @@ def train_model():
         "crop_classes": crop_classes
     }
 
+    # -----------------------------------------------------
+    # SAVE MODEL
+    # -----------------------------------------------------
+
+    print("\n========================================")
+    print("SAVING MODEL")
+    print("========================================\n")
+
     joblib.dump(
         model_package,
         MODEL_PATH,
@@ -403,21 +426,32 @@ def train_model():
     )
 
     print(
-        f"\nModel saved to:\n"
-        f"{MODEL_PATH}"
+        f"Model saved to:\n{MODEL_PATH}"
     )
 
-    print(
-        "\n========================================"
-    )
+    # -----------------------------------------------------
+    # MODEL SIZE
+    # -----------------------------------------------------
 
-    print(
-        "CROP MODEL TRAINING COMPLETED"
-    )
+    if MODEL_PATH.exists():
 
-    print(
-        "========================================\n"
-    )
+        model_size_mb = (
+            MODEL_PATH.stat().st_size
+            / (1024 * 1024)
+        )
+
+        print(
+            f"\nSaved model size: "
+            f"{model_size_mb:.2f} MB"
+        )
+
+    # -----------------------------------------------------
+    # COMPLETED
+    # -----------------------------------------------------
+
+    print("\n========================================")
+    print("CROP MODEL TRAINING COMPLETED")
+    print("========================================\n")
 
     return model_package
 
@@ -427,5 +461,4 @@ def train_model():
 # =========================================================
 
 if __name__ == "__main__":
-
     train_model()
