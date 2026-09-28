@@ -90,22 +90,16 @@ function ForgotPassword() {
             }
 
 
-            // -------------------------------------------------
-            // DEVELOPMENT ONLY
-            // -------------------------------------------------
-            // The backend currently returns the OTP so that
-            // you can test the password reset functionality.
-            //
-            // Do NOT display the OTP like this in production.
-            // -------------------------------------------------
-
-            console.log(
-                "Password reset OTP:",
-                data.otp
-            );
+            // =================================================
+            // OTP SENT
+            // =================================================
+            // The OTP is intentionally NOT displayed or logged.
+            // In production, the OTP should be delivered through
+            // the configured SMS service.
+            // =================================================
 
             setMessage(
-                `OTP generated. Development OTP: ${data.otp}`
+                "OTP sent to your registered phone number."
             );
 
             setStep(2);
@@ -186,7 +180,9 @@ function ForgotPassword() {
             }
 
 
-            // Save temporary password-reset token
+            // =================================================
+            // SAVE PASSWORD RESET TOKEN
+            // =================================================
 
             setResetToken(
                 data.reset_token
@@ -228,9 +224,9 @@ function ForgotPassword() {
         setMessage("");
 
 
-        // -----------------------------------------------------
-        // Validate password
-        // -----------------------------------------------------
+        // =====================================================
+        // VALIDATE PASSWORD
+        // =====================================================
 
         if (!newPassword) {
 
@@ -298,9 +294,9 @@ function ForgotPassword() {
             );
 
 
-            // -------------------------------------------------
-            // Redirect to login
-            // -------------------------------------------------
+            // =================================================
+            // REDIRECT TO LOGIN
+            // =================================================
 
             setTimeout(() => {
 
@@ -532,8 +528,8 @@ function ForgotPassword() {
                         </h2>
 
                         <p className="forgot-password-description">
-                            Enter the 6-digit OTP generated for
-                            your phone number.
+                            Enter the 6-digit OTP sent to your
+                            registered phone number.
                         </p>
 
 
