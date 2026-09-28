@@ -1,1620 +1,217 @@
-import axios from "axios";
-
-
 // =========================================================
-// API BASE URL
+// API CONFIGURATION
 // =========================================================
 
-const API_BASE_URL =
+const API_URL =
     import.meta.env.VITE_API_URL ||
     "https://ai-smart-agriculture-production.up.railway.app";
 
 
 // =========================================================
-// NORMAL API INSTANCE
+// HELPER FUNCTION
 // =========================================================
 
-const API = axios.create({
+async function handleResponse(response) {
 
-    baseURL: API_BASE_URL,
+    const data = await response.json();
 
-    headers: {
-        "Content-Type": "application/json",
-    },
-
-    timeout: 30000,
-
-});
-
-
-// =========================================================
-// AI ASSISTANT API INSTANCE
-// =========================================================
-
-const ASSISTANT_API = axios.create({
-
-    baseURL: API_BASE_URL,
-
-    headers: {
-        "Content-Type": "application/json",
-    },
-
-    timeout: 60000,
-
-});
-
-
-// =========================================================
-// GET JWT TOKEN
-// =========================================================
-
-const getToken = () => {
-
-    return localStorage.getItem("token");
-
-};
-
-
-// =========================================================
-// ADD JWT TO NORMAL API REQUESTS
-// =========================================================
-
-API.interceptors.request.use(
-
-    (config) => {
-
-        const token = getToken();
-
-        if (token) {
-
-            config.headers =
-                config.headers || {};
-
-            config.headers.Authorization =
-                `Bearer ${token}`;
-
-        }
-
-        return config;
-
-    },
-
-    (error) => {
-
-        return Promise.reject(error);
-
-    }
-
-);
-
-
-// =========================================================
-// ADD JWT TO ASSISTANT REQUESTS
-// =========================================================
-
-ASSISTANT_API.interceptors.request.use(
-
-    (config) => {
-
-        const token = getToken();
-
-        if (token) {
-
-            config.headers =
-                config.headers || {};
-
-            config.headers.Authorization =
-                `Bearer ${token}`;
-
-        }
-
-        return config;
-
-    },
-
-    (error) => {
-
-        return Promise.reject(error);
-
-    }
-
-);
-
-
-// =========================================================
-// NORMAL API RESPONSE INTERCEPTOR
-// =========================================================
-
-API.interceptors.response.use(
-
-    (response) => {
-
-        return response;
-
-    },
-
-    (error) => {
-
-        if (error.response) {
-
-            console.error(
-                "API Error:",
-                error.response.status,
-                error.response.data
-            );
-
-        }
-
-        else if (error.request) {
-
-            console.error(
-                "API Server did not respond:",
-                error.message
-            );
-
-        }
-
-        else {
-
-            console.error(
-                "API Request Error:",
-                error.message
-            );
-
-        }
-
-        return Promise.reject(error);
-
-    }
-
-);
-
-
-// =========================================================
-// ASSISTANT RESPONSE INTERCEPTOR
-// =========================================================
-
-ASSISTANT_API.interceptors.response.use(
-
-    (response) => {
-
-        return response;
-
-    },
-
-    (error) => {
-
-        if (
-            error.code ===
-            "ECONNABORTED"
-        ) {
-
-            console.error(
-                "AI Assistant timeout:",
-                error.message
-            );
-
-        }
-
-        else if (error.response) {
-
-            console.error(
-                "AI Assistant API Error:",
-                error.response.status,
-                error.response.data
-            );
-
-        }
-
-        else if (error.request) {
-
-            console.error(
-                "AI Assistant server did not respond:",
-                error.message
-            );
-
-        }
-
-        else {
-
-            console.error(
-                "AI Assistant request error:",
-                error.message
-            );
-
-        }
-
-        return Promise.reject(error);
-
-    }
-
-);
-
-
-// =========================================================
-// GENERIC API REQUEST
-// =========================================================
-
-export const apiRequest = async (
-
-    method,
-    endpoint,
-    data = null
-
-) => {
-
-    const response = await API({
-
-        method,
-
-        url: endpoint,
-
-        data,
-
-    });
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// IOT
-// =========================================================
-
-export const getLatestSensorData = async () => {
-
-    const response =
-        await API.get(
-            "/iot/latest"
-        );
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// CROP RECOMMENDATION
-// =========================================================
-
-export const getCropRecommendation = async (
-    data
-) => {
-
-    const response =
-        await API.post(
-            "/crop/recommend",
-            data
-        );
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// SOIL ANALYSIS
-// =========================================================
-
-export const getSoilAnalysis = async (
-    data
-) => {
-
-    const response =
-        await API.post(
-            "/soil/analyze",
-            data
-        );
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// FERTILIZER RECOMMENDATION
-// =========================================================
-//
-// Current fertilizer model uses:
-//
-// 1. Nitrogen
-// 2. Phosphorus
-// 3. Potassium
-// 4. pH
-// 5. Moisture
-// 6. Temperature
-//
-// Backend additionally requires:
-//
-// 7. crop_type
-//
-// Backend endpoint:
-//
-// POST /fertilizer/recommend
-//
-// =========================================================
-
-export const getFertilizerRecommendation = async (
-    data
-) => {
-
-    // -----------------------------------------------------
-    // Validate input
-    // -----------------------------------------------------
-
-    if (!data) {
+    if (!response.ok) {
 
         throw new Error(
-            "Fertilizer input data is required."
+            data.detail ||
+            data.message ||
+            "Something went wrong"
         );
-
     }
 
-
-    // -----------------------------------------------------
-    // Prepare fertilizer request
-    // -----------------------------------------------------
-
-    const fertilizerData = {
-
-        nitrogen:
-            Number(data.nitrogen),
-
-        phosphorus:
-            Number(data.phosphorus),
-
-        potassium:
-            Number(data.potassium),
-
-        ph:
-            Number(data.ph),
-
-        moisture:
-            Number(data.moisture),
-
-        temperature:
-            Number(data.temperature),
-
-        crop_type:
-            String(
-                data.crop_type || ""
-            )
-                .trim()
-                .toLowerCase(),
-
-    };
-
-
-    // -----------------------------------------------------
-    // Validate numeric values
-    // -----------------------------------------------------
-
-    const numericFields = {
-
-        nitrogen:
-            fertilizerData.nitrogen,
-
-        phosphorus:
-            fertilizerData.phosphorus,
-
-        potassium:
-            fertilizerData.potassium,
-
-        ph:
-            fertilizerData.ph,
-
-        moisture:
-            fertilizerData.moisture,
-
-        temperature:
-            fertilizerData.temperature,
-
-    };
-
-
-    const invalidFields =
-        Object.entries(
-            numericFields
-        )
-
-            .filter(
-                ([, value]) =>
-                    !Number.isFinite(value)
-            )
-
-            .map(
-                ([key]) =>
-                    key
-            );
-
-
-    if (
-        invalidFields.length > 0
-    ) {
-
-        throw new Error(
-            `Invalid fertilizer sensor values: ${invalidFields.join(", ")}`
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate crop type
-    // -----------------------------------------------------
-
-    if (
-        !fertilizerData.crop_type
-    ) {
-
-        throw new Error(
-            "Crop type is required for fertilizer recommendation."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Console debugging
-    // -----------------------------------------------------
-
-    console.log(
-        "Fertilizer API request:",
-        fertilizerData
-    );
-
-
-    // -----------------------------------------------------
-    // API REQUEST
-    // -----------------------------------------------------
-
-    const response =
-        await API.post(
-
-            "/fertilizer/recommend",
-
-            fertilizerData
-
-        );
-
-
-    // -----------------------------------------------------
-    // Console response
-    // -----------------------------------------------------
-
-    console.log(
-        "Fertilizer API response:",
-        response.data
-    );
-
-
-    return response.data;
-
-};
+    return data;
+}
 
 
 // =========================================================
-// IRRIGATION PREDICTION
+// AUTHENTICATION
 // =========================================================
 
-export const getIrrigationPrediction = async (
-    data
-) => {
-
-    const response =
-        await API.post(
-            "/irrigation/predict",
-            data
-        );
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// CROP YIELD PREDICTION
-// =========================================================
-//
-// Backend endpoint:
-//
-// POST /yield/predict
-//
-// Model features:
-//
-// 1. year
-// 2. state
-// 3. crop
-// 4. season
-// 5. area
-// 6. annual_rainfall
-// 7. fertilizer
-// 8. pesticide
-//
-// Target:
-//
-// yield (tonnes/hectare)
-//
-// =========================================================
-
-export const predictCropYield = async (
-    data
-) => {
-
-    // -----------------------------------------------------
-    // Validate input object
-    // -----------------------------------------------------
-
-    if (!data) {
-
-        throw new Error(
-            "Crop yield input data is required."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Prepare request data
-    // -----------------------------------------------------
-
-    const yieldData = {
-
-        year:
-            Number(data.year),
-
-        state:
-            String(
-                data.state || ""
-            )
-                .trim(),
-
-        crop:
-            String(
-                data.crop || ""
-            )
-                .trim(),
-
-        season:
-            String(
-                data.season || ""
-            )
-                .trim(),
-
-        area:
-            Number(data.area),
-
-        annual_rainfall:
-            Number(
-                data.annual_rainfall
-            ),
-
-        fertilizer:
-            Number(
-                data.fertilizer
-            ),
-
-        pesticide:
-            Number(
-                data.pesticide
-            ),
-
-    };
-
-
-    // -----------------------------------------------------
-    // Validate numeric fields
-    // -----------------------------------------------------
-
-    const numericFields = {
-
-        year:
-            yieldData.year,
-
-        area:
-            yieldData.area,
-
-        annual_rainfall:
-            yieldData.annual_rainfall,
-
-        fertilizer:
-            yieldData.fertilizer,
-
-        pesticide:
-            yieldData.pesticide,
-
-    };
-
-
-    const invalidFields =
-        Object.entries(
-            numericFields
-        )
-
-            .filter(
-                ([, value]) =>
-                    !Number.isFinite(value)
-            )
-
-            .map(
-                ([key]) =>
-                    key
-            );
-
-
-    if (
-        invalidFields.length > 0
-    ) {
-
-        throw new Error(
-            `Invalid crop yield values: ${invalidFields.join(", ")}`
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate state
-    // -----------------------------------------------------
-
-    if (
-        !yieldData.state
-    ) {
-
-        throw new Error(
-            "State is required for crop yield prediction."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate crop
-    // -----------------------------------------------------
-
-    if (
-        !yieldData.crop
-    ) {
-
-        throw new Error(
-            "Crop is required for crop yield prediction."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate season
-    // -----------------------------------------------------
-
-    if (
-        !yieldData.season
-    ) {
-
-        throw new Error(
-            "Season is required for crop yield prediction."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate area
-    // -----------------------------------------------------
-
-    if (
-        yieldData.area <= 0
-    ) {
-
-        throw new Error(
-            "Area must be greater than zero."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate rainfall
-    // -----------------------------------------------------
-
-    if (
-        yieldData.annual_rainfall < 0
-    ) {
-
-        throw new Error(
-            "Annual rainfall cannot be negative."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate fertilizer
-    // -----------------------------------------------------
-
-    if (
-        yieldData.fertilizer < 0
-    ) {
-
-        throw new Error(
-            "Fertilizer value cannot be negative."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate pesticide
-    // -----------------------------------------------------
-
-    if (
-        yieldData.pesticide < 0
-    ) {
-
-        throw new Error(
-            "Pesticide value cannot be negative."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Console debugging
-    // -----------------------------------------------------
-
-    console.log(
-        "Crop Yield API request:",
-        yieldData
-    );
-
-
-    // -----------------------------------------------------
-    // API REQUEST
-    // -----------------------------------------------------
-
-    const response =
-        await API.post(
-
-            "/yield/predict",
-
-            yieldData
-
-        );
-
-
-    // -----------------------------------------------------
-    // Console response
-    // -----------------------------------------------------
-
-    console.log(
-        "Crop Yield API response:",
-        response.data
-    );
-
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// MARKET PRICE ANALYSIS
-// =========================================================
-//
-// Backend endpoint:
-//
-// GET /market/prices
-//
-// Query parameters:
-//
-// 1. commodity
-// 2. state
-// 3. district
-// 4. market
-// 5. limit
-//
-// Data source:
-//
-// Government of India mandi market data
-//
-// =========================================================
-
-export const getMarketPrices = async ({
-
-    commodity = "",
-
-    state = "",
-
-    district = "",
-
-    market = "",
-
-    limit = 100,
-
-} = {}) => {
-
-
-    // -----------------------------------------------------
-    // Prepare query parameters
-    // -----------------------------------------------------
-
-    const params = {
-
-        limit:
-            Number(limit) || 100,
-
-    };
-
-
-    // -----------------------------------------------------
-    // Commodity filter
-    // -----------------------------------------------------
-
-    if (
-        commodity &&
-        commodity.trim()
-    ) {
-
-        params.commodity =
-            commodity.trim();
-
-    }
-
-
-    // -----------------------------------------------------
-    // State filter
-    // -----------------------------------------------------
-
-    if (
-        state &&
-        state.trim()
-    ) {
-
-        params.state =
-            state.trim();
-
-    }
-
-
-    // -----------------------------------------------------
-    // District filter
-    // -----------------------------------------------------
-
-    if (
-        district &&
-        district.trim()
-    ) {
-
-        params.district =
-            district.trim();
-
-    }
-
-
-    // -----------------------------------------------------
-    // Market filter
-    // -----------------------------------------------------
-
-    if (
-        market &&
-        market.trim()
-    ) {
-
-        params.market =
-            market.trim();
-
-    }
-
-
-    // -----------------------------------------------------
-    // Console debugging
-    // -----------------------------------------------------
-
-    console.log(
-        "Market Price API request:",
-        params
-    );
-
-
-    // -----------------------------------------------------
-    // API REQUEST
-    // -----------------------------------------------------
-
-    const response =
-        await API.get(
-
-            "/market/prices",
-
-            {
-                params,
-            }
-
-        );
-
-
-    // -----------------------------------------------------
-    // Console response
-    // -----------------------------------------------------
-
-    console.log(
-        "Market Price API response:",
-        response.data
-    );
-
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// PLANT DISEASE DETECTION
-// =========================================================
-//
-// Backend endpoint:
-//
-// POST /disease/predict
-//
-// Request:
-//
-// multipart/form-data
-//
-// Field:
-//
-// file
-//
-// Maximum image size:
-//
-// 5 MB
-//
-// =========================================================
-
-export const predictPlantDisease = async (
-    imageFile
-) => {
-
-    // -----------------------------------------------------
-    // Validate image
-    // -----------------------------------------------------
-
-    if (!imageFile) {
-
-        throw new Error(
-            "Plant image is required."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate file type
-    // -----------------------------------------------------
-
-    if (
-        !imageFile.type ||
-        !imageFile.type.startsWith("image/")
-    ) {
-
-        throw new Error(
-            "Please select a valid image file."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Validate file size
-    // -----------------------------------------------------
-
-    const MAX_IMAGE_SIZE =
-        5 * 1024 * 1024;
-
-    if (
-        imageFile.size >
-        MAX_IMAGE_SIZE
-    ) {
-
-        throw new Error(
-            "Image size must be less than 5 MB."
-        );
-
-    }
-
-
-    // -----------------------------------------------------
-    // Prepare multipart form data
-    // -----------------------------------------------------
-
-    const formData =
-        new FormData();
+// ---------------------------------------------------------
+// LOGIN
+// ---------------------------------------------------------
+
+export async function loginUser(
+    phoneNumber,
+    password
+) {
+
+    const formData = new URLSearchParams();
 
     formData.append(
-        "file",
-        imageFile
+        "username",
+        phoneNumber
     );
 
+    formData.append(
+        "password",
+        password
+    );
 
-    // -----------------------------------------------------
-    // Console debugging
-    // -----------------------------------------------------
-
-    console.log(
-        "Plant Disease API request:",
+    const response = await fetch(
+        `${API_URL}/auth/login`,
         {
-            fileName:
-                imageFile.name,
+            method: "POST",
 
-            fileType:
-                imageFile.type,
+            headers: {
+                "Content-Type":
+                    "application/x-www-form-urlencoded",
+            },
 
-            fileSize:
-                imageFile.size,
+            body: formData.toString(),
         }
     );
 
-
-    // -----------------------------------------------------
-    // API REQUEST
-    // -----------------------------------------------------
-
-    const response =
-        await API.post(
-
-            "/disease/predict",
-
-            formData,
-
-            {
-                headers: {
-                    "Content-Type":
-                        "multipart/form-data",
-                },
-
-                timeout: 60000,
-            }
-
-        );
+    return handleResponse(response);
+}
 
 
-    // -----------------------------------------------------
-    // Console response
-    // -----------------------------------------------------
+// ---------------------------------------------------------
+// REGISTER
+// ---------------------------------------------------------
 
-    console.log(
-        "Plant Disease API response:",
-        response.data
+export async function registerUser(
+    username,
+    phoneNumber,
+    password
+) {
+
+    const response = await fetch(
+        `${API_URL}/auth/register`,
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json",
+            },
+
+            body: JSON.stringify({
+                username: username,
+                phone_number: phoneNumber,
+                password: password,
+            }),
+        }
     );
 
-
-    return response.data;
-
-};
+    return handleResponse(response);
+}
 
 
 // =========================================================
-// WEATHER - CURRENT
+// FORGOT PASSWORD
 // =========================================================
 
-export const getCurrentWeather = async (
-    location
-) => {
+// ---------------------------------------------------------
+// SEND OTP
+// ---------------------------------------------------------
 
-    if (
-        !location ||
-        !location.trim()
-    ) {
+export async function forgotPassword(
+    phoneNumber
+) {
 
-        throw new Error(
-            "Location is required."
-        );
+    const response = await fetch(
+        `${API_URL}/auth/forgot-password?phone_number=${encodeURIComponent(
+            phoneNumber
+        )}`,
+        {
+            method: "POST",
+        }
+    );
 
-    }
+    return handleResponse(response);
+}
 
 
-    const response =
-        await API.post(
+// ---------------------------------------------------------
+// VERIFY RESET OTP
+// ---------------------------------------------------------
 
-            "/weather/current",
+export async function verifyResetOTP(
+    phoneNumber,
+    otp
+) {
 
-            {
-                location:
-                    location.trim(),
+    const response = await fetch(
+        `${API_URL}/auth/verify-reset-otp?phone_number=${encodeURIComponent(
+            phoneNumber
+        )}&otp=${encodeURIComponent(
+            otp
+        )}`,
+        {
+            method: "POST",
+        }
+    );
+
+    return handleResponse(response);
+}
+
+
+// ---------------------------------------------------------
+// RESET PASSWORD
+// ---------------------------------------------------------
+
+export async function resetPassword(
+    phoneNumber,
+    resetToken,
+    newPassword
+) {
+
+    const response = await fetch(
+        `${API_URL}/auth/reset-password?phone_number=${encodeURIComponent(
+            phoneNumber
+        )}&reset_token=${encodeURIComponent(
+            resetToken
+        )}&new_password=${encodeURIComponent(
+            newPassword
+        )}`,
+        {
+            method: "POST",
+        }
+    );
+
+    return handleResponse(response);
+}
+
+
+// =========================================================
+// TOKEN
+// =========================================================
+
+export function getToken() {
+
+    return localStorage.getItem("token");
+}
+
+
+// =========================================================
+// AUTH HEADERS
+// =========================================================
+
+export function getAuthHeaders() {
+
+    const token = getToken();
+
+    return {
+        "Content-Type": "application/json",
+
+        ...(token
+            ? {
+                Authorization:
+                    `Bearer ${token}`
             }
-
-        );
-
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// WEATHER - COORDINATES
-// =========================================================
-
-export const getWeatherByCoordinates = async (
-
-    latitude,
-
-    longitude
-
-) => {
-
-    if (
-
-        latitude === null ||
-        latitude === undefined ||
-
-        longitude === null ||
-        longitude === undefined
-
-    ) {
-
-        throw new Error(
-            "Latitude and longitude are required."
-        );
-
-    }
-
-
-    const response =
-        await API.post(
-
-            "/weather/current-by-coordinates",
-
-            {
-
-                latitude:
-                    Number(latitude),
-
-                longitude:
-                    Number(longitude),
-
-            }
-
-        );
-
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// WEATHER SEARCH
-// =========================================================
-
-export const searchWeatherLocations = async (
-
-    village,
-
-    district = "",
-
-    state = ""
-
-) => {
-
-    if (
-        !village ||
-        !village.trim()
-    ) {
-
-        throw new Error(
-            "Village/location is required."
-        );
-
-    }
-
-
-    const response =
-        await API.get(
-
-            "/weather/search",
-
-            {
-
-                params: {
-
-                    village:
-                        village.trim(),
-
-                    district:
-                        district.trim(),
-
-                    state:
-                        state.trim(),
-
-                },
-
-            }
-
-        );
-
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// WEATHER STATUS
-// =========================================================
-
-export const getWeatherStatus = async () => {
-
-    const response =
-        await API.get(
-            "/weather/"
-        );
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// WEATHER FORECAST
-// =========================================================
-
-export const getWeatherForecast = async (
-    location
-) => {
-
-    if (
-        !location ||
-        !location.trim()
-    ) {
-
-        throw new Error(
-            "Location is required."
-        );
-
-    }
-
-
-    const response =
-        await API.post(
-
-            "/weather/forecast",
-
-            {
-
-                location:
-                    location.trim(),
-
-            }
-
-        );
-
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// NOTIFICATIONS
-// =========================================================
-
-export const getNotifications = async () => {
-
-    const response =
-        await API.get(
-            "/notifications/"
-        );
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// UNREAD NOTIFICATIONS
-// =========================================================
-
-export const getUnreadNotifications = async () => {
-
-    const response =
-        await API.get(
-            "/notifications/unread"
-        );
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// MARK NOTIFICATION READ
-// =========================================================
-
-export const markNotificationAsRead = async (
-    notificationId
-) => {
-
-    if (
-        notificationId ===
-        null ||
-        notificationId ===
-        undefined
-    ) {
-
-        throw new Error(
-            "Notification ID is required."
-        );
-
-    }
-
-
-    const response =
-        await API.put(
-
-            `/notifications/${notificationId}/read`
-
-        );
-
-
-    return response.data;
-
-};
-
-
-// =========================================================
-// MARK ALL NOTIFICATIONS READ
-// =========================================================
-
-export const markAllNotificationsAsRead =
-    async () => {
-
-        const response =
-            await API.put(
-                "/notifications/read-all"
-            );
-
-        return response.data;
-
+            : {})
     };
+}
 
 
 // =========================================================
-// AI ASSISTANT - CHAT
+// API URL
 // =========================================================
 
-export const sendAssistantMessage = async (
-
-    message,
-
-    language = "English"
-
-) => {
-
-    if (
-        !message ||
-        !message.trim()
-    ) {
-
-        throw new Error(
-            "Assistant message cannot be empty."
-        );
-
-    }
-
-
-    const cleanMessage =
-        message.trim();
-
-
-    console.log(
-        "AI Assistant request:",
-        {
-
-            message:
-                cleanMessage,
-
-            language,
-
-            endpoint:
-                `${API_BASE_URL}/assistant/chat`,
-
-        }
-    );
-
-
-    try {
-
-        const response =
-            await ASSISTANT_API.post(
-
-                "/assistant/chat",
-
-                {
-
-                    message:
-                        cleanMessage,
-
-                    language,
-
-                }
-
-            );
-
-
-        console.log(
-            "AI Assistant response:",
-            response.data
-        );
-
-
-        return response.data;
-
-    }
-
-    catch (error) {
-
-        console.error(
-
-            "AI Assistant request failed:",
-
-            {
-
-                status:
-                    error?.response?.status,
-
-                data:
-                    error?.response?.data,
-
-                message:
-                    error?.message,
-
-                code:
-                    error?.code,
-
-            }
-
-        );
-
-
-        throw error;
-
-    }
-
-};
-
-
-// =========================================================
-// AI ASSISTANT - TEXT TO SPEECH
-// =========================================================
-
-export const generateAssistantSpeech = async (
-
-    text,
-
-    language = "English"
-
-) => {
-
-    if (
-        !text ||
-        !text.trim()
-    ) {
-
-        throw new Error(
-            "Text for speech cannot be empty."
-        );
-
-    }
-
-
-    const cleanText =
-        text.trim();
-
-
-    console.log(
-        "AI Assistant TTS request:",
-        {
-
-            text:
-                cleanText,
-
-            language,
-
-            endpoint:
-                `${API_BASE_URL}/tts/speak`,
-
-        }
-    );
-
-
-    try {
-
-        const response =
-            await ASSISTANT_API.post(
-
-                "/tts/speak",
-
-                {
-
-                    text:
-                        cleanText,
-
-                    language,
-
-                },
-
-                {
-
-                    responseType:
-                        "blob",
-
-                    headers: {
-
-                        Accept:
-                            "audio/mpeg",
-
-                    },
-
-                }
-
-            );
-
-
-        console.log(
-
-            "AI Assistant TTS audio received:",
-
-            {
-
-                type:
-                    response.data?.type,
-
-                size:
-                    response.data?.size,
-
-            }
-
-        );
-
-
-        return response.data;
-
-    }
-
-    catch (error) {
-
-        console.error(
-
-            "AI Assistant TTS request failed:",
-
-            {
-
-                status:
-                    error?.response?.status,
-
-                data:
-                    error?.response?.data,
-
-                message:
-                    error?.message,
-
-                code:
-                    error?.code,
-
-            }
-
-        );
-
-
-        throw error;
-
-    }
-
-};
-
-
-// =========================================================
-// DEFAULT EXPORT
-// =========================================================
-
-export default API;
+export { API_URL };

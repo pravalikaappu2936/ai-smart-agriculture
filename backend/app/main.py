@@ -38,6 +38,9 @@ from app.models.user import User
 from app.models.prediction import Prediction
 from app.models.notification import Notification
 
+# Password reset model
+from app.models.password_reset import PasswordReset
+
 
 # =========================================================
 # API ROUTERS
@@ -102,7 +105,9 @@ app.add_middleware(
     allow_origin_regex=r"https://[a-z0-9-]+-pravalikaappu2936\.vercel\.app",
 
     allow_credentials=True,
+
     allow_methods=["*"],
+
     allow_headers=["*"],
 )
 
@@ -135,6 +140,7 @@ app.include_router(disease_router)
 
 @app.get("/")
 def root():
+
     return {
         "message": "AI Smart Agriculture Backend Running"
     }

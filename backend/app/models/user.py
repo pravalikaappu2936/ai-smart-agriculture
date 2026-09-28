@@ -29,4 +29,3 @@ class User(Base):
         String,
         nullable=False
     )
-
